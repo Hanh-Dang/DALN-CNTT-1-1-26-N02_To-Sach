@@ -1,0 +1,319 @@
+// Prisma Schema for Tổ Sách E-Commerce Platform
+// Proposal Compliant: PostgreSQL on Supabase
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==========================================
+// 1. AUTHENTICATION & RBAC
+// ==========================================
+
+enum UserRole {
+  USER
+  STAFF
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  UNVERIFIED
+}
+
+model User {
+  id             String      @id @default(uuid())
+  email          String      @unique
+  passwordHash   String      @map("password_hash")
+  fullName       String      @map("full_name")
+  phone          String?     @unique
+  avatarUrl      String?     @map("avatar_url")
+  role           UserRole    @default(USER)
+  status         UserStatus  @default(ACTIVE)
+  emailVerified  Boolean     @default(false) @map("email_verified")
+  lastLoginAt    DateTime?   @map("last_login_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  profile        UserProfile?
+  orders         Order[]
+  reviews        Review[]
+  staffPerms     StaffPermission[] @relation("StaffPermTarget")
+  grantedPerms   StaffPermission[] @relation("StaffPermGranter")
+  auditLogs      AuditLog[]
+  behaviorEvents BehaviorEvent[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id              String    @id @default(uuid())
+  userId          String    @unique @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthday        DateTime?
+  gender          String?
+  addressProvince String?   @map("address_province")
+  addressDistrict String?   @map("address_district")
+  addressWard     String?   @map("address_ward")
+  addressDetail   String?   @map("address_detail")
+  preferredGenres String[]  @default([]) @map("preferred_genres")
+  preferredLangs  String[]  @default([]) @map("preferred_langs")
+  readingLevel    String?   @default("casual") @map("reading_level")
+  metadata        Json?
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("user_profiles")
+}
+
+model Permission {
+  id          String            @id @default(uuid())
+  code        String            @unique // E.g., "MANAGE_BOOKS", "MANAGE_ORDERS", "MANAGE_USERS", "VIEW_AUDIT_LOG"
+  name        String            // Tên tiếng Việt hiển thị
+  description String?           // Mô tả quyền hạn
+  staffPerms  StaffPermission[]
+
+  @@map("permissions")
+}
+
+model StaffPermission {
+  id           String     @id @default(uuid())
+  staffId      String     @map("staff_id")
+  permissionId String     @map("permission_id")
+  assignedById String?    @map("assigned_by_id")
+  assignedAt   DateTime   @default(now()) @map("assigned_at")
+
+  staff        User       @relation("StaffPermTarget", fields: [staffId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  assignedBy   User?      @relation("StaffPermGranter", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([staffId, permissionId])
+  @@map("staff_permissions")
+}
+
+// ==========================================
+// 2. CATALOG: BOOKS, AUTHORS, CATEGORIES
+// ==========================================
+
+model Author {
+  id        String       @id @default(uuid())
+  name      String
+  slug      String       @unique
+  bio       String?
+  avatarUrl String?      @map("avatar_url")
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  books     BookAuthor[]
+
+  @@map("authors")
+}
+
+model Category {
+  id          String         @id @default(uuid())
+  parentId    String?        @map("parent_id")
+  name        String
+  slug        String         @unique
+  level       Int            @default(1) // 1 = Ngành hàng cha, 2 = Chuyên mục, 3 = Chi tiết
+  sortOrder   Int            @default(0) @map("sort_order")
+  imageUrl    String?        @map("image_url")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  parent      Category?      @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[]     @relation("CategoryHierarchy")
+  books       BookCategory[]
+
+  @@map("categories")
+}
+
+model Book {
+  id             String         @id @default(uuid())
+  isbn           String?        @unique
+  title          String
+  slug           String         @unique
+  description    String?        @db.Text
+  price          Int            // Giá bán thực tế (VND)
+  originalPrice  Int            @map("original_price") // Giá bìa gốc
+  stockQty       Int            @default(0) @map("stock_qty")
+  soldCount      Int            @default(0) @map("sold_count")
+  pageCount      Int?           @map("page_count")
+  language       String?        @default("Tiếng Việt")
+  publishYear    Int?           @map("publish_year")
+  publisher      String?
+  coverUrl       String         @map("cover_url")
+  extraImages    String[]       @default([]) @map("extra_images")
+  avgRating      Float          @default(0) @map("avg_rating")
+  ratingCount    Int            @default(0) @map("rating_count")
+  weightG        Int?           @map("weight_g")
+  sizeCm         String?        @map("size_cm")
+  format         String?        @default("Bìa mềm") // Bìa mềm / Bìa cứng
+  translator     String?
+  tags           String[]       @default([])
+  isActive       Boolean        @default(true) @map("is_active")
+  isBestseller   Boolean        @default(false) @map("is_bestseller")
+  isNew          Boolean        @default(false) @map("is_new")
+  isFeatured     Boolean        @default(false) @map("is_featured")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  authors        BookAuthor[]
+  categories     BookCategory[]
+  orderItems     OrderItem[]
+  reviews        Review[]
+  behaviorEvents BehaviorEvent[]
+
+  @@map("books")
+}
+
+model BookAuthor {
+  bookId   String @map("book_id")
+  authorId String @map("author_id")
+
+  book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  author   Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, authorId])
+  @@map("book_authors")
+}
+
+model BookCategory {
+  bookId     String   @map("book_id")
+  categoryId String   @map("category_id")
+
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, categoryId])
+  @@map("book_categories")
+}
+
+// ==========================================
+// 3. ORDERS & TRANSACTIONS
+// ==========================================
+
+enum OrderStatus {
+  PENDING     // Chờ xác nhận
+  CONFIRMED   // Đã xác nhận
+  SHIPPING    // Đang giao hàng
+  DELIVERED   // Đã giao thành công
+  CANCELLED   // Đã hủy
+  REFUNDED    // Đã hoàn tiền
+}
+
+enum PaymentMethod {
+  COD           // Thanh toán khi nhận hàng
+  BANK_TRANSFER // Chuyển khoản ngân hàng (QR Code)
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id              String        @id @default(uuid())
+  orderCode       String        @unique @map("order_code") // Mã đơn: TS-YYYYMMDD-XXXX
+  userId          String?       @map("user_id")
+  customerName    String        @map("customer_name")
+  customerPhone   String        @map("customer_phone")
+  customerEmail   String?       @map("customer_email")
+  shippingAddress String        @map("shipping_address")
+  subtotal        Int           // Tổng tiền hàng
+  shippingFee     Int           @default(30000) @map("shipping_fee") // Phí vận chuyển
+  totalAmount     Int           @map("total_amount") // Tổng thanh toán
+  paymentMethod   PaymentMethod @default(COD) @map("payment_method")
+  paymentStatus   PaymentStatus @default(PENDING) @map("payment_status")
+  status          OrderStatus   @default(PENDING)
+  trackingCode    String?       @map("tracking_code")
+  note            String?
+  timeline        Json?         // Mảng sự kiện lịch sử cập nhật đơn hàng
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items           OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String @id @default(uuid())
+  orderId    String @map("order_id")
+  bookId     String @map("book_id")
+  bookTitle  String @map("book_title")
+  coverUrl   String @map("cover_url")
+  unitPrice  Int    @map("unit_price")
+  quantity   Int    @default(1)
+  totalPrice Int    @map("total_price")
+
+  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  book       Book   @relation(fields: [bookId], references: [id], onDelete: Restrict)
+
+  @@map("order_items")
+}
+
+// ==========================================
+// 4. REVIEWS & AUDIT
+// ==========================================
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id                 String       @id @default(uuid())
+  bookId             String       @map("book_id")
+  userId             String       @map("user_id")
+  rating             Int          // 1 - 5 sao
+  title              String?
+  body               String       @db.Text
+  isVerifiedPurchase Boolean      @default(false) @map("is_verified_purchase")
+  status             ReviewStatus @default(APPROVED)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  book               Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  action     String   // E.g., "CREATE_BOOK", "UPDATE_ORDER_STATUS", "UPDATE_STAFF_ROLE"
+  targetType String   @map("target_type") // E.g., "BOOK", "ORDER", "USER"
+  targetId   String?  @map("target_id")
+  details    Json?    // Dữ liệu trước/sau thay đổi
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_audit_logs")
+}
+
+model BehaviorEvent {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  sessionId   String   @map("session_id")
+  eventType   String   @map("event_type") // "view", "add_to_cart", "wishlist", "purchase", "search"
+  bookId      String?  @map("book_id")
+  searchQuery String?  @map("search_query")
+  durationSec Int?     @map("duration_sec")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  book        Book?    @relation(fields: [bookId], references: [id], onDelete: SetNull)
+
+  @@map("user_behavior_events")
+}

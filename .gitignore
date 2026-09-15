@@ -32,6 +32,16 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# AI IDE folders
+.claude/
+.cursor/
+.devin/
+.agents/
+
+# Reference / Legacy code (local only)
+legacy/
 
 # vercel
 .vercel
