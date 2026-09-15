@@ -43,6 +43,7 @@ yarn-error.log*
 # Reference / Legacy code (local only)
 legacy/
 UI/
+QNA_STUDY_GUIDE.md
 
 # vercel
 .vercel
