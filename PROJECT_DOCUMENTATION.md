@@ -70,28 +70,48 @@ Proposal quy định chuẩn **3 vai trò**:
 ## 4. Nhật Ký Tiến Độ Dự Án (Project Progress)
 
 ```
-[====== GIAI ĐOẠN 1: NỀN TẢNG ======] ---> HOÀN THÀNH 100%
-[== GIAI ĐOẠN 2: FRONTEND & DB ==]   ---> ĐANG THỰC HIỆN (HIỆN TẠI)
+[====== GIAI ĐOẠN 1: NỀN TẢNG ======] ---> HOÀN THÀNH 100% (Ngày 15/09/2026)
+[== GIAI ĐOẠN 2: FRONTEND & DB ==]   ---> SẴN SÀNG BẮT ĐẦU BUỔI TỚI
 [   GIAI ĐOẠN 3: ADMIN & RBAC    ]   ---> CHUẨN BỊ
 [   GIAI ĐOẠN 4: TEST & BẢO VỆ   ]   ---> DỰ KIẾN THÁNG 10/2026
 ```
 
-### Chi tiết các giai đoạn:
-* **✅ Giai đoạn 1 — Nền tảng & Cấu trúc (Đã Xong):**
-  - Lưu trữ code cũ vào `legacy/`.
-  - Khởi tạo Next.js 15 App Router, TypeScript, Tailwind CSS.
-  - Thiết kế Schema Prisma 14 bảng chuẩn PostgreSQL.
-  - Viết bộ mã hóa Custom JWT Auth & API Login/Register/Logout/Me.
-  - Viết Middleware bảo vệ trang Admin và trang cá nhân.
-  - Viết `seed.ts` chứa dữ liệu mẫu đầy đủ.
-* **⏳ Giai đoạn 2 — Giao diện Khách hàng & Tích hợp DB Thật (Hiện tại):**
-  - Nhập Database Password vào `.env` $\rightarrow$ Đẩy bảng lên Supabase (`prisma db push`) $\rightarrow$ Nạp dữ liệu mẫu (`prisma db seed`).
-  - Chuyển đổi 11 trang giao diện Khách hàng (Trang chủ, Tìm kiếm, Chi tiết sách, Giỏ hàng, Thanh toán COD/QR ngân hàng, Quản lý đơn hàng cá nhân) từ mock data sang Server Components & Prisma Query.
-* **📅 Giai đoạn 3 — Quản trị Nhà Sách & RBAC (Tuần tiếp theo):**
-  - Chuyển đổi giao diện Admin Dashboard, Quản lý kho sách (CRUD), Cây danh mục 3 cấp, Xử lý đơn hàng, Phân quyền nhân viên, Nhật ký kiểm toán.
-* **📅 Giai đoạn 4 — Tinh chỉnh, Kiểm thử & Đóng gói Báo cáo (Trước giữa tháng 10/2026):**
-  - Kiểm thử toàn diện luồng người dùng (E2E Test).
-  - Viết tài liệu báo cáo đồ án, slide thuyết trình và chuẩn bị demo bảo vệ.
+### 4.1 Những gì ĐÃ HOÀN THÀNH trong buổi hôm nay (15/09/2026):
+* [x] **Dọn dẹp kiến trúc:** Chuyển toàn bộ code Express/Vite prototype vào `legacy/` làm tư liệu tham khảo UI/Logic.
+* [x] **Khởi tạo Framework chuẩn:** Thiết lập dự án Next.js 15 (App Router, TypeScript, Tailwind CSS v4) tại thư mục gốc.
+* [x] **Thiết kế Database chuẩn Proposal:** Xây dựng `prisma/schema.prisma` với đầy đủ 14 bảng quan hệ, Enum phân quyền 3 vai trò (`USER`, `STAFF`, `SUPER_ADMIN`).
+* [x] **Kết nối & Đẩy bảng lên Supabase Cloud:** Chạy `npx prisma db push` thành công 100% lên PostgreSQL Supabase Singapore.
+* [x] **Nạp dữ liệu mẫu ban đầu (Seed Data):** Viết và chạy `prisma/seed.ts` nạp thành công 6 quyền hạn, 4 tài khoản mẫu (`admin@tosach.vn`, `staff.kho@tosach.vn`, `staff.order@tosach.vn`, `customer@gmail.com`), 8 đầu sách, cây danh mục 3 tầng, tác giả và đơn hàng mẫu.
+* [x] **Hệ thống Xác thực (Auth Engine):** Viết `src/lib/auth.ts`, các API route `/api/auth/login`, `/api/auth/register`, `/api/auth/logout`, `/api/auth/me` với JWT mã hóa `jose` và HttpOnly Cookie.
+* [x] **Phân quyền Route (RBAC Middleware):** Viết `src/middleware.ts` tự động bảo vệ route `/admin` (chỉ cho phép Staff/Admin) và `/account` (bắt buộc đăng nhập).
+* [x] **Kiểm thử thực tế (Verification):** Build Turbopack thành công trong 2.7s; test API `/api/auth/me` trả về HTTP 200 OK trên dev server.
+* [x] **Thiết lập Git & Bảo mật:** Cấu hình `.gitignore` giấu an toàn `.env` (chứa password DB), `legacy/`, `UI/` và các thư mục AI IDE.
+
+---
+
+### 4.2 Kế hoạch thực hiện cho BUỔI TIẾP THEO (Giai đoạn 2):
+* [ ] **Bước 1 — Tái cấu trúc Layout & Components dùng chung:**
+  - [ ] Di chuyển Navbar (Header với giỏ hàng, search bar, dropdown user) từ `legacy/src/components/CustomerHeader.tsx` sang Next.js App Router.
+  - [ ] Di chuyển Footer (B2C copy đã chuẩn hóa) từ `legacy/src/components/CustomerFooter.tsx`.
+  - [ ] Tạo Context / Hook quản lý Giỏ hàng (CartContext) lưu vào LocalStorage và đồng bộ với User.
+* [ ] **Bước 2 — Xây dựng Trang Chủ (`src/app/page.tsx`):**
+  - [ ] Query sách trực tiếp từ Supabase bằng Prisma (`prisma.book.findMany(...)` - Server Component).
+  - [ ] Render Hero Banner, Quick Stats Bar.
+  - [ ] Render Carousel "Sách Nổi Bật Tổ Sách", "Giờ Vàng Giá Tốt (Flash Sale)", "Mới Lên Kệ", "Thể Loại Nổi Bật".
+* [ ] **Bước 3 — Trang Tìm Kiếm & Danh Mục (`src/app/catalog/page.tsx`):**
+  - [ ] Lọc sách theo Danh mục 3 cấp, khoảng giá, đánh giá sao, sắp xếp bán chạy/giá tăng dần.
+  - [ ] Tìm kiếm sách theo từ khóa (tiêu đề, tác giả, mô tả) trực tiếp từ PostgreSQL.
+* [ ] **Bước 4 — Trang Chi Tiết Sách (`src/app/book/[slug]/page.tsx`):**
+  - [ ] Dynamic Route hiển thị chi tiết sách theo slug.
+  - [ ] Thư viện ảnh bìa, thông số kỹ thuật (số trang, kích thước, NXB).
+  - [ ] Đánh giá & bình luận của độc giả từ bảng `reviews`.
+  - [ ] Nút "Thêm vào giỏ" và "Mua ngay".
+* [ ] **Bước 5 — Giỏ Hàng & Thanh Toán (`/cart` & `/checkout`):**
+  - [ ] Trang giỏ hàng điều chỉnh số lượng, xóa sách.
+  - [ ] Trang thanh toán: Nhập thông tin nhận hàng, chọn hình thức thanh toán COD hoặc Chuyển khoản QR ngân hàng.
+  - [ ] Lưu đơn hàng thật vào bảng `orders` và `order_items` trên Supabase.
+* [ ] **Bước 6 — Trang Đăng Nhập / Đăng Ký (`src/app/auth/page.tsx`):**
+  - [ ] Form đăng nhập / đăng ký kết nối với API `/api/auth/login` và `/api/auth/register`.
 
 ---
 
