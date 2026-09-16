@@ -43,7 +43,17 @@ yarn-error.log*
 # Reference / Legacy code (local only)
 legacy/
 UI/
-QNA_STUDY_GUIDE.md
+
+# Local utility scripts & HTML exports
+scripts/
+*.html
+
+# Ignore any extra markdown files (only allow previously committed core docs)
+/*.md
+!/README.md
+!/AGENTS.md
+!/CLAUDE.md
+!/PROJECT_DOCUMENTATION.md
 
 # vercel
 .vercel
