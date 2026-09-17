@@ -65,6 +65,21 @@ Proposal quy định chuẩn **3 vai trò**:
    - `VIEW_AUDIT_LOG`: Theo dõi nhật ký kiểm toán.
 3. **`SUPER_ADMIN` (Quản trị viên tối cao):** Toàn quyền hệ thống, quản lý tài khoản nhân viên, cấp phát quyền hạn, xem doanh thu và thống kê.
 
+### 3.2 Cơ Chế Quản Lý Giỏ Hàng Cách Ly & Hợp Nhất Thông Minh (Smart Cart Merge)
+Hệ thống thương mại điện tử Tổ Sách áp dụng kiến trúc quản lý giỏ hàng theo chuẩn quốc tế (Shopee, Amazon), giải quyết triệt để bài toán bảo mật riêng tư và trải nghiệm người dùng liền mạch:
+1. **Phân vùng giỏ hàng độc lập (Storage Partitioning):**
+   - Khách vãng lai: Lưu vào key `tosach_guest_cart`.
+   - Thành viên đã đăng nhập: Lưu vào key độc lập gắn chặt theo ID người dùng: `tosach_user_cart_<userId>`.
+2. **Kịch bản 1 — Đăng ký tài khoản mới:**
+   - Khách vãng lai nhặt sách vào giỏ $\rightarrow$ bấm Đặt hàng $\rightarrow$ sang `/auth` Đăng ký tài khoản mới.
+   - Tài khoản mới tạo lập tức kế thừa 100% danh sách sách từ `tosach_guest_cart` sang `tosach_user_cart_<newUserId>`. Xóa sạch giỏ guest để giải phóng bộ nhớ.
+3. **Kịch bản 2 — Đăng nhập tài khoản cũ (Smart Merge):**
+   - Khách vãng lai nhặt sách mới bên ngoài $\rightarrow$ bấm Đăng nhập tài khoản đã có lịch sử giỏ hàng trước đó.
+   - Hệ thống tự động **hợp nhất thông minh**: Nạp lịch sử giỏ hàng của tài khoản cũ, gộp thêm các cuốn sách vừa nhặt ngoài luồng (nếu trùng sách thì cộng dồn số lượng tối đa theo tồn kho `stockQty`, nếu sách mới thì thêm vào). Xóa sạch giỏ guest.
+4. **Kịch bản 3 — Đăng xuất (Logout) & Bảo mật dữ liệu:**
+   - Khi người dùng bấm Đăng xuất: Toàn bộ giỏ hàng của user được lưu lại an toàn vào `tosach_user_cart_<userId>`, giỏ hàng trên màn hình lập tức được reset về rỗng (`[]`).
+   - Đảm bảo nếu người dùng khác đăng nhập vào cùng máy tính/trình duyệt, họ sẽ **hoàn toàn không bao giờ** nhìn thấy sản phẩm trong giỏ của người trước.
+
 ---
 
 ## 4. Nhật Ký Tiến Độ Dự Án (Project Progress)
@@ -92,6 +107,7 @@ Proposal quy định chuẩn **3 vai trò**:
   - Public routes: `/`, `/catalog`, `/book/*`, `/cart` (cho phép khách vãng lai tự do duyệt và thêm vào giỏ).
   - Protected routes: `/checkout/*`, `/account/*`, `/profile/*` (chặn và chuyển hướng sang `/auth?redirect=...` nếu chưa đăng nhập).
   - Admin routes: `/admin/*` (chặn triệt để, chỉ cho phép `STAFF` và `SUPER_ADMIN`).
+* [x] **Quản Lý Giỏ Hàng Cách Ly & Hợp Nhất Thông Minh (Smart Cart Merge):** Hoàn thiện `CartContext` phân vùng giỏ hàng riêng biệt theo `userId`, tự động chuyển giỏ guest sang user khi đăng ký mới, tự động hợp nhất giỏ khi đăng nhập tài khoản cũ (Cách B), và xóa sạch giỏ trên màn hình khi đăng xuất để đảm bảo tính riêng tư.
 * [x] **Kiểm thử biên dịch (Verification):** Kiểm tra `npx tsc --noEmit` đạt 0 lỗi type; build Turbopack `npm run build` thành công 100%.
 
 ---
