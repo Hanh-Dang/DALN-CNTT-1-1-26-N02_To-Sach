@@ -69,6 +69,7 @@ export const CustomerHeader: React.FC = () => {
       await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
       setShowUserMenu(false);
+      window.dispatchEvent(new Event('auth-change'));
       router.push('/');
       router.refresh();
     } catch (error) {
