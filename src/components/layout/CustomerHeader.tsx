@@ -48,6 +48,11 @@ export const CustomerHeader: React.FC = () => {
       }
     }
     fetchUser();
+
+    window.addEventListener('auth-change', fetchUser);
+    return () => {
+      window.removeEventListener('auth-change', fetchUser);
+    };
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {

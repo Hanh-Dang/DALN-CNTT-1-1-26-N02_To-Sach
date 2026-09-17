@@ -70,48 +70,43 @@ Proposal quy định chuẩn **3 vai trò**:
 ## 4. Nhật Ký Tiến Độ Dự Án (Project Progress)
 
 ```
-[====== GIAI ĐOẠN 1: NỀN TẢNG ======] ---> HOÀN THÀNH 100% (Ngày 15/09/2026)
-[== GIAI ĐOẠN 2: FRONTEND & DB ==]   ---> SẴN SÀNG BẮT ĐẦU BUỔI TỚI
-[   GIAI ĐOẠN 3: ADMIN & RBAC    ]   ---> CHUẨN BỊ
-[   GIAI ĐOẠN 4: TEST & BẢO VỆ   ]   ---> DỰ KIẾN THÁNG 10/2026
+[====== GIAI ĐOẠN 1: NỀN TẢNG (TUẦN 1) ======] ---> HOÀN THÀNH 100% (13/09/2026)
+[=== GIAI ĐOẠN 2: FRONTEND & AUTH (TUẦN 2) ==] ---> HOÀN THÀNH 100% (20/09/2026) - MỐC BÁO CÁO 1
+[   GIAI ĐOẠN 3: CATALOG & DETAILS (TUẦN 3)  ] ---> CHUẨN BỊ BẮT ĐẦU
+[   GIAI ĐOẠN 4: CART & CHECKOUT (TUẦN 4)    ] ---> DỰ KIẾN (MỐC BÁO CÁO 2)
+[   GIAI ĐOẠN 5: ADMIN & RBAC (TUẦN 5-6)     ] ---> DỰ KIẾN (MỐC BÁO CÁO 3)
+[   GIAI ĐOẠN 6: TEST, DEPLOY & BẢO VỆ (7-8) ] ---> DỰ KIẾN THÁNG 10/2026 (MỐC BÁO CÁO 4)
 ```
 
-### 4.1 Những gì ĐÃ HOÀN THÀNH trong buổi hôm nay (15/09/2026):
+### 4.1 Những gì ĐÃ HOÀN THÀNH trong Giai đoạn 2 (Tuần 2: 14/09 — 20/09/2026):
 * [x] **Dọn dẹp kiến trúc:** Chuyển toàn bộ code Express/Vite prototype vào `legacy/` làm tư liệu tham khảo UI/Logic.
 * [x] **Khởi tạo Framework chuẩn:** Thiết lập dự án Next.js 15 (App Router, TypeScript, Tailwind CSS v4) tại thư mục gốc.
 * [x] **Thiết kế Database chuẩn Proposal:** Xây dựng `prisma/schema.prisma` với đầy đủ 14 bảng quan hệ, Enum phân quyền 3 vai trò (`USER`, `STAFF`, `SUPER_ADMIN`).
 * [x] **Kết nối & Đẩy bảng lên Supabase Cloud:** Chạy `npx prisma db push` thành công 100% lên PostgreSQL Supabase Singapore.
 * [x] **Nạp dữ liệu mẫu ban đầu (Seed Data):** Viết và chạy `prisma/seed.ts` nạp thành công 6 quyền hạn, 4 tài khoản mẫu (`admin@tosach.vn`, `staff.kho@tosach.vn`, `staff.order@tosach.vn`, `customer@gmail.com`), 8 đầu sách, cây danh mục 3 tầng, tác giả và đơn hàng mẫu.
 * [x] **Hệ thống Xác thực (Auth Engine):** Viết `src/lib/auth.ts`, các API route `/api/auth/login`, `/api/auth/register`, `/api/auth/logout`, `/api/auth/me` với JWT mã hóa `jose` và HttpOnly Cookie.
-* [x] **Phân quyền Route (RBAC Middleware):** Viết `src/middleware.ts` tự động bảo vệ route `/admin` (chỉ cho phép Staff/Admin) và `/account` (bắt buộc đăng nhập).
-* [x] **Kiểm thử thực tế (Verification):** Build Turbopack thành công trong 2.7s; test API `/api/auth/me` trả về HTTP 200 OK trên dev server.
-* [x] **Thiết lập Git & Bảo mật:** Cấu hình `.gitignore` giấu an toàn `.env` (chứa password DB), `legacy/`, `UI/` và các thư mục AI IDE.
+* [x] **Khung Layout Dùng Chung (Storefront Shell):** Dựng `CustomerHeader` (nhận diện auth state, tìm kiếm, giỏ hàng badge), `CustomerFooter` (4 trụ cột cam kết B2C), và `CartContext` (`localStorage` lưu trữ giỏ hàng độc lập cho khách vãng lai).
+* [x] **Trang Chủ Kết Nối Database Thật (`src/app/page.tsx`):** Server Component truy vấn dữ liệu trực tiếp qua Prisma ORM, hiển thị Hero Banner, Thể loại nổi bật, Sách bán chạy nhất (`bestsellerBooks`), Sách mới (`newBooks`), và Cam kết chất lượng.
+* [x] **Giao Diện Đăng Nhập / Đăng Ký (`src/app/auth/page.tsx`):** Dựng trang Auth hoàn chỉnh hỗ trợ tab Đăng Nhập / Đăng Ký, kết nối API backend thật, hỗ trợ tham số `redirect` thông minh và bộ nút chọn nhanh tài khoản mẫu (Khách hàng, Staff Kho, Staff Đơn, Super Admin) phục vụ chấm điểm đồ án.
+* [x] **Phân Quyền Route & Bảo Vệ Chuẩn Hóa Trường Phái 1 (`src/middleware.ts`):**
+  - Public routes: `/`, `/catalog`, `/book/*`, `/cart` (cho phép khách vãng lai tự do duyệt và thêm vào giỏ).
+  - Protected routes: `/checkout/*`, `/account/*`, `/profile/*` (chặn và chuyển hướng sang `/auth?redirect=...` nếu chưa đăng nhập).
+  - Admin routes: `/admin/*` (chặn triệt để, chỉ cho phép `STAFF` và `SUPER_ADMIN`).
+* [x] **Kiểm thử biên dịch (Verification):** Kiểm tra `npx tsc --noEmit` đạt 0 lỗi type; build Turbopack `npm run build` thành công 100%.
 
 ---
 
-### 4.2 Kế hoạch thực hiện cho BUỔI TIẾP THEO (Giai đoạn 2):
-* [ ] **Bước 1 — Tái cấu trúc Layout & Components dùng chung:**
-  - [ ] Di chuyển Navbar (Header với giỏ hàng, search bar, dropdown user) từ `legacy/src/components/CustomerHeader.tsx` sang Next.js App Router.
-  - [ ] Di chuyển Footer (B2C copy đã chuẩn hóa) từ `legacy/src/components/CustomerFooter.tsx`.
-  - [ ] Tạo Context / Hook quản lý Giỏ hàng (CartContext) lưu vào LocalStorage và đồng bộ với User.
-* [ ] **Bước 2 — Xây dựng Trang Chủ (`src/app/page.tsx`):**
-  - [ ] Query sách trực tiếp từ Supabase bằng Prisma (`prisma.book.findMany(...)` - Server Component).
-  - [ ] Render Hero Banner, Quick Stats Bar.
-  - [ ] Render Carousel "Sách Nổi Bật Tổ Sách", "Giờ Vàng Giá Tốt (Flash Sale)", "Mới Lên Kệ", "Thể Loại Nổi Bật".
-* [ ] **Bước 3 — Trang Tìm Kiếm & Danh Mục (`src/app/catalog/page.tsx`):**
-  - [ ] Lọc sách theo Danh mục 3 cấp, khoảng giá, đánh giá sao, sắp xếp bán chạy/giá tăng dần.
-  - [ ] Tìm kiếm sách theo từ khóa (tiêu đề, tác giả, mô tả) trực tiếp từ PostgreSQL.
-* [ ] **Bước 4 — Trang Chi Tiết Sách (`src/app/book/[slug]/page.tsx`):**
-  - [ ] Dynamic Route hiển thị chi tiết sách theo slug.
-  - [ ] Thư viện ảnh bìa, thông số kỹ thuật (số trang, kích thước, NXB).
-  - [ ] Đánh giá & bình luận của độc giả từ bảng `reviews`.
-  - [ ] Nút "Thêm vào giỏ" và "Mua ngay".
-* [ ] **Bước 5 — Giỏ Hàng & Thanh Toán (`/cart` & `/checkout`):**
-  - [ ] Trang giỏ hàng điều chỉnh số lượng, xóa sách.
-  - [ ] Trang thanh toán: Nhập thông tin nhận hàng, chọn hình thức thanh toán COD hoặc Chuyển khoản QR ngân hàng.
-  - [ ] Lưu đơn hàng thật vào bảng `orders` và `order_items` trên Supabase.
-* [ ] **Bước 6 — Trang Đăng Nhập / Đăng Ký (`src/app/auth/page.tsx`):**
-  - [ ] Form đăng nhập / đăng ký kết nối với API `/api/auth/login` và `/api/auth/register`.
+### 4.2 Kế hoạch thực hiện cho TUẦN 3 (Giai đoạn 3: 21/09 — 27/09/2026):
+* [ ] **Bước 1 — Trang Tìm Kiếm & Danh Mục (`src/app/catalog/page.tsx`):**
+  - [ ] Lọc sách theo Danh mục 3 cấp (L1 - L2 - L3) lấy từ Supabase DB.
+  - [ ] Lọc theo khoảng giá bìa và mức đánh giá sao.
+  - [ ] Sắp xếp: Bán chạy nhất (`soldCount`), Giá tăng dần, Giá giảm dần, Mới nhất.
+  - [ ] Tìm kiếm sách toàn văn theo từ khóa (tiêu đề, tác giả, mô tả).
+* [ ] **Bước 2 — Trang Chi Tiết Sách (`src/app/book/[slug]/page.tsx`):**
+  - [ ] Dynamic Route hiển thị chi tiết sách theo slug chuẩn SEO.
+  - [ ] Thư viện ảnh bìa sách, thông số xuất bản (NXB, số trang, kích thước, định dạng bìa).
+  - [ ] Hiển thị danh sách đánh giá đã duyệt từ bảng `reviews`.
+  - [ ] Xử lý nút "Thêm vào giỏ" và "Mua ngay" (chuyển tiếp tới `/cart` hoặc `/checkout`).
 
 ---
 
