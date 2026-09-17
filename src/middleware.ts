@@ -34,6 +34,25 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Protect Checkout route (Trường phái 1: Guest cart allowed, Auth required at checkout)
+  if (pathname.startsWith('/checkout')) {
+    if (!token) {
+      const loginUrl = new URL('/auth', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    try {
+      await jwtVerify(token, key);
+    } catch {
+      const loginUrl = new URL('/auth', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      const response = NextResponse.redirect(loginUrl);
+      response.cookies.delete('tosach_token');
+      return response;
+    }
+  }
+
   // Protect User Account & Orders routes
   if (pathname.startsWith('/account') || pathname.startsWith('/profile')) {
     if (!token) {
@@ -55,5 +74,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/account/:path*', '/profile/:path*'],
+  matcher: ['/admin/:path*', '/account/:path*', '/profile/:path*', '/checkout/:path*'],
 };
