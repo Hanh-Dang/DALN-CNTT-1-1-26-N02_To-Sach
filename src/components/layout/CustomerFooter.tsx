@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { BookOpen, Phone, Mail, MapPin, ShieldCheck, RefreshCw, Truck, Award } from 'lucide-react';
+import { ToSachLogo } from '@/components/brand/ToSachLogo';
 
 export const CustomerFooter: React.FC = () => {
   return (
@@ -53,14 +54,13 @@ export const CustomerFooter: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 py-12 border-b border-slate-800">
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="inline-flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-white/10 text-[#F5A623] flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-xl font-black text-white tracking-tight">TỔ SÁCH</span>
-                <p className="text-xs text-[#F5A623] font-medium">Sách về tổ, tri thức bay xa</p>
-              </div>
+            <Link href="/" className="inline-flex items-center group">
+              <ToSachLogo 
+                size={42} 
+                withText={true}
+                textClassName="text-xl font-black text-white tracking-tight leading-none group-hover:text-[#F5A623] transition-colors"
+                sloganClassName="text-xs text-[#F5A623] font-medium mt-1 leading-none group-hover:text-white transition-colors"
+              />
             </Link>
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
               Nhà sách trực tuyến chuyên cung cấp sách mới, 100% có bản quyền từ các nhà xuất bản uy tín hàng đầu Việt Nam. Cam kết đóng gói cẩn thận và giao hàng tận tay độc giả.
