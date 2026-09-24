@@ -8,6 +8,7 @@ import {
   ArrowRight, ShieldCheck, AlertCircle, CheckCircle2, 
   Loader2, Sparkles 
 } from 'lucide-react';
+import { ToSachLogo } from '@/components/brand/ToSachLogo';
 
 const DEMO_ACCOUNTS = [
   {
@@ -170,9 +171,10 @@ function AuthContent() {
         <div className="text-center space-y-2 mb-6">
           <Link 
             href="/"
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#0B1F3A] text-[#F5A623] shadow-md hover:scale-105 transition-transform"
+            className="inline-block hover:scale-105 transition-transform"
+            title="Về trang chủ Nhà Sách Tổ Sách"
           >
-            <BookOpen className="w-7 h-7 stroke-[2.2]" />
+            <ToSachLogo size={56} />
           </Link>
           <h1 className="text-2xl font-black text-[#0B1F3A] tracking-tight">
             TỔ SÁCH XIN CHÀO

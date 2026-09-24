@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Star, ShoppingBag, Check } from 'lucide-react';
+import { Star, ShoppingBag, Check, Heart } from 'lucide-react';
 import { formatVND, calculateDiscount } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 
 export interface BookCardData {
   id: string;
@@ -39,8 +40,10 @@ interface BookCardProps {
 
 export const BookCard: React.FC<BookCardProps> = ({ book }) => {
   const { addToCart } = useCart();
+  const { isWishlisted, toggleWishlist } = useWishlist();
   const [isAdded, setIsAdded] = useState(false);
 
+  const isFavorite = isWishlisted(book.id);
   const discountPercent = calculateDiscount(book.originalPrice, book.price);
   const authorName = book.authors && book.authors.length > 0 
     ? book.authors.map((a) => a.author.name).join(', ') 
@@ -48,6 +51,23 @@ export const BookCard: React.FC<BookCardProps> = ({ book }) => {
   const categoryName = book.categories && book.categories.length > 0
     ? book.categories[0].category.name
     : null;
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist({
+      bookId: book.id,
+      title: book.title,
+      slug: book.slug,
+      price: book.price,
+      originalPrice: book.originalPrice,
+      coverUrl: book.coverUrl,
+      authorName,
+      categoryName: categoryName || undefined,
+      stockQty: book.stockQty,
+      avgRating: book.avgRating,
+    });
+  };
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -103,6 +123,20 @@ export const BookCard: React.FC<BookCardProps> = ({ book }) => {
             </span>
           )}
         </div>
+
+        {/* Top-Right Heart Button */}
+        <button
+          type="button"
+          onClick={handleToggleFavorite}
+          className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-all z-30 shadow-sm ${
+            isFavorite 
+              ? 'bg-white text-rose-500 opacity-100 ring-1 ring-rose-200' 
+              : 'bg-white/85 hover:bg-white text-slate-500 hover:text-rose-500 opacity-0 group-hover:opacity-100'
+          }`}
+          title={isFavorite ? "Gỡ khỏi sách yêu thích" : "Lưu vào sách yêu thích"}
+        >
+          <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current text-rose-500' : ''}`} />
+        </button>
 
         {/* Quick Add to Cart button on Hover */}
         <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">

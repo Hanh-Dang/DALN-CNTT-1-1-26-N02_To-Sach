@@ -48,12 +48,12 @@ UI/
 scripts/
 *.html
 
-# Ignore any extra markdown files (only allow previously committed core docs)
+# Ignore markdown documentation files (only keep README, AGENTS, CLAUDE in git)
 /*.md
 !/README.md
 !/AGENTS.md
 !/CLAUDE.md
-!/PROJECT_DOCUMENTATION.md
+PROJECT_DOCUMENTATION.md
 
 # vercel
 .vercel
