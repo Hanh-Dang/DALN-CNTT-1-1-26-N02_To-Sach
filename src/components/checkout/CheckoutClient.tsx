@@ -712,9 +712,10 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
                 <div key={item.bookId} className="flex gap-3 pt-3 first:pt-0">
                   <div className="relative w-14 h-20 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
                     <Image
-                      src={item.coverUrl}
+                      src={item.coverUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600'}
                       alt={item.title}
                       fill
+                      unoptimized
                       className="object-cover"
                       sizes="60px"
                     />
