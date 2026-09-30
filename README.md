@@ -91,6 +91,7 @@ to-sach-studio/
 │   │   ├── book/[slug]/     # Trang Chi tiết sách chuẩn SEO (Dynamic Route Server Component)
 │   │   ├── catalog/         # Trang Danh mục sách & Bộ lọc đa chiều (3 cấp, giá, sao, NXB)
 │   │   ├── cart/            # Trang Giỏ hàng tương tác & Thanh tiến trình Freeship 150k
+│   │   ├── checkout/        # Trang Thanh toán (Sổ địa chỉ linh hoạt, COD & VietQR)
 │   │   ├── wishlist/        # Trang Quản lý Tủ sách yêu thích (1-Click sang giỏ hàng)
 │   │   ├── auth/            # Trang Đăng nhập & Đăng ký (kèm nút test 4 vai trò)
 │   │   ├── layout.tsx       # Root Layout & Typography Plus Jakarta Sans
@@ -99,6 +100,7 @@ to-sach-studio/
 │   │   ├── book/            # BookCard, BookDetailClient (Gallery, Tabs, Reviews)
 │   │   ├── brand/           # ToSachLogo độc quyền
 │   │   ├── cart/            # CartClient (Stepper số lượng, Freeship bar, Empty state, Gợi ý)
+│   │   ├── checkout/        # CheckoutClient (Form địa chỉ, ngày giao động theo tỉnh, COD & VietQR)
 │   │   ├── catalog/         # CatalogFilterSidebar, CatalogBookCard, CatalogClient
 │   │   └── layout/          # CustomerHeader (Zero CLS, Mega Menu), CustomerFooter
 │   ├── context/             # Quản lý State phân vùng cục bộ
