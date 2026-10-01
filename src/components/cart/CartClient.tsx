@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   ShoppingBag, Trash2, Plus, Minus, ArrowRight, ArrowLeft, 
   ShieldCheck, Truck, PackageCheck, RefreshCw, CheckCircle2, 
-  Sparkles, AlertCircle, Bookmark, Check
+  Sparkles, AlertCircle, Bookmark, Check, ArrowUpDown
 } from 'lucide-react';
 import { useCart, CartItem } from '@/context/CartContext';
 import { formatVND, calculateDiscount } from '@/lib/utils';
@@ -23,12 +23,66 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
   const router = useRouter();
   const { items, updateQuantity, removeFromCart, clearCart, isLoaded } = useCart();
 
-  // Trạng thái chọn từng sản phẩm để thanh toán (mặc định chọn tất cả)
+  // Trạng thái chọn từng sản phẩm để thanh toán
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
+  const [sessionAddedIds, setSessionAddedIds] = useState<string[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-  // Không tự động tích chọn toàn bộ sách - khách chọn cuốn nào hoặc bấm "Chọn tất cả" mới tính
+  // 🌟 Tự động tích chọn những cuốn sách được thêm trong phiên mua sắm hiện tại (Session-Based Selection)
+  useEffect(() => {
+    if (!isLoaded || items.length === 0) return;
+
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = sessionStorage.getItem('tosach_session_added');
+        if (raw) {
+          const sessionAdded: string[] = JSON.parse(raw);
+          if (Array.isArray(sessionAdded) && sessionAdded.length > 0) {
+            setSessionAddedIds(sessionAdded);
+            const nextSelected: Record<string, boolean> = {};
+            let hasAnyMatched = false;
+
+            items.forEach((item) => {
+              if (sessionAdded.includes(item.bookId)) {
+                nextSelected[item.bookId] = true;
+                hasAnyMatched = true;
+              }
+            });
+
+            // Nếu có cuốn sách vừa thêm trong phiên này thì tự động tích chọn các cuốn đó
+            if (hasAnyMatched) {
+              setSelectedIds(nextSelected);
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [isLoaded, items]);
+
+  // Trạng thái sắp xếp danh sách giỏ hàng (mặc định: Mới nhất từ trên xuống)
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'price_desc' | 'price_asc'>('newest');
+
+  // Danh sách giỏ hàng sau khi sắp xếp theo tiêu chí đã chọn
+  const sortedItems = useMemo(() => {
+    const list = [...items];
+    switch (sortOrder) {
+      case 'newest':
+        return list.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+      case 'oldest':
+        return list.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+      case 'price_desc':
+        return list.sort((a, b) => b.price - a.price);
+      case 'price_asc':
+        return list.sort((a, b) => a.price - b.price);
+      default:
+        return list;
+    }
+  }, [items, sortOrder]);
+
+  // Danh sách các cuốn sách được tick chọn
   const selectedItems = useMemo(() => {
     return items.filter((item) => selectedIds[item.bookId] === true);
   }, [items, selectedIds]);
@@ -182,29 +236,51 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
           {/* LEFT COLUMN: ITEMS LIST & ACTIONS (8 COLS) */}
           <div className="lg:col-span-8 space-y-4">
             
-            {/* Header select-all bar */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-4 flex items-center justify-between text-xs shadow-2xs">
-              <label className="flex items-center gap-3 font-bold text-[#0B1F3A] cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={(e) => handleToggleSelectAll(e.target.checked)}
-                  className="rounded accent-[#0B1F3A] w-4 h-4 cursor-pointer"
-                />
-                <span>Chọn tất cả ({items.length} cuốn sách)</span>
-              </label>
-
-              <div className="flex items-center gap-4">
-                <span className="hidden sm:inline text-slate-400">
-                  Đã chọn: <strong className="text-[#0B1F3A]">{selectedItems.length}</strong>
+            {/* Header select-all & sort bar */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2.5 font-bold text-[#0B1F3A] cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={(e) => handleToggleSelectAll(e.target.checked)}
+                    className="rounded accent-[#0B1F3A] w-4 h-4 cursor-pointer"
+                  />
+                  <span>Chọn tất cả ({items.length} cuốn)</span>
+                </label>
+                <span className="hidden sm:inline text-slate-300">|</span>
+                <span className="hidden sm:inline text-slate-500 font-medium">
+                  Đã chọn: <strong className="text-[#0B1F3A] font-extrabold">{selectedItems.length}</strong>
                 </span>
+              </div>
+
+              <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3">
+                {/* Sắp xếp giỏ hàng */}
+                <div className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl px-2.5 py-1.5 transition-colors">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span className="text-[11px] text-slate-500 font-medium hidden md:inline">Sắp xếp:</span>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as any)}
+                    className="bg-transparent font-bold text-[#0B1F3A] text-xs focus:outline-none cursor-pointer pr-1"
+                    aria-label="Sắp xếp danh sách giỏ hàng"
+                  >
+                    <option value="newest">Mới nhất thêm vào</option>
+                    <option value="oldest">Cũ nhất thêm vào</option>
+                    <option value="price_desc">Giá: Cao đến thấp</option>
+                    <option value="price_asc">Giá: Thấp đến cao</option>
+                  </select>
+                </div>
+
+                {/* Xóa giỏ hàng */}
                 <button
                   type="button"
                   onClick={() => setShowClearConfirm(true)}
-                  className="text-slate-400 hover:text-rose-600 transition-colors font-medium flex items-center gap-1 cursor-pointer"
+                  className="text-slate-400 hover:text-rose-600 transition-colors font-medium flex items-center gap-1 py-1.5 px-2 hover:bg-rose-50 rounded-xl cursor-pointer"
+                  title="Làm rỗng giỏ hàng"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Xóa giỏ hàng</span>
+                  <span className="hidden sm:inline">Xóa giỏ</span>
                 </button>
               </div>
             </div>
@@ -238,8 +314,9 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
 
             {/* Cart Items List */}
             <div className="space-y-3">
-              {items.map((item) => {
+              {sortedItems.map((item) => {
                 const isChecked = selectedIds[item.bookId] === true;
+                const isSessionAdded = sessionAddedIds.includes(item.bookId);
                 const discount = calculateDiscount(item.originalPrice, item.price);
 
                 return (
@@ -270,12 +347,20 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
 
                     {/* Book Title & Author */}
                     <div className="flex-1 min-w-0 space-y-1">
-                      <Link 
-                        href={`/book/${item.slug}`}
-                        className="font-bold text-[#0B1F3A] text-sm hover:text-[#F5A623] transition-colors line-clamp-2"
-                      >
-                        {item.title}
-                      </Link>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Link 
+                          href={`/book/${item.slug}`}
+                          className="font-bold text-[#0B1F3A] text-sm hover:text-[#F5A623] transition-colors line-clamp-2"
+                        >
+                          {item.title}
+                        </Link>
+                        {isSessionAdded && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md shrink-0">
+                            <Sparkles className="w-2.5 h-2.5 text-[#F5A623]" />
+                            <span>Vừa thêm</span>
+                          </span>
+                        )}
+                      </div>
                       {item.authorName && (
                         <p className="text-xs text-slate-500">Tác giả: <span className="font-semibold text-slate-700">{item.authorName}</span></p>
                       )}

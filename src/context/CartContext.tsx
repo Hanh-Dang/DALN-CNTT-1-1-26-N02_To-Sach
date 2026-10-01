@@ -12,6 +12,7 @@ export interface CartItem {
   authorName?: string;
   quantity: number;
   stockQty: number;
+  addedAt?: number; // Thời điểm thêm hoặc cập nhật sách vào giỏ
 }
 
 interface CartContextType {
@@ -58,7 +59,14 @@ function getStoredCart(key: string): CartItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    const baseTime = Date.now();
+    return parsed.map((item, index) => ({
+      ...item,
+      addedAt: item.addedAt || (baseTime - (index + 1) * 1000),
+    }));
   } catch {
     return [];
   }
@@ -164,6 +172,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items, currentUserId, isLoaded]);
 
   const addToCart = (newItem: Omit<CartItem, 'quantity'>, qty = 1) => {
+    // 🌟 Ghi nhận mã sách vừa thêm vào phiên mua sắm hiện tại (Session-Based Cart Selection)
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem('tosach_session_added');
+        const sessionAdded: string[] = raw ? JSON.parse(raw) : [];
+        if (!sessionAdded.includes(newItem.bookId)) {
+          sessionAdded.push(newItem.bookId);
+          sessionStorage.setItem('tosach_session_added', JSON.stringify(sessionAdded));
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const now = Date.now();
+
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex((item) => item.bookId === newItem.bookId);
 
@@ -171,11 +195,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const updated = [...prevItems];
         const existing = updated[existingIndex];
         const newQty = Math.min(existing.quantity + qty, existing.stockQty);
-        updated[existingIndex] = { ...existing, quantity: newQty };
-        return updated;
+        // Cập nhật số lượng và cập nhật mốc thời gian mới nhất, đẩy lên đầu danh sách
+        const updatedItem = { ...existing, quantity: newQty, addedAt: now };
+        updated.splice(existingIndex, 1);
+        return [updatedItem, ...updated];
       } else {
         const initialQty = Math.min(qty, newItem.stockQty > 0 ? newItem.stockQty : 1);
-        return [...prevItems, { ...newItem, quantity: initialQty }];
+        // Đưa sách mới thêm lên đầu danh sách giỏ hàng
+        return [{ ...newItem, quantity: initialQty, addedAt: now }, ...prevItems];
       }
     });
   };
@@ -198,10 +225,30 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removeFromCart = (bookId: string) => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem('tosach_session_added');
+        if (raw) {
+          const sessionAdded: string[] = JSON.parse(raw);
+          const filtered = sessionAdded.filter((id) => id !== bookId);
+          sessionStorage.setItem('tosach_session_added', JSON.stringify(filtered));
+        }
+      } catch {
+        // ignore
+      }
+    }
     setItems((prevItems) => prevItems.filter((item) => item.bookId !== bookId));
   };
 
   const clearCart = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('tosach_session_added');
+        sessionStorage.removeItem('tosach_checkout_selected_ids');
+      } catch {
+        // ignore
+      }
+    }
     setItems([]);
   };
 
