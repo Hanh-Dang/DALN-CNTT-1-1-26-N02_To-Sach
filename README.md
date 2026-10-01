@@ -87,6 +87,7 @@ to-sach-studio/
 │   ├── app/                 # Next.js App Router (Pages, Layouts, API Routes)
 │   │   ├── api/
 │   │   │   ├── auth/        # Các API đăng nhập, đăng ký, đăng xuất, phiên làm việc
+│   │   │   ├── locations/   # API nạp dữ liệu hành chính 3 cấp (Tỉnh - Huyện - Xã) chuẩn GSO
 │   │   │   └── reviews/     # API tiếp nhận và duyệt đánh giá bạn đọc
 │   │   ├── book/[slug]/     # Trang Chi tiết sách chuẩn SEO (Dynamic Route Server Component)
 │   │   ├── catalog/         # Trang Danh mục sách & Bộ lọc đa chiều (3 cấp, giá, sao, NXB)

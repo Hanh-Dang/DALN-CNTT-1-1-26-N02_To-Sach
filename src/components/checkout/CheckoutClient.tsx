@@ -47,45 +47,202 @@ interface CheckoutClientProps {
 const FREESHIP_THRESHOLD = 150000;
 const STANDARD_SHIPPING_FEE = 25000;
 
+interface LocationItem {
+  code: number;
+  name: string;
+}
+
 export default function CheckoutClient({ user }: CheckoutClientProps) {
   const router = useRouter();
   const { items, clearCart, isLoaded } = useCart();
 
-  // 1. FORM STATE (Tự động điền dữ liệu đã lưu trong User Profile)
+  // 1. FILTER CÁC SẢN PHẨM ĐƯỢC CHỌN TỪ GIỎ HÀNG
+  const [selectedBookIds, setSelectedBookIds] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('tosach_checkout_selected_ids');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSelectedBookIds(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const checkoutItems = useMemo(() => {
+    if (selectedBookIds && selectedBookIds.length > 0) {
+      const filtered = items.filter((item) => selectedBookIds.includes(item.bookId));
+      return filtered.length > 0 ? filtered : items;
+    }
+    return items;
+  }, [items, selectedBookIds]);
+
+  // 2. FORM STATE (Tự động điền dữ liệu đã lưu trong User Profile)
   const [fullName, setFullName] = useState(user.fullName || '');
   const [phone, setPhone] = useState(user.phone || '');
   const [email, setEmail] = useState(user.email || '');
-  const [province, setProvince] = useState(
-    user.profile?.addressProvince || 'Hà Nội'
-  );
-  const [district, setDistrict] = useState(
-    user.profile?.addressDistrict || ''
-  );
+
+  // 3. ĐỊA CHỈ HÀNH CHÍNH 3 CẤP (TỈNH / HUYỆN / XÃ TỪ API CHUẨN TỔNG CỤC THỐNG KÊ)
+  const [provinces, setProvinces] = useState<LocationItem[]>([]);
+  const [districts, setDistricts] = useState<LocationItem[]>([]);
+  const [wards, setWards] = useState<LocationItem[]>([]);
+
+  const [provinceCode, setProvinceCode] = useState<number | null>(1); // Mặc định Hà Nội code 1
+  const [districtCode, setDistrictCode] = useState<number | null>(null);
+
+  const [province, setProvince] = useState(user.profile?.addressProvince || 'Thành phố Hà Nội');
+  const [district, setDistrict] = useState(user.profile?.addressDistrict || '');
   const [ward, setWard] = useState(user.profile?.addressWard || '');
-  const [addressDetail, setAddressDetail] = useState(
-    user.profile?.addressDetail || ''
-  );
+  const [addressDetail, setAddressDetail] = useState(user.profile?.addressDetail || '');
   const [note, setNote] = useState('');
   const [saveAsDefault, setSaveAsDefault] = useState(true);
 
-  // 2. PAYMENT METHOD STATE
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>(
-    'COD'
-  );
+  const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
+  const [isLoadingWards, setIsLoadingWards] = useState(false);
 
-  // 3. UI & SUBMIT STATE
+  // 4. LOAD DANH SÁCH 63 TỈNH THÀNH TỪ API
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchProvinces() {
+      setIsLoadingProvinces(true);
+      try {
+        const res = await fetch('/api/locations?type=provinces');
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (isMounted && Array.isArray(data)) {
+          setProvinces(data);
+          // Tìm code phù hợp với tỉnh ban đầu
+          const targetName = (user.profile?.addressProvince || province || 'Hà Nội').toLowerCase();
+          const matched = data.find((p: LocationItem) =>
+            p.name.toLowerCase().includes(targetName)
+          );
+          if (matched) {
+            setProvinceCode(matched.code);
+            setProvince(matched.name);
+          } else if (data.length > 0) {
+            setProvinceCode(data[0].code);
+            setProvince(data[0].name);
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi tải danh mục Tỉnh/Thành:', err);
+      } finally {
+        if (isMounted) setIsLoadingProvinces(false);
+      }
+    }
+    fetchProvinces();
+    return () => { isMounted = false; };
+  }, []);
+
+  // 5. LOAD QUẬN / HUYỆN KHI TỈNH THAY ĐỔI
+  useEffect(() => {
+    if (!provinceCode) {
+      setDistricts([]);
+      setWards([]);
+      return;
+    }
+    let isMounted = true;
+    async function fetchDistricts() {
+      setIsLoadingDistricts(true);
+      try {
+        const res = await fetch(`/api/locations?type=districts&provinceCode=${provinceCode}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (isMounted && Array.isArray(data)) {
+          setDistricts(data);
+          // Nếu đã có quận/huyện từ profile
+          if (district) {
+            const matched = data.find((d: LocationItem) =>
+              d.name.toLowerCase().includes(district.toLowerCase())
+            );
+            if (matched) {
+              setDistrictCode(matched.code);
+              setDistrict(matched.name);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi tải Quận/Huyện:', err);
+      } finally {
+        if (isMounted) setIsLoadingDistricts(false);
+      }
+    }
+    fetchDistricts();
+    return () => { isMounted = false; };
+  }, [provinceCode]);
+
+  // 6. LOAD PHƯỜNG / XÃ KHI QUẬN / HUYỆN THAY ĐỔI
+  useEffect(() => {
+    if (!districtCode) {
+      setWards([]);
+      return;
+    }
+    let isMounted = true;
+    async function fetchWards() {
+      setIsLoadingWards(true);
+      try {
+        const res = await fetch(`/api/locations?type=wards&districtCode=${districtCode}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (isMounted && Array.isArray(data)) {
+          setWards(data);
+          if (ward) {
+            const matched = data.find((w: LocationItem) =>
+              w.name.toLowerCase().includes(ward.toLowerCase())
+            );
+            if (matched) {
+              setWard(matched.name);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi tải Phường/Xã:', err);
+      } finally {
+        if (isMounted) setIsLoadingWards(false);
+      }
+    }
+    fetchWards();
+    return () => { isMounted = false; };
+  }, [districtCode]);
+
+  // Xử lý khi người dùng chọn Tỉnh / Thành phố mới
+  const handleProvinceChange = (newCode: number) => {
+    setProvinceCode(newCode);
+    const found = provinces.find((p) => p.code === newCode);
+    if (found) setProvince(found.name);
+    // Reset cấp dưới
+    setDistrictCode(null);
+    setDistrict('');
+    setWard('');
+    setWards([]);
+    if (errors.province) setErrors((prev) => ({ ...prev, province: '' }));
+  };
+
+  // Xử lý khi người dùng chọn Quận / Huyện mới
+  const handleDistrictChange = (newCode: number) => {
+    setDistrictCode(newCode);
+    const found = districts.find((d) => d.code === newCode);
+    if (found) setDistrict(found.name);
+    // Reset cấp xã
+    setWard('');
+    if (errors.district) setErrors((prev) => ({ ...prev, district: '' }));
+  };
+
+  // 7. PAYMENT METHOD STATE
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD');
+
+  // 8. UI & SUBMIT STATE
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [copiedBankInfo, setCopiedBankInfo] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 4. LẤY DANH SÁCH MÓN HÀNG CHECKOUT
-  // Nếu có danh sách món được chọn trong giỏ thì lấy, nếu không thì lấy toàn bộ giỏ
-  const checkoutItems = useMemo(() => {
-    return items;
-  }, [items]);
-
-  // 5. TÍNH TOÁN TIỀN NÔNG
+  // 9. TÍNH TOÁN TIỀN NÔNG
   const subtotal = useMemo(() => {
     return checkoutItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   }, [checkoutItems]);
@@ -105,7 +262,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const shippingFee = checkoutItems.length === 0 ? 0 : isFreeShip ? 0 : STANDARD_SHIPPING_FEE;
   const totalAmount = subtotal + shippingFee;
 
-  // 6. TÍNH TOÁN DỰ KIẾN GIAO HÀNG ĐỘNG THEO TỈNH THÀNH (GIẢI PHÁP 2)
+  // 10. TÍNH TOÁN DỰ KIẾN GIAO HÀNG ĐỘNG THEO TỈNH THÀNH (GIẢI PHÁP 2)
   const deliveryEstimate = useMemo(() => {
     return getEstimatedDeliveryText(province);
   }, [province]);
@@ -393,66 +550,104 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
               {/* Tỉnh / Thành phố */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                  <span>Tỉnh / Thành phố</span>
-                  <span className="text-rose-500">*</span>
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <span>Tỉnh / Thành phố</span>
+                    <span className="text-rose-500">*</span>
+                  </span>
+                  {isLoadingProvinces && (
+                    <span className="text-[10px] text-blue-600 animate-pulse font-normal">Đang tải...</span>
+                  )}
                 </label>
                 <select
-                  value={province}
-                  onChange={(e) => {
-                    setProvince(e.target.value);
-                    if (errors.province) setErrors((prev) => ({ ...prev, province: '' }));
-                  }}
+                  value={provinceCode || ''}
+                  onChange={(e) => handleProvinceChange(Number(e.target.value))}
+                  disabled={isLoadingProvinces || provinces.length === 0}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:outline-hidden focus:ring-2 focus:ring-[#0B1F3A]/20 transition-all cursor-pointer"
                 >
-                  {VIETNAM_PROVINCES.map((p) => (
-                    <option key={p.id} value={p.name}>
-                      {p.name} {p.isExpressCity ? '⚡ (1-2 ngày)' : ''}
-                    </option>
-                  ))}
+                  {provinces.length === 0 ? (
+                    <option value="">Đang nạp 63 tỉnh thành...</option>
+                  ) : (
+                    provinces.map((p) => (
+                      <option key={p.code} value={p.code}>
+                        {p.name}
+                      </option>
+                    ))
+                  )}
                 </select>
                 {errors.province && <p className="text-[11px] text-rose-600 font-medium">{errors.province}</p>}
               </div>
 
-              {/* Quận / Huyện */}
+              {/* Quận / Huyện (Dropdown tự động cập nhật theo Tỉnh/Thành) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                  <span>Quận / Huyện</span>
-                  <span className="text-rose-500">*</span>
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <span>Quận / Huyện</span>
+                    <span className="text-rose-500">*</span>
+                  </span>
+                  {isLoadingDistricts && (
+                    <span className="text-[10px] text-blue-600 animate-pulse font-normal">Đang cập nhật...</span>
+                  )}
                 </label>
-                <input
-                  type="text"
-                  value={district}
-                  onChange={(e) => {
-                    setDistrict(e.target.value);
-                    if (errors.district) setErrors((prev) => ({ ...prev, district: '' }));
-                  }}
-                  placeholder="Ví dụ: Quận Cầu Giấy / Quận 1"
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-hidden focus:ring-2 focus:ring-[#0B1F3A]/20 transition-all ${
+                <select
+                  value={districtCode || ''}
+                  onChange={(e) => handleDistrictChange(Number(e.target.value))}
+                  disabled={!provinceCode || isLoadingDistricts}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-hidden focus:ring-2 focus:ring-[#0B1F3A]/20 transition-all cursor-pointer disabled:bg-slate-100 disabled:cursor-not-allowed ${
                     errors.district ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300 bg-white'
                   }`}
-                />
+                >
+                  <option value="">
+                    {isLoadingDistricts
+                      ? 'Đang tải quận/huyện...'
+                      : !provinceCode
+                      ? '-- Vui lòng chọn Tỉnh/Thành trước --'
+                      : '-- Chọn Quận / Huyện --'}
+                  </option>
+                  {districts.map((d) => (
+                    <option key={d.code} value={d.code}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
                 {errors.district && <p className="text-[11px] text-rose-600 font-medium">{errors.district}</p>}
               </div>
 
-              {/* Phường / Xã */}
+              {/* Phường / Xã (Dropdown tự động cập nhật theo Quận/Huyện) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                  <span>Phường / Xã</span>
-                  <span className="text-rose-500">*</span>
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <span>Phường / Xã</span>
+                    <span className="text-rose-500">*</span>
+                  </span>
+                  {isLoadingWards && (
+                    <span className="text-[10px] text-blue-600 animate-pulse font-normal">Đang cập nhật...</span>
+                  )}
                 </label>
-                <input
-                  type="text"
+                <select
                   value={ward}
                   onChange={(e) => {
                     setWard(e.target.value);
                     if (errors.ward) setErrors((prev) => ({ ...prev, ward: '' }));
                   }}
-                  placeholder="Ví dụ: Phường Dịch Vọng Hậu"
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-hidden focus:ring-2 focus:ring-[#0B1F3A]/20 transition-all ${
+                  disabled={!districtCode || isLoadingWards}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-hidden focus:ring-2 focus:ring-[#0B1F3A]/20 transition-all cursor-pointer disabled:bg-slate-100 disabled:cursor-not-allowed ${
                     errors.ward ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300 bg-white'
                   }`}
-                />
+                >
+                  <option value="">
+                    {isLoadingWards
+                      ? 'Đang tải phường/xã...'
+                      : !districtCode
+                      ? '-- Vui lòng chọn Quận/Huyện trước --'
+                      : '-- Chọn Phường / Xã --'}
+                  </option>
+                  {wards.map((w) => (
+                    <option key={w.code} value={w.name}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
                 {errors.ward && <p className="text-[11px] text-rose-600 font-medium">{errors.ward}</p>}
               </div>
 

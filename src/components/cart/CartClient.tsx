@@ -28,24 +28,9 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-  // Khởi tạo các item được chọn khi nạp xong giỏ hàng
-  React.useEffect(() => {
-    if (items.length > 0) {
-      setSelectedIds((prev) => {
-        const next: Record<string, boolean> = { ...prev };
-        items.forEach((item) => {
-          if (next[item.bookId] === undefined) {
-            next[item.bookId] = true;
-          }
-        });
-        return next;
-      });
-    }
-  }, [items]);
-
-  // Danh sách các cuốn được tick chọn
+  // Không tự động tích chọn toàn bộ sách - khách chọn cuốn nào hoặc bấm "Chọn tất cả" mới tính
   const selectedItems = useMemo(() => {
-    return items.filter((item) => selectedIds[item.bookId] !== false);
+    return items.filter((item) => selectedIds[item.bookId] === true);
   }, [items, selectedIds]);
 
   // Tính toán tiền hàng và chiết khấu
@@ -86,6 +71,14 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
 
   const handleProceedCheckout = () => {
     if (selectedItems.length === 0) return;
+    try {
+      if (typeof window !== 'undefined') {
+        const bookIds = selectedItems.map((i) => i.bookId);
+        sessionStorage.setItem('tosach_checkout_selected_ids', JSON.stringify(bookIds));
+      }
+    } catch {
+      // ignore
+    }
     router.push('/checkout');
   };
 
@@ -246,7 +239,7 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
             {/* Cart Items List */}
             <div className="space-y-3">
               {items.map((item) => {
-                const isChecked = selectedIds[item.bookId] !== false;
+                const isChecked = selectedIds[item.bookId] === true;
                 const discount = calculateDiscount(item.originalPrice, item.price);
 
                 return (
