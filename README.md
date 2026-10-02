@@ -113,7 +113,9 @@ to-sach-studio/
 │   │   └── WishlistContext.tsx  # Tủ sách yêu thích độc lập
 │   ├── lib/
 │   │   ├── auth.ts          # Mã hóa JWT HS256 (jose) & Bcrypt password hash
+│   │   ├── flyToCart.ts     # Hiệu ứng ném sách vào giỏ hàng (Parabolic Fly-to-Cart GPU 60fps)
 │   │   ├── prisma.ts        # Prisma Client singleton
+│   │   ├── provinces.ts     # Danh mục 63 Tỉnh/Thành & Ước tính thời gian giao hàng
 │   │   └── utils.ts         # Tiện ích định dạng tiền VND, tính chiết khấu
 │   └── middleware.ts        # Next.js Middleware kiểm tra quyền RBAC & chốt chặn checkout
 ├── legacy/                  # Thư mục lưu trữ code Express/Vite cũ làm tư liệu
