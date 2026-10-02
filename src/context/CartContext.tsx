@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import { triggerFlyToCart } from '@/lib/flyToCart';
 
 export interface CartItem {
   bookId: string;
@@ -19,7 +20,11 @@ interface CartContextType {
   items: CartItem[];
   totalItems: number;
   subtotal: number;
-  addToCart: (item: Omit<CartItem, 'quantity'>, qty?: number) => void;
+  addToCart: (
+    item: Omit<CartItem, 'quantity'>, 
+    qty?: number, 
+    startSource?: HTMLElement | MouseEvent | React.MouseEvent | TouchEvent | null
+  ) => void;
   updateQuantity: (bookId: string, quantity: number) => void;
   removeFromCart: (bookId: string) => void;
   clearCart: () => void;
@@ -171,7 +176,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [items, currentUserId, isLoaded]);
 
-  const addToCart = (newItem: Omit<CartItem, 'quantity'>, qty = 1) => {
+  const addToCart = (
+    newItem: Omit<CartItem, 'quantity'>,
+    qty = 1,
+    startSource?: HTMLElement | MouseEvent | React.MouseEvent | TouchEvent | null
+  ) => {
+    // 🚀 Kích hoạt hiệu ứng ném sách vào giỏ hàng (Parabolic Fly to Cart)
+    try {
+      triggerFlyToCart(newItem.coverUrl, startSource);
+    } catch (err) {
+      console.error('Lỗi hiệu ứng ném sách vào giỏ:', err);
+    }
+
     // 🌟 Ghi nhận mã sách vừa thêm vào phiên mua sắm hiện tại (Session-Based Cart Selection)
     if (typeof window !== 'undefined') {
       try {

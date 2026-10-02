@@ -82,7 +82,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book }) => {
       coverUrl: book.coverUrl,
       authorName,
       stockQty: book.stockQty,
-    });
+    }, 1, e);
 
     setIsAdded(true);
     setTimeout(() => {
