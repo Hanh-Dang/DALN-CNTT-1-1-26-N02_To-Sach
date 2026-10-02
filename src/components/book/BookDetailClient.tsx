@@ -93,7 +93,7 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
   const primaryCategory = book.categories && book.categories.length > 0 ? book.categories[0].category : null;
 
   // Handle Add To Cart
-  const handleAddToCart = () => {
+  const handleAddToCart = (e?: React.MouseEvent) => {
     if (book.stockQty <= 0) return;
 
     addToCart({
@@ -105,7 +105,7 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
       coverUrl: book.coverUrl,
       authorName,
       stockQty: book.stockQty,
-    });
+    }, 1, e);
 
     setIsAddedToCart(true);
     setTimeout(() => setIsAddedToCart(false), 2200);

@@ -88,20 +88,24 @@ to-sach-studio/
 │   │   ├── api/
 │   │   │   ├── auth/        # Các API đăng nhập, đăng ký, đăng xuất, phiên làm việc
 │   │   │   ├── locations/   # API nạp dữ liệu hành chính 3 cấp (Tỉnh - Huyện - Xã) chuẩn GSO
+│   │   │   ├── orders/      # API Đặt hàng Prisma Transaction (ACID) & Tra cứu đơn
 │   │   │   └── reviews/     # API tiếp nhận và duyệt đánh giá bạn đọc
+│   │   ├── account/orders/  # Trang Lịch sử đơn mua & Timeline vận chuyển thời gian thực
 │   │   ├── book/[slug]/     # Trang Chi tiết sách chuẩn SEO (Dynamic Route Server Component)
 │   │   ├── catalog/         # Trang Danh mục sách & Bộ lọc đa chiều (3 cấp, giá, sao, NXB)
 │   │   ├── cart/            # Trang Giỏ hàng tương tác & Thanh tiến trình Freeship 150k
 │   │   ├── checkout/        # Trang Thanh toán (Sổ địa chỉ linh hoạt, COD & VietQR)
+│   │   ├── order/success/   # Trang Đặt hàng thành công (kèm VietQR động & sao chép STK)
 │   │   ├── wishlist/        # Trang Quản lý Tủ sách yêu thích (1-Click sang giỏ hàng)
 │   │   ├── auth/            # Trang Đăng nhập & Đăng ký (kèm nút test 4 vai trò)
 │   │   ├── layout.tsx       # Root Layout & Typography Plus Jakarta Sans
 │   │   └── page.tsx         # Trang chủ kết nối 100% dữ liệu thực tế Supabase DB
 │   ├── components/          # UI Components chuẩn Design System Figma
+│   │   ├── account/         # OrdersClient (Tabs trạng thái, Card đơn, Timeline drawer)
 │   │   ├── book/            # BookCard, BookDetailClient (Gallery, Tabs, Reviews)
 │   │   ├── brand/           # ToSachLogo độc quyền
-│   │   ├── cart/            # CartClient (Stepper số lượng, Freeship bar, Empty state, Gợi ý)
-│   │   ├── checkout/        # CheckoutClient (Form địa chỉ, ngày giao động theo tỉnh, COD & VietQR)
+│   │   ├── cart/            # CartClient (Stepper số lượng, Freeship bar, Empty state, Gợi ý, Sắp xếp)
+│   │   ├── checkout/        # CheckoutClient (Form địa chỉ 3 cấp, COD & VietQR), OrderSuccessClient
 │   │   ├── catalog/         # CatalogFilterSidebar, CatalogBookCard, CatalogClient
 │   │   └── layout/          # CustomerHeader (Zero CLS, Mega Menu), CustomerFooter
 │   ├── context/             # Quản lý State phân vùng cục bộ

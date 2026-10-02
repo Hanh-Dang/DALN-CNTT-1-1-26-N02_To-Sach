@@ -54,7 +54,7 @@ interface LocationItem {
 
 export default function CheckoutClient({ user }: CheckoutClientProps) {
   const router = useRouter();
-  const { items, clearCart, isLoaded } = useCart();
+  const { items, clearCart, removeFromCart, isLoaded } = useCart();
 
   // 1. FILTER CÁC SẢN PHẨM ĐƯỢC CHỌN TỪ GIỎ HÀNG
   const [selectedBookIds, setSelectedBookIds] = useState<string[] | null>(null);
@@ -276,7 +276,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
   // Copy số tài khoản
   const handleCopyBank = () => {
-    navigator.clipboard.writeText('9824052026');
+    navigator.clipboard.writeText('0388272905');
     setCopiedBankInfo(true);
     setTimeout(() => setCopiedBankInfo(false), 2000);
   };
@@ -375,8 +375,15 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
         throw new Error(data.error || 'Đặt hàng thất bại. Vui lòng thử lại!');
       }
 
-      // Xóa giỏ hàng thành công
-      clearCart();
+      // Xóa các sản phẩm đã đặt mua thành công khỏi giỏ hàng
+      if (checkoutItems.length >= items.length) {
+        clearCart();
+      } else {
+        checkoutItems.forEach((item) => removeFromCart(item.bookId));
+      }
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('tosach_checkout_selected_ids');
+      }
 
       // Chuyển sang màn hình xác nhận đặt hàng thành công
       router.push(`/order/success?code=${data.orderCode}`);
@@ -851,16 +858,16 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-xl border border-slate-200">
                     <div>
                       <span className="text-slate-400 block text-[11px]">Ngân hàng thụ hưởng:</span>
-                      <span className="font-bold text-slate-800">Vietcombank (Chi nhánh Hội sở)</span>
+                      <span className="font-bold text-slate-800">MBBank (Ngân hàng Quân Đội)</span>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[11px]">Tên chủ tài khoản:</span>
-                      <span className="font-bold text-slate-800 uppercase">CTCP PHAT HANH SACH TO SACH</span>
+                      <span className="font-bold text-slate-800 uppercase">TO SACH - MBBANK</span>
                     </div>
                     <div className="sm:col-span-2 flex items-center justify-between pt-1 border-t border-slate-100">
                       <div>
                         <span className="text-slate-400 block text-[11px]">Số tài khoản:</span>
-                        <span className="font-black text-sm text-[#0B1F3A] tracking-wider">9824052026</span>
+                        <span className="font-black text-sm text-[#0B1F3A] tracking-wider">0388272905</span>
                       </div>
                       <button
                         type="button"

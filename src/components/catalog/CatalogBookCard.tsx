@@ -49,7 +49,7 @@ export const CatalogBookCard: React.FC<CatalogBookCardProps> = ({ book, viewMode
       coverUrl: book.coverUrl,
       authorName: book.author,
       stockQty: book.inStock ? 50 : 0,
-    });
+    }, 1, e);
 
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 1800);

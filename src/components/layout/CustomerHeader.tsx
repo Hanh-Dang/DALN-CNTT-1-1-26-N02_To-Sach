@@ -305,6 +305,8 @@ export const CustomerHeader: React.FC = () => {
             {/* Icon Giỏ Hàng (kết nối CartContext) */}
             <Link
               href="/cart"
+              id="header-cart-icon"
+              data-cart-icon
               className="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-200 hover:text-white hover:bg-white/10 transition-colors shrink-0"
               title="Giỏ hàng Tổ Sách"
             >

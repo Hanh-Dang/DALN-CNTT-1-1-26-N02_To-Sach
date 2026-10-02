@@ -17,7 +17,7 @@ export default function WishlistPage() {
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
   const [allAdded, setAllAdded] = useState(false);
 
-  const handleAddToCart = (item: WishlistItem) => {
+  const handleAddToCart = (item: WishlistItem, e?: React.MouseEvent) => {
     addToCart({
       bookId: item.bookId,
       title: item.title,
@@ -27,7 +27,7 @@ export default function WishlistPage() {
       coverUrl: item.coverUrl,
       authorName: item.authorName,
       stockQty: item.stockQty || 50,
-    });
+    }, 1, e);
 
     setAddedIds((prev) => ({ ...prev, [item.bookId]: true }));
     setTimeout(() => {
@@ -214,7 +214,7 @@ export default function WishlistPage() {
 
                     <button
                       type="button"
-                      onClick={() => handleAddToCart(book)}
+                      onClick={(e) => handleAddToCart(book, e)}
                       className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors ${
                         isItemAdded
                           ? 'bg-emerald-600 text-white'
