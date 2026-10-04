@@ -195,12 +195,15 @@ async function main() {
     data: { name: 'Hệ Thống & Bảo Mật', slug: 'he-thong-bao-mat', level: 2, parentId: catCongNghe.id, sortOrder: 2 },
   });
 
-  // Level 1: Lịch Sử, Tâm Lý
+  // Level 1: Lịch Sử, Tâm Lý, Thiếu Nhi
   const catLichSu = await prisma.category.create({
     data: { name: 'Lịch Sử & Văn Hóa', slug: 'lich-su-van-hoa', level: 1, sortOrder: 4 },
   });
   const catTamLy = await prisma.category.create({
     data: { name: 'Tâm Lý & Triết Học', slug: 'tam-ly-triet-hoc', level: 1, sortOrder: 5 },
+  });
+  const catThieuNhi = await prisma.category.create({
+    data: { name: 'Thiếu Nhi & Truyện Tranh', slug: 'thieu-nhi', level: 1, sortOrder: 6 },
   });
 
   console.log('✅ Created 3-tier categories hierarchy.');
@@ -217,6 +220,7 @@ async function main() {
     { name: 'Thích Minh Niệm', slug: 'thich-minh-niem', bio: 'Thiền sư, tác giả cuốn sách chữa lành Hiểu Về Trái Tim' },
     { name: 'Alex Xu', slug: 'alex-xu', bio: 'Chuyên gia thiết kế hệ thống phần mềm tại thung lũng Silicon' },
     { name: 'Nguyễn Hữu Điệp', slug: 'nguyen-huu-diep', bio: 'Giảng viên chuyên ngành Khoa học Máy tính' },
+    { name: 'Antoine de Saint-Exupéry', slug: 'antoine-de-saint-exupery', bio: 'Nhà văn phi công vĩ đại người Pháp, tác giả kiệt tác Hoàng Tử Bé' },
   ];
 
   const createdAuthors: Record<string, string> = {};
@@ -447,6 +451,32 @@ async function main() {
       avgRating: 4.7,
       ratingCount: 188,
       categoryId: catTrinhThamNB.id,
+    },
+    {
+      isbn: '978-604-2-08911-3',
+      title: 'Hoàng Tử Bé (Le Petit Prince)',
+      slug: 'hoang-tu-be',
+      authorName: 'Antoine de Saint-Exupéry',
+      translator: 'Trác Phong',
+      publisher: 'NXB Kim Đồng',
+      publishYear: 2023,
+      price: 75000,
+      originalPrice: 95000,
+      coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
+      extraImages: [],
+      stockQty: 35,
+      soldCount: 5120,
+      pageCount: 110,
+      weightG: 180,
+      sizeCm: '13 x 19 cm',
+      format: 'Bìa mềm',
+      language: 'Tiếng Việt',
+      description: 'Kiệt tác văn học thiếu nhi kinh điển toàn cầu về tình bạn, tình yêu và cái nhìn trong trẻo của trẻ thơ về thế giới người lớn.',
+      tags: ['thieu-nhi', 'kinh-dien', 'triet-ly'],
+      isBestseller: true,
+      avgRating: 4.9,
+      ratingCount: 650,
+      categoryId: catThieuNhi.id,
     },
   ];
 
