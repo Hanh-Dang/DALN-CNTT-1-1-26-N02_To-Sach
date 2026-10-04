@@ -583,15 +583,6 @@ export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
             </label>
           </div>
         </div>
-
-        {/* NÚT ÁP DỤNG */}
-        <button
-          type="button"
-          onClick={() => {}}
-          className="w-full py-2.5 bg-[#0B1F3A] hover:bg-[#163156] text-white rounded-xl font-bold text-xs transition-colors shadow-xs"
-        >
-          Áp dụng bộ lọc
-        </button>
       </div>
 
       {/* 3. CAM KẾT CHÍNH HÃNG TRUST CARD */}

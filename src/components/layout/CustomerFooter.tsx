@@ -109,11 +109,11 @@ export const CustomerFooter: React.FC = () => {
           <div className="space-y-3">
             <h4 className="text-white font-bold text-sm tracking-wide uppercase">DANH MỤC TUYỂN CHỌN</h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li><Link href="/catalog?cat=van-hoc" className="hover:text-white transition-colors">Văn Học & Tiểu Thuyết</Link></li>
-              <li><Link href="/catalog?cat=kinh-te" className="hover:text-white transition-colors">Kinh Tế & Khởi Nghiệp</Link></li>
-              <li><Link href="/catalog?cat=tam-ly" className="hover:text-white transition-colors">Tâm Lý & Kỹ Năng Sống</Link></li>
-              <li><Link href="/catalog?cat=thieu-nhi" className="hover:text-white transition-colors">Sách Thiếu Nhi</Link></li>
-              <li><Link href="/catalog?cat=ngoai-ngu" className="hover:text-white transition-colors">Ngoại Ngữ & Từ Điển</Link></li>
+              <li><Link href="/catalog?category=van-hoc" className="hover:text-white transition-colors">Văn Học & Tiểu Thuyết</Link></li>
+              <li><Link href="/catalog?category=kinh-te-ky-nang" className="hover:text-white transition-colors">Kinh Tế & Kỹ Năng</Link></li>
+              <li><Link href="/catalog?category=cong-nghe-lap-trinh" className="hover:text-white transition-colors">Công Nghệ & Lập Trình</Link></li>
+              <li><Link href="/catalog?category=tam-ly-triet-hoc" className="hover:text-white transition-colors">Tâm Lý & Triết Học</Link></li>
+              <li><Link href="/catalog?category=thieu-nhi" className="hover:text-white transition-colors">Thiếu Nhi & Truyện Tranh</Link></li>
             </ul>
           </div>
         </div>
