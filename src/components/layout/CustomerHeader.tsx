@@ -7,11 +7,13 @@ import {
   BookOpen, Search, ShoppingBag, Heart, User as UserIcon, 
   ChevronDown, Phone, ShieldCheck, Truck, Menu, X, 
   ArrowRight, LogOut, Package, UserCheck, Shield,
-  SlidersHorizontal, Flame, Sparkles, Layers, ChevronRight
+  SlidersHorizontal, Flame, Sparkles, Layers, ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { ToSachLogo } from '@/components/brand/ToSachLogo';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { formatVND } from '@/lib/utils';
 
 interface CurrentUser {
   id: string;
@@ -38,50 +40,60 @@ const TICKER_ITEMS = [
   { icon: '🌿', text: 'Kho tri thức hơn 150.000 tựa sách phong phú luôn sẵn sàng phục vụ' },
 ];
 
-// Cây danh mục chuẩn cho Mega Menu
+// Cây danh mục chuẩn đồng bộ 100% theo Database Supabase / Prisma
 const CATEGORY_TREE = [
   {
-    name: 'Văn Học & Tiểu Thuyết',
+    name: 'Văn Học',
     slug: 'van-hoc',
     icon: '📖',
     subs: [
       { name: 'Tiểu thuyết Việt Nam', slug: 'tieu-thuyet-vn' },
       { name: 'Tiểu thuyết Nước ngoài', slug: 'tieu-thuyet-nuoc-ngoai' },
-      { name: 'Trinh thám & Kinh dị', slug: 'trinh-tham-kinh-di' },
-      { name: 'Thơ ca & Tản văn', slug: 'tho-ca-tan-van' },
+      { name: 'Trinh Thám & Kinh Dị', slug: 'trinh-tham-kinh-di' },
+      { name: 'Trinh thám Nhật Bản (Honkaku)', slug: 'trinh-tham-nhat-ban' },
     ],
   },
   {
-    name: 'Kinh Tế - Khởi Nghiệp',
+    name: 'Kinh Tế & Kỹ Năng',
     slug: 'kinh-te-ky-nang',
     icon: '📈',
     subs: [
-      { name: 'Tài chính & Đầu tư', slug: 'tai-chinh-dau-tu' },
-      { name: 'Quản trị - Lãnh đạo', slug: 'quan-tri-lanh-dao' },
-      { name: 'Khởi nghiệp & Kinh doanh', slug: 'khoi-nghiep' },
-      { name: 'Marketing & Bán hàng', slug: 'marketing-ban-hang' },
+      { name: 'Tài Chính & Đầu Tư', slug: 'tai-chinh-dau-tu' },
+      { name: 'Quản lý tài chính cá nhân', slug: 'tai-chinh-ca-nhan' },
     ],
   },
   {
-    name: 'Phát Triển Bản Thân & Tâm Lý',
-    slug: 'ky-nang-song',
+    name: 'Công Nghệ & Lập Trình',
+    slug: 'cong-nghe-lap-trinh',
+    icon: '💻',
+    subs: [
+      { name: 'Lập Trình Phần Mềm', slug: 'lap-trinh-phan-mem' },
+      { name: 'Python & Khoa học Dữ liệu', slug: 'python-data-science' },
+      { name: 'Hệ Thống & Bảo Mật', slug: 'he-thong-bao-mat' },
+    ],
+  },
+  {
+    name: 'Lịch Sử & Văn Hóa',
+    slug: 'lich-su-van-hoa',
+    icon: '🏛️',
+    subs: [
+      { name: 'Lịch sử nhân loại', slug: 'lich-su-van-hoa' },
+    ],
+  },
+  {
+    name: 'Tâm Lý & Triết Học',
+    slug: 'tam-ly-triet-hoc',
     icon: '🧠',
     subs: [
-      { name: 'Phát triển bản thân', slug: 'phat-trien-ban-than' },
       { name: 'Tâm lý học ứng dụng', slug: 'tam-ly-triet-hoc' },
-      { name: 'Giao tiếp & Ứng xử', slug: 'giao-tiep' },
-      { name: 'Tư duy tích cực', slug: 'tu-duy-tich-cuc' },
     ],
   },
   {
-    name: 'Thiếu Nhi & Giáo Dục',
-    slug: 'thieu-nhi-giao-duc',
-    icon: '🌱',
+    name: 'Thiếu Nhi & Truyện Tranh',
+    slug: 'thieu-nhi',
+    icon: '✨',
     subs: [
-      { name: 'Truyện tranh - Manga', slug: 'manga' },
-      { name: 'Khoa học thường thức', slug: 'khoa-hoc-thuong-thuc' },
-      { name: 'Sách song ngữ Anh - Việt', slug: 'sach-song-ngu' },
-      { name: 'Nuôi dạy con', slug: 'nuoi-day-con' },
+      { name: 'Văn học thiếu nhi', slug: 'thieu-nhi' },
     ],
   },
 ];
@@ -97,10 +109,78 @@ export const CustomerHeader: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMegaMenu, setShowMegaMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchResults, setSearchResults] = useState<Array<{
+    id: string;
+    title: string;
+    slug: string;
+    price: number;
+    originalPrice: number;
+    coverUrl: string;
+    soldCount: number;
+    authorName: string;
+    categoryName: string;
+  }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const { totalWishlist, isLoaded: isWishlistLoaded } = useWishlist();
 
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const POPULAR_SEARCHES = [
+    'Tâm lý học',
+    'Nhà Giả Kim',
+    'Tâm Lý Học Về Tiền',
+    'Sapiens',
+    'Cây Chuối Non',
+    'Lập Trình Python',
+    'Án Mạng Mười Một Chữ',
+  ];
+
+  // Tìm kiếm tức thì khi gõ từ khóa (Live search debounce)
+  useEffect(() => {
+    let isMounted = true;
+    if (!searchQuery.trim()) {
+      fetch('/api/books/search')
+        .then((res) => res.json())
+        .then((data) => {
+          if (isMounted && data?.books) {
+            setSearchResults(data.books);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(() => {
+      fetch(`/api/books/search?q=${encodeURIComponent(searchQuery.trim())}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (isMounted) {
+            setSearchResults(data?.books || []);
+          }
+        })
+        .catch(() => {
+          if (isMounted) setSearchResults([]);
+        })
+        .finally(() => {
+          if (isMounted) setIsSearching(false);
+        });
+    }, 200);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
+
+  const handleSelectSuggestion = (keyword: string) => {
+    setSearchQuery(keyword);
+    setIsSearchFocused(false);
+    router.push(`/catalog?q=${encodeURIComponent(keyword)}`);
+  };
 
   // Xác định trang hiện tại để kích hoạt nút pill trắng đúng như thiết kế Figma
   const isHome = pathname === '/';
@@ -136,11 +216,14 @@ export const CustomerHeader: React.FC = () => {
     };
   }, [fetchUser]);
 
-  // Đóng user menu khi click ra ngoài
+  // Đóng user menu & search suggestions khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
+      }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsSearchFocused(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -225,8 +308,8 @@ export const CustomerHeader: React.FC = () => {
             </Link>
           </div>
 
-          {/* CỘT 2 (Ở GIỮA): Menu Trang chủ, Danh mục, Tất cả sách (Đồng bộ Figma) */}
-          <nav className="hidden md:flex items-center justify-center gap-6 lg:gap-8 shrink-0">
+          {/* CỘT 2 (Ở GIỮA): Menu Trang chủ & Danh mục (Đã bỏ Tất cả sách theo yêu cầu) */}
+          <nav className="hidden md:flex items-center justify-center gap-3 lg:gap-5 shrink-0">
             {/* Nút Trang Chủ: Pill trắng khi ở trang chủ, link mờ khi ở trang khác */}
             <Link
               href="/"
@@ -253,40 +336,189 @@ export const CustomerHeader: React.FC = () => {
                 }`}
               >
                 <Layers className={`w-4 h-4 ${isCatalog || showMegaMenu ? 'text-[#0B1F3A]' : 'text-[#F5A623]'}`} />
-                <span>Danh mục</span>
+                <span>Danh mục sách</span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showMegaMenu ? 'rotate-180' : ''}`} />
               </Link>
             </div>
-
-            {/* Tất cả sách (Dẫn trực tiếp sang trang danh mục & bộ lọc) */}
-            <Link
-              href="/catalog"
-              className="font-bold text-xs text-slate-200 hover:text-white hover:bg-white/10 rounded-xl px-4 py-2 inline-flex items-center justify-center h-10 transition-colors shrink-0"
-            >
-              Tất cả sách
-            </Link>
           </nav>
 
           {/* CỘT 3 (BÊN PHẢI): Ô tìm kiếm + Wishlist + Giỏ hàng + Cố định Khung Tài khoản */}
           <div className="shrink-0 flex items-center justify-end gap-2.5 sm:gap-3.5">
-            {/* Ô tìm kiếm dạng pill bo tròn trắng với icon Filter SlidersHorizontal */}
-            <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-full h-9 px-3 w-40 sm:w-48 md:w-56 shadow-inner shrink-0">
-              <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm sách, tác giả..."
-                className="w-full min-w-0 bg-transparent px-2 text-xs text-slate-800 placeholder-slate-400 outline-none"
-              />
-              <button
-                type="submit"
-                title="Lọc & Tìm kiếm trong Catalog"
-                className="text-slate-400 hover:text-[#0B1F3A] flex items-center justify-center p-0.5 shrink-0"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600 hover:text-[#0B1F3A]" />
-              </button>
-            </form>
+            {/* Ô tìm kiếm dạng pill bo tròn trắng: Bên trái KHÔNG CÒN ICON, icon Search chuyển sang bên phải (thay thế dấu mũi tên) */}
+            <div ref={searchContainerRef} className="relative shrink-0">
+              <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-full h-9 pl-3.5 pr-1.5 w-48 sm:w-60 md:w-72 lg:w-80 shadow-inner shrink-0 transition-all border border-transparent focus-within:border-[#F5A623]">
+                {/* INPUT BÊN TRÁI SẠCH SẼ, KHÔNG CÒN ICON TÌM KIẾM */}
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm sách, tác giả, thể loại..."
+                  className="w-full min-w-0 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 outline-none"
+                />
+
+                {/* Nút Xóa nhanh khi có từ khóa */}
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors mr-1 shrink-0"
+                    title="Xóa từ khóa"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {/* ICON TÌM KIẾM ĐÃ CHUYỂN SANG BÊN PHẢI (THAY CHO DẤU MŨI TÊN) */}
+                <button
+                  type="submit"
+                  title="Tìm kiếm"
+                  className="w-7 h-7 rounded-full bg-[#0B1F3A] hover:bg-[#F5A623] text-white hover:text-[#0B1F3A] flex items-center justify-center transition-all shrink-0 shadow-xs"
+                >
+                  <Search className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
+              </form>
+
+              {/* Popup gợi ý sách liên quan trực tiếp khi gõ từ khóa & sách hot khi chưa gõ */}
+              {isSearchFocused && (
+                <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3.5 z-50 animate-in fade-in-0 zoom-in-95 duration-150 max-h-[460px] overflow-y-auto">
+                  {/* Trạng thái 1: Người dùng đã gõ từ khóa -> Hiện danh sách sách liên quan nhất */}
+                  {searchQuery.trim() ? (
+                    <div>
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Sách liên quan nhất
+                        </span>
+                        {isSearching ? (
+                          <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                            <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                            <span>Đang tìm...</span>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 font-medium">
+                            {searchResults.length} kết quả
+                          </span>
+                        )}
+                      </div>
+
+                      {searchResults.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {searchResults.slice(0, 5).map((book) => (
+                            <Link
+                              key={book.id}
+                              href={`/books/${book.slug}`}
+                              onClick={() => setIsSearchFocused(false)}
+                              className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#F0F3FF] transition-colors group"
+                            >
+                              <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0 relative bg-slate-100 border border-slate-200 shadow-2xs">
+                                <img
+                                  src={book.coverUrl}
+                                  alt={book.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-xs font-bold text-slate-800 truncate group-hover:text-amber-600 transition-colors">
+                                  {book.title}
+                                </h4>
+                                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                                  {book.authorName} • <span className="text-slate-500">{book.categoryName}</span>
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs font-bold text-[#0B1F3A]">
+                                    {formatVND(book.price)}
+                                  </span>
+                                  {book.originalPrice > book.price && (
+                                    <span className="text-[10px] text-slate-400 line-through">
+                                      {formatVND(book.originalPrice)}
+                                    </span>
+                                  )}
+                                  {book.soldCount > 0 && (
+                                    <span className="text-[10px] text-emerald-600 font-semibold ml-auto">
+                                      Đã bán {book.soldCount.toLocaleString('vi-VN')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleSearch(e)}
+                            className="w-full pt-2.5 pb-1 border-t border-slate-100 text-xs font-bold text-[#0B1F3A] hover:text-amber-600 transition-colors flex items-center justify-center gap-1"
+                          >
+                            <span>Xem tất cả kết quả cho &quot;{searchQuery}&quot;</span>
+                            <span className="text-amber-500 font-bold">→</span>
+                          </button>
+                        </div>
+                      ) : !isSearching ? (
+                        <div className="py-6 text-center text-xs text-slate-500">
+                          <p className="font-semibold text-slate-700">Chưa tìm thấy sách phù hợp với &quot;{searchQuery}&quot;</p>
+                          <p className="text-[11px] text-slate-400 mt-1">Hãy thử tìm theo tên tác giả hoặc thể loại</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    /* Trạng thái 2: Ô tìm kiếm trống -> Hiện gợi ý từ khóa hot & sách nổi bật */
+                    <div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <Flame className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Sách được quan tâm nhiều nhất</span>
+                      </div>
+
+                      <div className="space-y-1.5 mb-3">
+                        {searchResults.slice(0, 3).map((book) => (
+                          <Link
+                            key={book.id}
+                            href={`/books/${book.slug}`}
+                            onClick={() => setIsSearchFocused(false)}
+                            className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-[#F0F3FF] transition-colors group"
+                          >
+                            <div className="w-9 h-12 rounded-lg overflow-hidden shrink-0 relative bg-slate-100 border border-slate-200">
+                              <img
+                                src={book.coverUrl}
+                                alt={book.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xs font-bold text-slate-800 truncate group-hover:text-amber-600 transition-colors">
+                                {book.title}
+                              </h4>
+                              <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                                {book.authorName} • <span className="text-slate-500">{book.categoryName}</span>
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs font-bold text-[#0B1F3A]">
+                                  {formatVND(book.price)}
+                                </span>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100">
+                        <p className="text-[10px] uppercase font-bold text-slate-400 mb-1.5">Từ khóa tìm kiếm hot:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {POPULAR_SEARCHES.map((keyword) => (
+                            <button
+                              key={keyword}
+                              type="button"
+                              onClick={() => handleSelectSuggestion(keyword)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-[#0B1F3A] hover:text-white text-slate-700 text-xs font-medium transition-colors text-left"
+                            >
+                              {keyword}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Icon Wishlist (Sách yêu thích) */}
             <Link
@@ -560,9 +792,10 @@ export const CustomerHeader: React.FC = () => {
           <Link
             href="/catalog"
             onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 font-semibold text-slate-700 border-b border-slate-100"
+            className="block py-2 font-semibold text-slate-700 border-b border-slate-100 flex items-center justify-between"
           >
-            Tất cả sách & Bộ lọc
+            <span>Danh mục sách</span>
+            <Layers className="w-4 h-4 text-slate-400" />
           </Link>
           <Link
             href="/cart"
