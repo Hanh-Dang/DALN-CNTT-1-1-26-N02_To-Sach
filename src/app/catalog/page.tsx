@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Khám phá kho tri thức sách chính hãng với bộ lọc chuyên sâu theo ngành hàng, khoảng giá, nhà xuất bản và tác giả.',
 };
 
-export const revalidate = 60; // ISR cache 60 seconds
+export const dynamic = 'force-dynamic';
 
 export default async function CatalogPage() {
   // 1. Lấy toàn bộ sách thực tế đang active từ Supabase PostgreSQL qua Prisma (100% dữ liệu thật, không mock)
@@ -18,26 +18,50 @@ export default async function CatalogPage() {
     where: { isActive: true },
     include: {
       authors: { include: { author: true } },
-      categories: { include: { category: true } },
+      categories: {
+        include: {
+          category: {
+            include: {
+              parent: {
+                include: {
+                  parent: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
 
-  const books: CatalogBookItem[] = rawBooks.map((b) => ({
-    id: b.id,
-    title: b.title,
-    slug: b.slug,
-    author: b.authors && b.authors.length > 0 ? b.authors.map((a) => a.author.name).join(', ') : 'Tổ Sách Tuyển Chọn',
-    publisher: b.publisher || 'NXB Trẻ',
-    price: b.price,
-    originalPrice: b.originalPrice,
-    coverUrl: b.coverUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
-    rating: b.avgRating || 5.0,
-    ratingCount: b.ratingCount || 1,
-    inStock: b.stockQty > 0,
-    categorySlug: b.categories.map((c) => c.category.slug).join(' '),
-    tag: b.publisher || 'Chính Hãng',
-  }));
+  const books: CatalogBookItem[] = rawBooks.map((b) => {
+    // Thu thập toàn bộ slug của danh mục và các danh mục cha/ông nội của cuốn sách
+    const allCatSlugs = new Set<string>();
+    b.categories.forEach((bc) => {
+      let cur: any = bc.category;
+      while (cur) {
+        if (cur.slug) allCatSlugs.add(cur.slug);
+        cur = cur.parent;
+      }
+    });
+
+    return {
+      id: b.id,
+      title: b.title,
+      slug: b.slug,
+      author: b.authors && b.authors.length > 0 ? b.authors.map((a) => a.author.name).join(', ') : 'Tổ Sách Tuyển Chọn',
+      publisher: b.publisher || 'NXB Trẻ',
+      price: b.price,
+      originalPrice: b.originalPrice,
+      coverUrl: b.coverUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
+      rating: b.avgRating || 5.0,
+      ratingCount: b.ratingCount || 1,
+      inStock: b.stockQty > 0,
+      categorySlug: Array.from(allCatSlugs).join(' '),
+      tag: b.publisher || 'Chính Hãng',
+    };
+  });
 
   // 2. Lấy danh mục thực tế từ Database kèm tính toán số lượng sách thực tế
   const rawCategories = await prisma.category.findMany({

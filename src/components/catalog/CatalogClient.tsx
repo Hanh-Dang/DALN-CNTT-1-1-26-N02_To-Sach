@@ -31,8 +31,8 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // URL parameters
-  const initialCategory = searchParams.get('category') || undefined;
+  // URL parameters (hỗ trợ cả ?category= và ?cat=)
+  const initialCategory = searchParams.get('category') || searchParams.get('cat') || undefined;
   const initialQuery = searchParams.get('q') || '';
   const initialSort = searchParams.get('sort') || 'newest';
 
@@ -57,7 +57,7 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
 
   // Sync state if searchParams change from outside (e.g. Header navigation)
   useEffect(() => {
-    const cat = searchParams.get('category') || undefined;
+    const cat = searchParams.get('category') || searchParams.get('cat') || undefined;
     const q = searchParams.get('q') || '';
     const sort = searchParams.get('sort') || 'newest';
 
@@ -126,11 +126,13 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
 
       // 2. Category
       if (filters.category) {
-        const cat = filters.category.toLowerCase();
-        // Check exact or partial slug match
-        if (book.categorySlug && !book.categorySlug.toLowerCase().includes(cat) && !cat.includes(book.categorySlug.toLowerCase())) {
-          return false;
-        }
+        const cat = filters.category.toLowerCase().trim();
+        const bookSlugs = (book.categorySlug || '').toLowerCase().split(/\s+/);
+        // Khớp trực tiếp slug hoặc khớp slug nhánh cha/con
+        const matchesCategory =
+          bookSlugs.includes(cat) ||
+          bookSlugs.some((s) => s.includes(cat) || cat.includes(s));
+        if (!matchesCategory) return false;
       }
 
       // 3. Price Range
@@ -175,13 +177,22 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
   const categoryTitle = useMemo(() => {
     if (searchQuery.trim()) return `Kết quả tìm kiếm: "${searchQuery}"`;
     if (!filters.category) return 'Tất cả Sách & Tác Phẩm';
-    if (filters.category.includes('kinh-te')) return 'Sách Kinh Tế - Khởi Nghiệp';
-    if (filters.category.includes('van-hoc')) return 'Sách Văn Học & Tiểu Thuyết';
-    if (filters.category.includes('ky-nang') || filters.category.includes('tam-ly')) return 'Phát Triển Bản Thân & Tâm Lý';
-    if (filters.category.includes('manga')) return 'Truyện Tranh - Manga';
-    if (filters.category.includes('ngoai-van')) return 'Sách Ngoại Văn';
+
+    // Tìm tên chính xác từ categoriesData (dữ liệu thật từ DB)
+    for (const root of categoriesData) {
+      if (root.slug === filters.category) return root.name;
+      const sub = root.subs?.find((s) => s.slug === filters.category);
+      if (sub) return `${root.name} › ${sub.name}`;
+    }
+
+    if (filters.category.includes('kinh-te')) return 'Kinh Tế & Kỹ Năng';
+    if (filters.category.includes('van-hoc')) return 'Văn Học & Tiểu Thuyết';
+    if (filters.category.includes('cong-nghe') || filters.category.includes('lap-trinh')) return 'Công Nghệ & Lập Trình';
+    if (filters.category.includes('lich-su') || filters.category.includes('van-hoa')) return 'Lịch Sử & Văn Hóa';
+    if (filters.category.includes('tam-ly') || filters.category.includes('triet-hoc')) return 'Tâm Lý & Triết Học';
+    if (filters.category.includes('thieu-nhi')) return 'Thiếu Nhi & Truyện Tranh';
     return `Danh Mục Sách: ${filters.category}`;
-  }, [searchQuery, filters.category]);
+  }, [searchQuery, filters.category, categoriesData]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full space-y-6">

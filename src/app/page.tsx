@@ -2,17 +2,18 @@ import React from 'react';
 import Link from 'next/link';
 import { 
   ArrowRight, BookOpen, Sparkles, Award, 
-  ChevronRight, ShieldCheck, Truck, RefreshCw, Layers
+  ChevronRight, ShieldCheck, Truck, RefreshCw, Layers,
+  TrendingUp, Code2, Landmark, Brain
 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { BookCard } from '@/components/book/BookCard';
 import { formatVND } from '@/lib/utils';
 
-export const revalidate = 60; // Tự động làm mới cache mỗi 60 giây (ISR)
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   // 1. Truy vấn dữ liệu thực tế từ Supabase PostgreSQL qua Prisma
-  const [bestsellers, categories, newBooks] = await Promise.all([
+  const [bestsellers, rawCategories, newBooks] = await Promise.all([
     // Top sách bán chạy nhất
     prisma.book.findMany({
       where: { isActive: true },
@@ -24,12 +25,22 @@ export default async function HomePage() {
       },
     }),
 
-    // Các ngành hàng cha (Cấp 1)
+    // Các ngành hàng cha (Cấp 1) kèm đếm sách trực tiếp và theo nhánh con
     prisma.category.findMany({
       where: { level: 1 },
       orderBy: { sortOrder: 'asc' },
       take: 6,
       include: {
+        children: {
+          include: {
+            children: {
+              include: {
+                _count: { select: { books: true } },
+              },
+            },
+            _count: { select: { books: true } },
+          },
+        },
         _count: { select: { books: true } },
       },
     }),
@@ -47,6 +58,46 @@ export default async function HomePage() {
   ]);
 
   const spotlightBook = bestsellers.length > 0 ? bestsellers[0] : null;
+
+  // Tính tổng số lượng sách theo danh mục cha (kèm các nhánh con) & gán icon đặc trưng
+  const categories = rawCategories.map((cat) => {
+    const directBooks = cat._count.books;
+    const childBooks = cat.children.reduce(
+      (sum, c2) =>
+        sum +
+        c2._count.books +
+        c2.children.reduce((s3, c3) => s3 + c3._count.books, 0),
+      0
+    );
+    const totalBooks = directBooks + childBooks;
+
+    let icon = BookOpen;
+    let iconBg = 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white';
+
+    if (cat.slug === 'kinh-te-ky-nang') {
+      icon = TrendingUp;
+      iconBg = 'bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white';
+    } else if (cat.slug === 'cong-nghe-lap-trinh') {
+      icon = Code2;
+      iconBg = 'bg-sky-50 text-sky-600 group-hover:bg-sky-500 group-hover:text-white';
+    } else if (cat.slug === 'lich-su-van-hoa') {
+      icon = Landmark;
+      iconBg = 'bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white';
+    } else if (cat.slug === 'tam-ly-triet-hoc') {
+      icon = Brain;
+      iconBg = 'bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white';
+    } else if (cat.slug === 'thieu-nhi') {
+      icon = Sparkles;
+      iconBg = 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white';
+    }
+
+    return {
+      ...cat,
+      totalBooks,
+      icon,
+      iconBg,
+    };
+  });
 
   return (
     <div className="space-y-12 sm:space-y-16 pb-16">
@@ -208,24 +259,27 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/catalog?cat=${cat.slug}`}
-                className="bg-white p-4 rounded-2xl border border-slate-200/80 hover:border-[#0B1F3A] hover:shadow-md transition-all group flex flex-col items-center text-center justify-center min-h-[120px]"
-              >
-                <div className="w-11 h-11 rounded-xl bg-slate-50 text-[#0B1F3A] flex items-center justify-center mb-3 group-hover:bg-[#0B1F3A] group-hover:text-[#F5A623] transition-colors shadow-xs">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <h4 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-[#0B1F3A] transition-colors line-clamp-1">
-                  {cat.name}
-                </h4>
-                <span className="text-[11px] text-slate-400 mt-0.5">
-                  {cat._count?.books || 0} tựa sách
-                </span>
-              </Link>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4 w-full">
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <Link
+                  key={cat.id}
+                  href={`/catalog?category=${cat.slug}`}
+                  className="bg-white p-4 rounded-2xl border border-slate-200/70 hover:-translate-y-1.5 hover:shadow-[0_14px_30px_-4px_rgba(11,31,58,0.12),0_6px_12px_-2px_rgba(11,31,58,0.06)] transition-all duration-300 ease-out group flex flex-col items-center text-center justify-center min-h-[130px] w-full"
+                >
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-105 shadow-xs ${cat.iconBg}`}>
+                    <Icon className="w-5 h-5 stroke-[2.2]" />
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-[#0B1F3A] transition-colors line-clamp-1 w-full px-1">
+                    {cat.name}
+                  </h4>
+                  <span className="text-[11px] font-medium text-slate-400 mt-1">
+                    {cat.totalBooks} tựa sách
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
