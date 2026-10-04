@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { CartProvider } from "@/context/CartContext";
-import { WishlistProvider } from "@/context/WishlistContext";
-import { CustomerHeader } from "@/components/layout/CustomerHeader";
-import { CustomerFooter } from "@/components/layout/CustomerFooter";
+import { AppShell } from "@/components/layout/AppShell";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -29,14 +26,8 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${plusJakartaSans.variable} font-sans h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans">
-        <CartProvider>
-          <WishlistProvider>
-            <CustomerHeader />
-            <main className="flex-1 flex flex-col">{children}</main>
-            <CustomerFooter />
-          </WishlistProvider>
-        </CartProvider>
+      <body className="min-h-full flex flex-col font-sans">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
