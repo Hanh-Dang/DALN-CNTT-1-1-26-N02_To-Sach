@@ -21,14 +21,52 @@ export default async function AdminLayout({
     redirect('/auth?redirect=/admin');
   }
 
-  // Đếm thời gian thực các đơn hàng PENDING đang chờ nhân viên duyệt
+  // Đếm và lấy dữ liệu thời gian thực các cảnh báo kho và đơn hàng PENDING
   let pendingOrdersCount = 0;
+  let lowStockList: { id: string; title: string; stockQty: number }[] = [];
+  let recentPendingOrders: {
+    id: string;
+    orderCode: string;
+    totalAmount: number;
+    customerName: string;
+    createdAt: string;
+  }[] = [];
+
   try {
-    pendingOrdersCount = await prisma.order.count({
-      where: {
-        status: 'PENDING',
-      },
-    });
+    const [pCount, lBooks, rOrders] = await Promise.all([
+      prisma.order.count({
+        where: {
+          status: 'PENDING',
+        },
+      }),
+      prisma.book.findMany({
+        where: { stockQty: { lte: 10 }, isActive: true },
+        select: { id: true, title: true, stockQty: true },
+        orderBy: { stockQty: 'asc' },
+        take: 5,
+      }),
+      prisma.order.findMany({
+        where: { status: 'PENDING' },
+        select: {
+          id: true,
+          orderCode: true,
+          totalAmount: true,
+          customerName: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 6,
+      }),
+    ]);
+    pendingOrdersCount = pCount;
+    lowStockList = lBooks;
+    recentPendingOrders = rOrders.map((o) => ({
+      id: o.id,
+      orderCode: o.orderCode,
+      totalAmount: o.totalAmount,
+      customerName: o.customerName,
+      createdAt: o.createdAt.toISOString(),
+    }));
   } catch (error) {
     console.error('Error counting pending orders:', error);
   }
@@ -43,6 +81,9 @@ export default async function AdminLayout({
         avatarUrl: user.avatarUrl,
       }}
       pendingOrdersCount={pendingOrdersCount}
+      lowStockCount={lowStockList.length}
+      lowStockList={lowStockList}
+      recentPendingOrders={recentPendingOrders}
     >
       {children}
     </AdminLayoutShell>

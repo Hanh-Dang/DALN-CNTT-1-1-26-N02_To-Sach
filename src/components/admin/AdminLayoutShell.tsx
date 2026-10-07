@@ -14,6 +14,14 @@ interface AdminLayoutShellProps {
   };
   pendingOrdersCount: number;
   lowStockCount?: number;
+  lowStockList?: { id: string; title: string; stockQty: number }[];
+  recentPendingOrders?: {
+    id: string;
+    orderCode: string;
+    totalAmount: number;
+    customerName: string;
+    createdAt: string;
+  }[];
   children: React.ReactNode;
 }
 
@@ -21,6 +29,8 @@ export function AdminLayoutShell({
   user,
   pendingOrdersCount,
   lowStockCount = 3,
+  lowStockList = [],
+  recentPendingOrders = [],
   children,
 }: AdminLayoutShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,6 +50,9 @@ export function AdminLayoutShell({
       <AdminHeader
         user={user}
         pendingOrdersCount={pendingOrdersCount}
+        lowStockCount={lowStockCount}
+        lowStockList={lowStockList}
+        recentPendingOrders={recentPendingOrders}
         onOpenSidebar={() => setSidebarOpen(true)}
       />
 
