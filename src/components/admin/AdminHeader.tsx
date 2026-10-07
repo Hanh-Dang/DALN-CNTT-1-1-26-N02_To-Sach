@@ -9,6 +9,7 @@ import {
   PlusSquare,
   Store,
 } from 'lucide-react';
+import { NotificationDropdown } from './NotificationDropdown';
 
 interface AdminHeaderProps {
   user: {
@@ -19,12 +20,24 @@ interface AdminHeaderProps {
     avatarUrl?: string | null;
   };
   pendingOrdersCount: number;
+  lowStockCount?: number;
+  lowStockList?: { id: string; title: string; stockQty: number }[];
+  recentPendingOrders?: {
+    id: string;
+    orderCode: string;
+    totalAmount: number;
+    customerName: string;
+    createdAt: string;
+  }[];
   onOpenSidebar: () => void;
 }
 
 export function AdminHeader({
   user,
   pendingOrdersCount,
+  lowStockCount = 0,
+  lowStockList = [],
+  recentPendingOrders = [],
   onOpenSidebar,
 }: AdminHeaderProps) {
   return (
@@ -72,17 +85,13 @@ export function AdminHeader({
             <span className="hidden sm:inline">Xem trang khách hàng</span>
           </Link>
 
-          {/* Notification Bell */}
-          <Link
-            href="/admin/orders"
-            className="relative p-2 rounded-lg text-slate-600 hover:bg-[#F0F3FF] hover:text-[#0B1F3A] transition-colors"
-            title={pendingOrdersCount > 0 ? `${pendingOrdersCount} đơn chờ duyệt` : 'Thông báo'}
-          >
-            <Bell className="w-5 h-5 stroke-[2]" />
-            {pendingOrdersCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#BA1A1A] ring-2 ring-white"></span>
-            )}
-          </Link>
+          {/* Notification Bell Dropdown (Thông báo thông minh có phân cấp & Xóa tất cả) */}
+          <NotificationDropdown
+            initialPendingOrdersCount={pendingOrdersCount}
+            initialLowStockCount={lowStockCount}
+            lowStockList={lowStockList}
+            recentPendingOrders={recentPendingOrders}
+          />
 
           {/* User Profile Chip */}
           <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
