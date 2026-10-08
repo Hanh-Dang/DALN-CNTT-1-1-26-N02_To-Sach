@@ -247,15 +247,10 @@ export const CustomerHeader: React.FC = () => {
       setUser(null);
       await fetch('/api/auth/logout', { method: 'POST' });
       window.dispatchEvent(new Event('auth-change'));
-
-      if (typeof window !== 'undefined') {
-        const path = window.location.pathname;
-        if (path.startsWith('/admin') || path.startsWith('/account') || path.startsWith('/checkout')) {
-          router.push('/');
-        }
-      }
+      window.location.href = '/';
     } catch (error) {
       console.error('Lỗi khi đăng xuất:', error);
+      window.location.href = '/';
     }
   };
 

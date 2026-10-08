@@ -93,6 +93,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Dùng ref để theo dõi trạng thái User trước đó, nhận diện chính xác các sự kiện Login / Register / Logout
   const activeUserIdRef = useRef<string | null>(null);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const syncCartToServer = useCallback((cartItems: CartItem[]) => {
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(async () => {
+      try {
+        await fetch('/api/user/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cart: cartItems }),
+        });
+      } catch (err) {
+        console.error('Lỗi sync giỏ hàng lên server:', err);
+      }
+    }, 600);
+  }, []);
 
   /**
    * Đồng bộ giỏ hàng với trạng thái Xác thực của Người dùng (Authentication State Sync)
@@ -119,16 +135,38 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedUserCart = getStoredCart(userStorageKey);
         const guestCart = getStoredCart(GUEST_STORAGE_KEY);
 
+        // Fetch giỏ hàng từ Database
+        let serverCart: CartItem[] = [];
+        try {
+          const syncRes = await fetch('/api/user/sync');
+          if (syncRes.ok) {
+            const syncData = await syncRes.json();
+            if (Array.isArray(syncData?.data?.cart)) {
+              serverCart = syncData.data.cart;
+            }
+          }
+        } catch (e) {
+          console.warn('Không thể kéo giỏ hàng từ DB:', e);
+        }
+
+        // Ưu tiên giỏ hàng từ server DB
+        const baseAccountCart = serverCart.length > 0 ? serverCart : savedUserCart;
+
         if (prevUserId === null && guestCart.length > 0) {
           // KỊCH BẢN CHUYỂN TIẾP: Khách vãng lai vừa nhặt sách -> Đăng nhập / Đăng ký
-          // Áp dụng Cách B (Smart Merge): Gộp sách khách vừa nhặt vào giỏ hàng tài khoản
-          const merged = mergeCartItems(savedUserCart, guestCart);
+          // Áp dụng Smart Merge: Gộp sách khách vừa nhặt vào giỏ hàng tài khoản
+          const merged = mergeCartItems(baseAccountCart, guestCart);
           saveCart(userStorageKey, merged);
           localStorage.removeItem(GUEST_STORAGE_KEY);
           setItems(merged);
-        } else if (prevUserId !== newUserId) {
-          // Chuyển đổi tài khoản khác hoặc phiên đăng nhập mới: Nạp đúng giỏ hàng của user này
-          setItems(savedUserCart);
+          syncCartToServer(merged);
+        } else if (prevUserId !== newUserId || serverCart.length > 0) {
+          // Chuyển đổi tài khoản khác hoặc mở từ thiết bị mới
+          setItems(baseAccountCart);
+          saveCart(userStorageKey, baseAccountCart);
+          if (serverCart.length === 0 && savedUserCart.length > 0) {
+            syncCartToServer(savedUserCart);
+          }
         }
       } else {
         // KHÁCH VÃNG LAI (HOẶC VỪA BẤM ĐĂNG XUẤT)
@@ -154,7 +192,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoaded(true);
     }
-  }, []);
+  }, [syncCartToServer]);
 
   // Khởi tạo ban đầu & Lắng nghe sự kiện đăng nhập / đăng xuất
   useEffect(() => {
@@ -171,10 +209,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isLoaded) return;
     if (currentUserId) {
       saveCart(USER_STORAGE_PREFIX + currentUserId, items);
+      syncCartToServer(items);
     } else {
       saveCart(GUEST_STORAGE_KEY, items);
     }
-  }, [items, currentUserId, isLoaded]);
+  }, [items, currentUserId, isLoaded, syncCartToServer]);
 
   const addToCart = (
     newItem: Omit<CartItem, 'quantity'>,

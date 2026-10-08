@@ -57,6 +57,22 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const activeUserIdRef = useRef<string | null>(null);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const syncWishlistToServer = useCallback((wishlistItems: WishlistItem[]) => {
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(async () => {
+      try {
+        await fetch('/api/user/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wishlist: wishlistItems }),
+        });
+      } catch (err) {
+        console.error('Lỗi sync wishlist lên server:', err);
+      }
+    }, 600);
+  }, []);
 
   const syncWithAuth = useCallback(async () => {
     try {
@@ -75,39 +91,58 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      // 2. Vừa đăng nhập từ khách vãng lai hoặc đăng ký mới
-      if (prevUserId !== newUserId) {
-        const guestItems = getStoredWishlist(GUEST_WISHLIST_KEY);
-        const userKey = `${USER_WISHLIST_PREFIX}${newUserId}`;
-        const userSavedItems = getStoredWishlist(userKey);
+      // 2. Vừa đăng nhập từ khách vãng lai hoặc nạp phiên người dùng
+      const userKey = `${USER_WISHLIST_PREFIX}${newUserId}`;
+      const userSavedItems = getStoredWishlist(userKey);
+      const guestItems = getStoredWishlist(GUEST_WISHLIST_KEY);
 
-        if (guestItems.length > 0) {
-          // Hợp nhất không trùng lặp
-          const existingIds = new Set(userSavedItems.map((i) => i.bookId));
-          const combined = [...userSavedItems];
-          for (const g of guestItems) {
-            if (!existingIds.has(g.bookId)) {
-              combined.push(g);
-              existingIds.add(g.bookId);
-            }
+      // Kéo từ server Database
+      let serverWishlist: WishlistItem[] = [];
+      try {
+        const syncRes = await fetch('/api/user/sync');
+        if (syncRes.ok) {
+          const syncData = await syncRes.json();
+          if (Array.isArray(syncData?.data?.wishlist)) {
+            serverWishlist = syncData.data.wishlist;
           }
-          saveWishlist(userKey, combined);
-          setItems(combined);
-          localStorage.removeItem(GUEST_WISHLIST_KEY);
-        } else {
-          setItems(userSavedItems);
         }
-
-        setCurrentUserId(newUserId);
-        activeUserIdRef.current = newUserId;
-        setIsLoaded(true);
+      } catch (e) {
+        console.warn('Không thể kéo wishlist từ server:', e);
       }
+
+      const baseAccountWishlist = serverWishlist.length > 0 ? serverWishlist : userSavedItems;
+
+      if (prevUserId === null && guestItems.length > 0) {
+        // Hợp nhất không trùng lặp giữa sách vãng lai và sách trong tài khoản
+        const existingIds = new Set(baseAccountWishlist.map((i) => i.bookId));
+        const combined = [...baseAccountWishlist];
+        for (const g of guestItems) {
+          if (!existingIds.has(g.bookId)) {
+            combined.push(g);
+            existingIds.add(g.bookId);
+          }
+        }
+        saveWishlist(userKey, combined);
+        setItems(combined);
+        localStorage.removeItem(GUEST_WISHLIST_KEY);
+        syncWishlistToServer(combined);
+      } else {
+        setItems(baseAccountWishlist);
+        saveWishlist(userKey, baseAccountWishlist);
+        if (serverWishlist.length === 0 && userSavedItems.length > 0) {
+          syncWishlistToServer(userSavedItems);
+        }
+      }
+
+      setCurrentUserId(newUserId);
+      activeUserIdRef.current = newUserId;
+      setIsLoaded(true);
     } catch {
       const guestItems = getStoredWishlist(GUEST_WISHLIST_KEY);
       setItems(guestItems);
       setIsLoaded(true);
     }
-  }, []);
+  }, [syncWishlistToServer]);
 
   useEffect(() => {
     syncWithAuth();
@@ -127,7 +162,10 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!isLoaded) return;
     const storageKey = currentUserId ? `${USER_WISHLIST_PREFIX}${currentUserId}` : GUEST_WISHLIST_KEY;
     saveWishlist(storageKey, items);
-  }, [items, isLoaded, currentUserId]);
+    if (currentUserId) {
+      syncWishlistToServer(items);
+    }
+  }, [items, isLoaded, currentUserId, syncWishlistToServer]);
 
   const isWishlisted = useCallback((bookId: string): boolean => {
     return items.some((i) => i.bookId === bookId);
