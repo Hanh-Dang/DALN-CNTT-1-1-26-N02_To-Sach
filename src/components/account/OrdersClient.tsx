@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -81,6 +81,20 @@ export default function OrdersClient({ initialOrders, userName }: OrdersClientPr
     if (activeTab === 'ALL') return ordersList;
     return ordersList.filter((order) => order.status === activeTab);
   }, [ordersList, activeTab]);
+
+  // Phân trang 10 đơn hàng / trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
 
   // Đếm số lượng theo trạng thái
   const counts = useMemo(() => {
@@ -279,7 +293,7 @@ export default function OrdersClient({ initialOrders, userName }: OrdersClientPr
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredOrders.map((order) => (
+          {paginatedOrders.map((order) => (
             <div
               key={order.id}
               className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 space-y-5 shadow-2xs hover:border-slate-300 transition-all"
@@ -404,6 +418,81 @@ export default function OrdersClient({ initialOrders, userName }: OrdersClientPr
               </div>
             </div>
           ))}
+
+          {/* Pagination Controls (10 đơn hàng / trang) */}
+          {filteredOrders.length > 0 && (
+            <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="text-slate-500">
+                Hiển thị{' '}
+                <strong className="text-[#0B1F3A]">
+                  {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredOrders.length)}
+                </strong>{' '}
+                trên tổng số <strong className="text-[#0B1F3A]">{filteredOrders.length}</strong> đơn hàng
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className={`px-2.5 py-1 rounded-lg transition-colors ${
+                      currentPage <= 1
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer'
+                    }`}
+                    type="button"
+                  >
+                    &lt;
+                  </button>
+
+                  {Array.from({ length: totalPages }).map((_, i) => {
+                    const p = i + 1;
+                    if (
+                      p === 1 ||
+                      p === totalPages ||
+                      (p >= currentPage - 1 && p <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                            currentPage === p
+                              ? 'bg-[#0B1F3A] text-white shadow-xs'
+                              : 'hover:bg-slate-100 text-slate-700'
+                          }`}
+                          type="button"
+                        >
+                          {p}
+                        </button>
+                      );
+                    }
+                    if (p === currentPage - 2 || p === currentPage + 2) {
+                      return (
+                        <span key={p} className="px-1 text-slate-400">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className={`px-2.5 py-1 rounded-lg transition-colors ${
+                      currentPage >= totalPages
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer'
+                    }`}
+                    type="button"
+                  >
+                    &gt;
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
