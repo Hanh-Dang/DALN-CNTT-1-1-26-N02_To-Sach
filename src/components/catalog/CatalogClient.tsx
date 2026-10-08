@@ -41,7 +41,7 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortOption, setSortOption] = useState(initialSort);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 12;
+  const pageSize = 10;
 
   const [filters, setFilters] = useState<CatalogFilterState>({
     category: initialCategory,

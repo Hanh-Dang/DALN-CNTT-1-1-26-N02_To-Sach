@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Heart, ShoppingBag, Trash2, ArrowRight, BookOpen, 
@@ -16,6 +16,22 @@ export default function WishlistPage() {
 
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
   const [allAdded, setAllAdded] = useState(false);
+
+  // Phân trang 10 tựa sách / trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  const totalPages = Math.ceil(items.length / pageSize) || 1;
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return items.slice(start, start + pageSize);
+  }, [items, currentPage, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [totalPages, currentPage]);
 
   const handleAddToCart = (item: WishlistItem, e?: React.MouseEvent) => {
     addToCart({
@@ -130,8 +146,9 @@ export default function WishlistPage() {
             <p className="text-xs text-slate-500 font-medium">Đang tải tủ sách yêu thích của bạn...</p>
           </div>
         ) : totalWishlist > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {items.map((book) => {
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {paginatedItems.map((book) => {
               const discount = calculateDiscount(book.originalPrice, book.price);
               const isItemAdded = addedIds[book.bookId];
 
@@ -238,7 +255,60 @@ export default function WishlistPage() {
               );
             })}
           </div>
-        ) : (
+
+          {/* Pagination Controls (10 tựa sách / trang) */}
+          {items.length > 0 && (
+            <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <p className="text-slate-500">
+                Hiển thị{' '}
+                <strong className="text-[#0B1F3A]">
+                  {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, items.length)}
+                </strong>{' '}
+                trên tổng số <strong className="text-[#0B1F3A]">{items.length}</strong> tựa sách yêu thích
+              </p>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors border border-slate-200/80 cursor-pointer"
+                    aria-label="Trang trước"
+                    type="button"
+                  >
+                    &lt;
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        currentPage === page
+                          ? 'bg-[#0B1F3A] text-white shadow-xs'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80'
+                      }`}
+                      type="button"
+                    >
+                      {page}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors border border-slate-200/80 cursor-pointer"
+                    aria-label="Trang sau"
+                    type="button"
+                  >
+                    &gt;
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
           /* Empty State */
           <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/80 max-w-lg mx-auto space-y-5 shadow-xs">
             <div className="w-20 h-20 rounded-3xl bg-rose-50 text-rose-500 mx-auto flex items-center justify-center ring-8 ring-rose-50/50">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -153,6 +153,20 @@ export function AdminOrdersClient({
       return true;
     });
   }, [orders, activeTab, paymentFilter, searchQuery]);
+
+  // Phân trang 10 đơn hàng / trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, paymentFilter, searchQuery]);
+
+  const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
 
   // Hàm gọi API chuyển trạng thái đơn hàng
   const handleUpdateStatus = async (
@@ -398,7 +412,7 @@ export function AdminOrdersClient({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredOrders.map((order) => {
+                {paginatedOrders.map((order) => {
                   const customerName = order.customerName || order.user?.fullName || 'Khách vãng lai';
                   const firstItem = order.items[0];
                   const bookTitle = firstItem?.bookTitle || firstItem?.book?.title || 'Tổ Sách Tuyển Chọn';
@@ -578,6 +592,80 @@ export function AdminOrdersClient({
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Table Footer with Pagination (10 đơn hàng / trang) */}
+        {filteredOrders.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-100 text-xs bg-slate-50/50">
+            <div className="flex items-center gap-2 text-slate-500">
+              <span>
+                Hiển thị{' '}
+                {(currentPage - 1) * pageSize + 1}{' '}
+                - {Math.min(currentPage * pageSize, filteredOrders.length)} trên tổng số{' '}
+                <strong className="text-slate-800">{filteredOrders.length}</strong> đơn hàng
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className={`px-2.5 py-1 rounded transition-colors ${
+                  currentPage <= 1
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer'
+                }`}
+                type="button"
+              >
+                &lt;
+              </button>
+
+              {Array.from({ length: totalPages }).map((_, i) => {
+                const p = i + 1;
+                if (
+                  p === 1 ||
+                  p === totalPages ||
+                  (p >= currentPage - 1 && p <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`px-3 py-1 rounded font-bold transition-colors cursor-pointer ${
+                        currentPage === p
+                          ? 'bg-[#0B1F3A] text-white shadow-xs'
+                          : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                      type="button"
+                    >
+                      {p}
+                    </button>
+                  );
+                }
+                if (p === currentPage - 2 || p === currentPage + 2) {
+                  return (
+                    <span key={p} className="px-1 text-slate-400">
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              })}
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className={`px-2.5 py-1 rounded transition-colors ${
+                  currentPage >= totalPages
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer'
+                }`}
+                type="button"
+              >
+                &gt;
+              </button>
+            </div>
           </div>
         )}
       </div>
