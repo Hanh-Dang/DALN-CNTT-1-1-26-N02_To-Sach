@@ -276,7 +276,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
   // Copy số tài khoản
   const handleCopyBank = () => {
-    navigator.clipboard.writeText('0388272905');
+    navigator.clipboard.writeText('09182736455');
     setCopiedBankInfo(true);
     setTimeout(() => setCopiedBankInfo(false), 2000);
   };
@@ -867,7 +867,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
                     <div className="sm:col-span-2 flex items-center justify-between pt-1 border-t border-slate-100">
                       <div>
                         <span className="text-slate-400 block text-[11px]">Số tài khoản:</span>
-                        <span className="font-black text-sm text-[#0B1F3A] tracking-wider">0388272905</span>
+                        <span className="font-black text-sm text-[#0B1F3A] tracking-wider">09182736455</span>
                       </div>
                       <button
                         type="button"

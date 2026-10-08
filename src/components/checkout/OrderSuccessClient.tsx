@@ -58,7 +58,7 @@ export default function OrderSuccessClient({ order }: OrderSuccessClientProps) {
   };
 
   const handleCopyAccount = () => {
-    navigator.clipboard.writeText('0388272905');
+    navigator.clipboard.writeText('09182736455');
     setCopiedAccount(true);
     setTimeout(() => setCopiedAccount(false), 2000);
   };
@@ -172,7 +172,7 @@ export default function OrderSuccessClient({ order }: OrderSuccessClientProps) {
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <span className="text-slate-500">Số tài khoản:</span>
                   <div className="flex items-center gap-2">
-                    <strong className="font-mono text-sm font-black text-emerald-700">0388272905</strong>
+                    <strong className="font-mono text-sm font-black text-emerald-700">09182736455</strong>
                     <button
                       onClick={handleCopyAccount}
                       type="button"
