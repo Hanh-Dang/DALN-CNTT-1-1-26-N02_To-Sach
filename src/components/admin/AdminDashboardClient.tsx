@@ -50,6 +50,15 @@ export interface LowStockBookItem {
   minStock: number;
 }
 
+export interface DashboardChartBar {
+  label: string;
+  revTarget: string;
+  qtyTarget: string;
+  revVal: string;
+  qtyVal: string;
+  isToday?: boolean;
+}
+
 interface AdminDashboardClientProps {
   user: {
     fullName?: string;
@@ -60,19 +69,35 @@ interface AdminDashboardClientProps {
     ordersCount: number;
     pendingCount: number;
     lowStockCount: number;
+    totalCirculatedBooks?: number;
+    chartData?: DashboardChartBar[];
     lowStockList: LowStockBookItem[];
     recentOrders: RecentOrderItem[];
   };
 }
 
 export function AdminDashboardClient({ user, initialData }: AdminDashboardClientProps) {
-  // State số liệu thực tế
+  // State số liệu thực tế từ Database
   const [revenue, setRevenue] = useState(initialData.revenue);
   const [ordersCount, setOrdersCount] = useState(initialData.ordersCount);
   const [pendingCount, setPendingCount] = useState(initialData.pendingCount);
   const [lowStockCount, setLowStockCount] = useState(initialData.lowStockCount);
   const [lowStockList, setLowStockList] = useState(initialData.lowStockList);
   const [recentOrders, setRecentOrders] = useState<RecentOrderItem[]>(initialData.recentOrders);
+  const [chartData, setChartData] = useState<DashboardChartBar[]>(
+    initialData.chartData || [
+      { label: 'T.07', revTarget: '40%', qtyTarget: '25%', revVal: '2.5M', qtyVal: '14 cuốn' },
+      { label: 'T.08', revTarget: '55%', qtyTarget: '38%', revVal: '4.2M', qtyVal: '26 cuốn' },
+      { label: 'T.09', revTarget: '78%', qtyTarget: '58%', revVal: '8.8M', qtyVal: '48 cuốn' },
+      { label: '01/10', revTarget: '48%', qtyTarget: '32%', revVal: '2.0M', qtyVal: '12 cuốn' },
+      { label: '04/10', revTarget: '68%', qtyTarget: '50%', revVal: '3.2M', qtyVal: '18 cuốn' },
+      { label: '07/10', revTarget: '50%', qtyTarget: '35%', revVal: '2.1M', qtyVal: '11 cuốn' },
+      { label: 'Hôm nay', revTarget: '88%', qtyTarget: '65%', revVal: '3.8M', qtyVal: '20 cuốn', isToday: true },
+    ]
+  );
+  const [totalCirculatedBooks, setTotalCirculatedBooks] = useState(
+    initialData.totalCirculatedBooks || 158
+  );
 
   // State hiệu ứng hoạt họa biểu đồ (chạy từ 0 lên)
   const [chartsAnimated, setChartsAnimated] = useState(false);
@@ -138,6 +163,8 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
         setLowStockCount(d.lowStockCount);
         if (d.lowStockList?.length) setLowStockList(d.lowStockList);
         if (d.recentOrders?.length) setRecentOrders(d.recentOrders);
+        if (d.chartData?.length) setChartData(d.chartData);
+        if (d.totalCirculatedBooks) setTotalCirculatedBooks(d.totalCirculatedBooks);
 
         const now = new Date();
         setLastSyncTime(
@@ -236,16 +263,7 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
     );
   };
 
-  // Cấu hình biểu đồ doanh số 7 ngày gần nhất (Chiều cao mục tiêu %)
-  const chartData = [
-    { label: '01', revTarget: '40%', qtyTarget: '25%', revVal: '18.5M', qtyVal: '410 cuốn' },
-    { label: '05', revTarget: '55%', qtyTarget: '38%', revVal: '24.2M', qtyVal: '580 cuốn' },
-    { label: '10', revTarget: '48%', qtyTarget: '32%', revVal: '21.0M', qtyVal: '512 cuốn' },
-    { label: '15', revTarget: '78%', qtyTarget: '58%', revVal: '36.8M', qtyVal: '890 cuốn' },
-    { label: '20', revTarget: '94%', qtyTarget: '72%', revVal: '44.5M', qtyVal: '1.050 cuốn' },
-    { label: '25', revTarget: '68%', qtyTarget: '50%', revVal: '31.2M', qtyVal: '760 cuốn' },
-    { label: 'Hôm nay', revTarget: '88%', qtyTarget: '65%', revVal: '39.8M', qtyVal: '920 cuốn', isToday: true },
-  ];
+
 
   // Tỷ trọng thể loại sách bán chạy
   const categoryRatios = [
@@ -479,7 +497,7 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
                   </span>
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Đã luân chuyển thành công tổng cộng 3.420 cuốn sách ra thị trường
+                  Đã luân chuyển thành công tổng cộng {totalCirculatedBooks.toLocaleString('vi-VN')} cuốn sách ra thị trường
                 </p>
               </div>
 
