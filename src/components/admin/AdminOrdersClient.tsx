@@ -85,6 +85,8 @@ interface AdminOrdersClientProps {
     fullName: string;
     role: string;
   } | null;
+  initialOrderCode?: string;
+  initialStatus?: string;
 }
 
 type TabType = 'ALL' | 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
@@ -102,10 +104,16 @@ export function AdminOrdersClient({
   initialOrders,
   canManageOrders,
   currentUser,
+  initialOrderCode = '',
+  initialStatus = '',
 }: AdminOrdersClientProps) {
   const [orders, setOrders] = useState<AdminOrderData[]>(initialOrders);
-  const [activeTab, setActiveTab] = useState<TabType>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<TabType>(
+    ['PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED'].includes(initialStatus)
+      ? (initialStatus as TabType)
+      : 'ALL'
+  );
+  const [searchQuery, setSearchQuery] = useState(initialOrderCode);
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'COD' | 'BANK_TRANSFER'>('ALL');
 
   // Modal / Drawer states
@@ -113,6 +121,46 @@ export function AdminOrdersClient({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null); // Order ID being updated
   const [actionError, setActionError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Tự động mở drawer chi tiết đơn hàng khi có initialOrderCode từ URL
+  useEffect(() => {
+    if (initialOrderCode) {
+      const targetCode = initialOrderCode.trim().toLowerCase();
+      setSearchQuery(initialOrderCode.trim());
+      setActiveTab('ALL');
+      const found = orders.find(
+        (o) =>
+          o.orderCode.toLowerCase() === targetCode ||
+          o.id.toLowerCase() === targetCode
+      );
+      if (found) {
+        setSelectedOrder(found);
+      }
+    }
+  }, [initialOrderCode, orders]);
+
+  // Lắng nghe sự kiện click từ chuông thông báo khi Admin đang ở cùng trang /admin/orders
+  useEffect(() => {
+    const handleCustomOpen = (e: Event) => {
+      const customEvent = e as CustomEvent<{ orderCode?: string }>;
+      const code = customEvent.detail?.orderCode;
+      if (code) {
+        const targetCode = code.trim().toLowerCase();
+        setSearchQuery(code.trim());
+        setActiveTab('ALL');
+        const found = orders.find(
+          (o) =>
+            o.orderCode.toLowerCase() === targetCode ||
+            o.id.toLowerCase() === targetCode
+        );
+        if (found) {
+          setSelectedOrder(found);
+        }
+      }
+    };
+    window.addEventListener('tosach_open_order', handleCustomOpen);
+    return () => window.removeEventListener('tosach_open_order', handleCustomOpen);
+  }, [orders]);
 
   // Modal Giao hàng kèm mã vận đơn
   const [shippingModalOrder, setShippingModalOrder] = useState<AdminOrderData | null>(null);

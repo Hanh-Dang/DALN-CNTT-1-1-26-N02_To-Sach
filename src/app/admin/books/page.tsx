@@ -9,7 +9,14 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminBooksPage() {
+export default async function AdminBooksPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ q?: string }>;
+}) {
+  const resolvedParams = searchParams ? await searchParams : {};
+  const initialQuery = (resolvedParams.q || '').trim();
+
   const user = await getCurrentUser();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const hasBookPerm = user?.permissions?.includes('MANAGE_BOOKS') ?? false;
@@ -72,6 +79,7 @@ export default async function AdminBooksPage() {
       categories={categories}
       canManageBooks={canManageBooks}
       currentUser={user ? { fullName: user.fullName, role: user.role } : null}
+      initialQuery={initialQuery}
     />
   );
 }

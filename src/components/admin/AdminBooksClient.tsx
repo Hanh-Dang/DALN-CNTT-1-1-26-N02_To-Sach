@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -60,6 +60,7 @@ interface AdminBooksClientProps {
   categories: AdminCategoryItem[];
   canManageBooks: boolean;
   currentUser: { fullName: string; role: string } | null;
+  initialQuery?: string;
 }
 
 type StockFilterType = 'ALL' | 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
@@ -69,16 +70,38 @@ export function AdminBooksClient({
   categories,
   canManageBooks,
   currentUser,
+  initialQuery = '',
 }: AdminBooksClientProps) {
   const router = useRouter();
   const [books, setBooks] = useState<AdminBookItem[]>(initialBooks);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedStatus, setSelectedStatus] = useState<StockFilterType>('ALL');
   const [selectedCategoryId, setSelectedCategoryId] = useState('ALL');
   const [selectedPublisher, setSelectedPublisher] = useState('ALL');
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
+
+  // Đồng bộ tìm kiếm khi có initialQuery từ URL hoặc từ Notification Bell
+  useEffect(() => {
+    if (initialQuery) {
+      setSearchQuery(initialQuery);
+      setSelectedStatus('ALL');
+    }
+  }, [initialQuery]);
+
+  useEffect(() => {
+    const handleCustomBook = (e: Event) => {
+      const customEvent = e as CustomEvent<{ query?: string }>;
+      const q = customEvent.detail?.query;
+      if (q) {
+        setSearchQuery(q);
+        setSelectedStatus('ALL');
+      }
+    };
+    window.addEventListener('tosach_open_book', handleCustomBook);
+    return () => window.removeEventListener('tosach_open_book', handleCustomBook);
+  }, []);
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

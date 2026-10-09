@@ -5,7 +5,15 @@ import { AdminOrdersClient, AdminOrderData } from '@/components/admin/AdminOrder
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ code?: string; q?: string; status?: string }>;
+}) {
+  const resolvedParams = searchParams ? await searchParams : {};
+  const initialOrderCode = (resolvedParams.code || resolvedParams.q || '').trim();
+  const initialStatus = (resolvedParams.status || '').trim().toUpperCase();
+
   const user = await getCurrentUser();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const hasOrderPerm = user?.permissions?.includes('MANAGE_ORDERS') ?? false;
@@ -89,6 +97,8 @@ export default async function AdminOrdersPage() {
       initialOrders={formattedOrders}
       canManageOrders={canManageOrders}
       currentUser={user ? { fullName: user.fullName, role: user.role } : null}
+      initialOrderCode={initialOrderCode}
+      initialStatus={initialStatus}
     />
   );
 }
