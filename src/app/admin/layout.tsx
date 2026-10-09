@@ -23,6 +23,7 @@ export default async function AdminLayout({
 
   // Đếm và lấy dữ liệu thời gian thực các cảnh báo kho và đơn hàng PENDING
   let pendingOrdersCount = 0;
+  let pendingReviewsCount = 0;
   let lowStockList: { id: string; title: string; stockQty: number }[] = [];
   let recentPendingOrders: {
     id: string;
@@ -33,7 +34,7 @@ export default async function AdminLayout({
   }[] = [];
 
   try {
-    const [pCount, lBooks, rOrders] = await Promise.all([
+    const [pCount, lBooks, rOrders, revCount] = await Promise.all([
       prisma.order.count({
         where: {
           status: 'PENDING',
@@ -57,8 +58,12 @@ export default async function AdminLayout({
         orderBy: { createdAt: 'desc' },
         take: 6,
       }),
+      prisma.review.count({
+        where: { status: 'PENDING' },
+      }),
     ]);
     pendingOrdersCount = pCount;
+    pendingReviewsCount = revCount;
     lowStockList = lBooks;
     recentPendingOrders = rOrders.map((o) => ({
       id: o.id,
@@ -68,7 +73,7 @@ export default async function AdminLayout({
       createdAt: o.createdAt.toISOString(),
     }));
   } catch (error) {
-    console.error('Error counting pending orders:', error);
+    console.error('Error counting pending orders and reviews:', error);
   }
 
   return (
@@ -82,6 +87,7 @@ export default async function AdminLayout({
       }}
       pendingOrdersCount={pendingOrdersCount}
       lowStockCount={lowStockList.length}
+      pendingReviewsCount={pendingReviewsCount}
       lowStockList={lowStockList}
       recentPendingOrders={recentPendingOrders}
     >
