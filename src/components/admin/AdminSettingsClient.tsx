@@ -12,6 +12,10 @@ import {
   Terminal,
   Activity,
   User,
+  Search,
+  Zap,
+  RefreshCw,
+  Cpu,
 } from 'lucide-react';
 
 export interface AuditLogItem {
@@ -42,6 +46,23 @@ interface AdminSettingsClientProps {
 
 export function AdminSettingsClient({ initialAuditLogs, systemInfo }: AdminSettingsClientProps) {
   const [activeTab, setActiveTab] = useState<'AUDIT' | 'SYSTEM'>('AUDIT');
+  const [isSyncingES, setIsSyncingES] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const handleSyncElasticsearch = async () => {
+    setIsSyncingES(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch('/api/admin/elasticsearch/sync', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Đồng bộ thất bại');
+      setSyncResult({ type: 'success', message: data.message || 'Đồng bộ kho sách sang Elasticsearch 8.x thành công!' });
+    } catch (err: any) {
+      setSyncResult({ type: 'error', message: err.message || 'Lỗi khi đồng bộ sang Elasticsearch' });
+    } finally {
+      setIsSyncingES(false);
+    }
+  };
 
   const getActionBadgeColor = (action: string) => {
     if (action.includes('CREATE')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -218,6 +239,85 @@ export function AdminSettingsClient({ initialAuditLogs, systemInfo }: AdminSetti
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Hoạt động bình thường (Healthy)</span>
                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Proposal Advanced Tools Section */}
+          <div className="md:col-span-2 bg-gradient-to-br from-white to-amber-50/30 p-6 rounded-2xl border border-amber-200/80 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-100">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-[#0B1F3A] text-[#F5A623]">
+                  <Cpu className="w-4 h-4 text-[#F5A623]" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-[#0B1F3A] text-sm">
+                    Công Cụ Nâng Cao Theo Proposal (Mục 3.1 — 3.4)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Bộ 3 hạ tầng nâng cấp phục vụ Tìm kiếm thông minh, Bộ nhớ đệm và Cá nhân hóa
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSyncElasticsearch}
+                disabled={isSyncingES}
+                className="bg-[#0B1F3A] hover:bg-[#163156] text-[#F5A623] font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50 self-start sm:self-auto"
+              >
+                {isSyncingES ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang đồng bộ...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-3.5 h-3.5 text-[#F5A623]" />
+                    <span>⚡ Đồng Bộ Elasticsearch 8.x (Index books_v1)</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {syncResult && (
+              <div
+                className={`p-3 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
+                  syncResult.type === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                <span>{syncResult.message}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+              <div className="bg-white p-4 rounded-xl border border-slate-200/70 space-y-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Mục 3.4 • In-Memory Cache</span>
+                <div className="font-black text-[#0B1F3A] text-sm flex items-center gap-1">
+                  <span>Redis Cloud (Upstash)</span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.2 rounded-sm font-bold">TTL 30D</span>
+                </div>
+                <p className="text-[11px] text-slate-500">Tự động thu hồi bộ nhớ sau 2.592.000s; có In-Memory Fallback</p>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-slate-200/70 space-y-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Mục 3.1 • Recommendation</span>
+                <div className="font-black text-[#0B1F3A] text-sm flex items-center gap-1">
+                  <span>Hybrid 5-Factor Engine</span>
+                  <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-sm font-bold">5 Trọng Số</span>
+                </div>
+                <p className="text-[11px] text-slate-500">Collab 35% + Content 25% + Behavior 15% + Rating 20% + Trend 5%</p>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-slate-200/70 space-y-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Mục 3.2 • Smart Search</span>
+                <div className="font-black text-[#0B1F3A] text-sm flex items-center gap-1">
+                  <span>Elasticsearch 8.x + PG</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded-sm font-bold">Fuzzy & Boost</span>
+                </div>
+                <p className="text-[11px] text-slate-500">Boost title^3/authors^2, synonyms tiếng Việt, tự động Fallback PG</p>
               </div>
             </div>
           </div>
