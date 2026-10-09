@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { BookCard } from '@/components/book/BookCard';
+import { RecentlyViewedCarousel } from '@/components/book/RecentlyViewedCarousel';
 import { formatVND } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -313,6 +314,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* 4.5. SÁCH VỪA XEM GẦN ĐÂY (In-Memory Redis Cache TTL 30 Ngày - Chuẩn Proposal Mục 3.4) */}
+      <RecentlyViewedCarousel />
 
       {/* 5. COMMITMENT BANNER (Cam kết B2C) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6">
