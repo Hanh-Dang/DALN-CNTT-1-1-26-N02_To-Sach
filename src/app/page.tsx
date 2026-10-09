@@ -8,6 +8,7 @@ import {
 import { prisma } from '@/lib/prisma';
 import { BookCard } from '@/components/book/BookCard';
 import { RecentlyViewedCarousel } from '@/components/book/RecentlyViewedCarousel';
+import { RecommendedForYou } from '@/components/book/RecommendedForYou';
 import { formatVND } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -236,6 +237,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* 2.5. GỢI Ý DÀNH RIÊNG CHO BẠN (Hybrid Recommendation Engine 5 Trọng Số - Chuẩn Proposal Mục 3.1) */}
+      <RecommendedForYou />
 
       {/* 3. DANH MỤC THỂ LOẠI NỔI BẬT (Cây danh mục thực tế từ Database) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6">
