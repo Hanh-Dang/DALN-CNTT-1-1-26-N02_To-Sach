@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -90,6 +90,22 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
   const authorName = book.authors && book.authors.length > 0
     ? book.authors.map((a) => a.author.name).join(', ')
     : 'Tổ Sách Tuyển Chọn';
+
+  // Tự động ghi nhận sách vừa xem vào Redis Cache (TTL 30 ngày theo Proposal Mục 3.4)
+  useEffect(() => {
+    fetch('/api/books/recently-viewed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookId: book.id }),
+    })
+      .then(() => {
+        window.dispatchEvent(new Event('tosach_book_viewed'));
+      })
+      .catch((err) => {
+        console.warn('Recently viewed error:', err);
+      });
+  }, [book.id]);
+
   const primaryCategory = book.categories && book.categories.length > 0 ? book.categories[0].category : null;
 
   // Handle Add To Cart

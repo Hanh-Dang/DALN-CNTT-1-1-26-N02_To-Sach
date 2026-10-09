@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { BookDetailClient, BookDetailData } from '@/components/book/BookDetailClient';
 import { BookCardData } from '@/components/book/BookCard';
+import { RecentlyViewedCarousel } from '@/components/book/RecentlyViewedCarousel';
 
 export const revalidate = 60; // ISR cache 60 seconds
 
@@ -230,6 +231,9 @@ export default async function BookDetailPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
       <BookDetailClient book={bookData} relatedBooks={relatedBooksData} />
+      <div className="mt-12">
+        <RecentlyViewedCarousel currentBookId={rawBook.id} />
+      </div>
     </main>
   );
 }
