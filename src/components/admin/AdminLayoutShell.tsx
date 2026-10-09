@@ -14,6 +14,7 @@ interface AdminLayoutShellProps {
   };
   pendingOrdersCount: number;
   lowStockCount?: number;
+  pendingReviewsCount?: number;
   lowStockList?: { id: string; title: string; stockQty: number }[];
   recentPendingOrders?: {
     id: string;
@@ -29,6 +30,7 @@ export function AdminLayoutShell({
   user,
   pendingOrdersCount,
   lowStockCount = 3,
+  pendingReviewsCount = 0,
   lowStockList = [],
   recentPendingOrders = [],
   children,
@@ -42,6 +44,7 @@ export function AdminLayoutShell({
         user={user}
         pendingOrdersCount={pendingOrdersCount}
         lowStockCount={lowStockCount}
+        pendingReviewsCount={pendingReviewsCount}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />

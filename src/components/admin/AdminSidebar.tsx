@@ -120,7 +120,7 @@ export function AdminSidebar({
           icon: MessageSquareText,
           allowed: isSuperAdmin || perms.includes('MANAGE_REVIEWS'),
           badge: pendingReviewsCount > 0 ? `${pendingReviewsCount} chờ` : null,
-          badgeColor: 'bg-[#182A44] text-slate-400',
+          badgeColor: 'bg-[#FFDDB4] text-[#6B4500]',
         },
       ],
     },
