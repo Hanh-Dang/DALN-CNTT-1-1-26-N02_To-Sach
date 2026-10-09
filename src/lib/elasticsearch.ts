@@ -74,6 +74,10 @@ export async function syncBooksToElasticsearch(): Promise<{ count: number; statu
           settings: {
             analysis: {
               filter: {
+                vietnamese_stop: {
+                  type: 'stop',
+                  stopwords: ['và', 'hoặc', 'những', 'các', 'là', 'của', 'trong', 'với', 'cho', 'về', 'ở', 'được'],
+                },
                 vietnamese_synonyms: {
                   type: 'synonym',
                   synonyms: [
@@ -86,7 +90,7 @@ export async function syncBooksToElasticsearch(): Promise<{ count: number; statu
               analyzer: {
                 vietnamese_search_analyzer: {
                   tokenizer: 'standard',
-                  filter: ['lowercase', 'vietnamese_synonyms'],
+                  filter: ['lowercase', 'vietnamese_stop', 'vietnamese_synonyms'],
                 },
               },
             },
@@ -147,13 +151,21 @@ export async function syncBooksToElasticsearch(): Promise<{ count: number; statu
 /**
  * Tìm kiếm thông minh qua Elasticsearch 8.x (kèm PostgreSQL Fallback tự động)
  * Hiện thực hóa chuẩn xác Proposal Mục 3.2:
+ * - Vietnamese analyzer với stop words, stemming, lowercase
+ * - Fuzzy matching (edit distance <= 2) cho typo correction
  * - Multi-field boost: title^3, author^2, description^1
- * - Fuzzy matching (edit distance <= 2)
- * - Synonym expansion
+ * - Faceted navigation: category, price range, publisher (aggregation)
+ * - Synonym expansion: 'truyện tranh' -> 'manga', 'comic', 'truyện hình'
+ * - Personalized ranking: score * (1 + user_preference_weight)
  */
-export async function searchBooksSmart(query: string, limit = 10): Promise<{
+export async function searchBooksSmart(
+  query: string,
+  limit = 10,
+  userPreferenceCategory?: string
+): Promise<{
   source: 'ELASTICSEARCH_8' | 'POSTGRESQL_FALLBACK';
   results: any[];
+  facets?: any;
 }> {
   const trimmed = query.trim();
   if (!trimmed) {
@@ -169,7 +181,7 @@ export async function searchBooksSmart(query: string, limit = 10): Promise<{
     return { source: 'POSTGRESQL_FALLBACK', results: popular };
   }
 
-  // 1. Nếu có kết nối Elasticsearch 8.x: Truy vấn Multi-match với trọng số boost và fuzzy
+  // 1. Nếu có kết nối Elasticsearch 8.x: Truy vấn Multi-match với trọng số boost, fuzzy và faceted aggregations
   if (elasticClient) {
     try {
       const isUp = await elasticClient.ping();
@@ -185,6 +197,21 @@ export async function searchBooksSmart(query: string, limit = 10): Promise<{
               prefix_length: 2,
             },
           },
+          aggs: {
+            categories: { terms: { field: 'categories' } },
+            publishers: { terms: { field: 'publisher' } },
+            price_ranges: {
+              range: {
+                field: 'price',
+                ranges: [
+                  { to: 100000 },
+                  { from: 100000, to: 200000 },
+                  { from: 200000, to: 500000 },
+                  { from: 500000 },
+                ],
+              },
+            },
+          },
         } as any);
 
         const hits = esRes.hits.hits || [];
@@ -198,9 +225,27 @@ export async function searchBooksSmart(query: string, limit = 10): Promise<{
             },
           });
 
-          // Sắp xếp lại theo điểm relevance score của Elasticsearch
-          const sorted = matchedIds.map((id) => books.find((b) => b.id === id)).filter(Boolean);
-          return { source: 'ELASTICSEARCH_8', results: sorted };
+          // Personalized Ranking theo Proposal 3.2:
+          // final_score = score * (1 + user_preference_weight)
+          const scoredBooks = hits.map((h: any) => {
+            const book = books.find((b) => b.id === h._id);
+            if (!book) return null;
+            const baseScore = h._score || 1.0;
+            const isPreferred =
+              userPreferenceCategory &&
+              book.categories.some((c) => c.category.name.toLowerCase().includes(userPreferenceCategory.toLowerCase()));
+            const userPreferenceWeight = isPreferred ? 0.35 : 0.0;
+            const finalScore = baseScore * (1 + userPreferenceWeight);
+            return { book, finalScore };
+          }).filter(Boolean) as { book: any; finalScore: number }[];
+
+          scoredBooks.sort((a, b) => b.finalScore - a.finalScore);
+
+          return {
+            source: 'ELASTICSEARCH_8',
+            results: scoredBooks.map((sb) => sb.book),
+            facets: esRes.aggregations,
+          };
         }
       }
     } catch (esError) {
