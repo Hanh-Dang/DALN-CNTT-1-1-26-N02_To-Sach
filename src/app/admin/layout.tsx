@@ -32,9 +32,17 @@ export default async function AdminLayout({
     customerName: string;
     createdAt: string;
   }[] = [];
+  let recentPendingReviews: {
+    id: string;
+    rating: number;
+    body: string;
+    userName: string;
+    bookTitle: string;
+    createdAt: string;
+  }[] = [];
 
   try {
-    const [pCount, lBooks, rOrders, revCount] = await Promise.all([
+    const [pCount, lBooks, rOrders, revCount, rReviews] = await Promise.all([
       prisma.order.count({
         where: {
           status: 'PENDING',
@@ -61,6 +69,19 @@ export default async function AdminLayout({
       prisma.review.count({
         where: { status: 'PENDING' },
       }),
+      prisma.review.findMany({
+        where: { status: 'PENDING' },
+        select: {
+          id: true,
+          rating: true,
+          body: true,
+          createdAt: true,
+          user: { select: { fullName: true } },
+          book: { select: { title: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+      }),
     ]);
     pendingOrdersCount = pCount;
     pendingReviewsCount = revCount;
@@ -71,6 +92,14 @@ export default async function AdminLayout({
       totalAmount: o.totalAmount,
       customerName: o.customerName,
       createdAt: o.createdAt.toISOString(),
+    }));
+    recentPendingReviews = rReviews.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      body: r.body,
+      userName: r.user?.fullName || 'Khách hàng',
+      bookTitle: r.book?.title || 'Tác phẩm',
+      createdAt: r.createdAt.toISOString(),
     }));
   } catch (error) {
     console.error('Error counting pending orders and reviews:', error);
@@ -90,6 +119,7 @@ export default async function AdminLayout({
       pendingReviewsCount={pendingReviewsCount}
       lowStockList={lowStockList}
       recentPendingOrders={recentPendingOrders}
+      recentPendingReviews={recentPendingReviews}
     >
       {children}
     </AdminLayoutShell>

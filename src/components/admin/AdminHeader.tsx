@@ -21,12 +21,21 @@ interface AdminHeaderProps {
   };
   pendingOrdersCount: number;
   lowStockCount?: number;
+  pendingReviewsCount?: number;
   lowStockList?: { id: string; title: string; stockQty: number }[];
   recentPendingOrders?: {
     id: string;
     orderCode: string;
     totalAmount: number;
     customerName: string;
+    createdAt: string;
+  }[];
+  recentPendingReviews?: {
+    id: string;
+    rating: number;
+    body: string;
+    userName: string;
+    bookTitle: string;
     createdAt: string;
   }[];
   onOpenSidebar: () => void;
@@ -36,8 +45,10 @@ export function AdminHeader({
   user,
   pendingOrdersCount,
   lowStockCount = 0,
+  pendingReviewsCount = 0,
   lowStockList = [],
   recentPendingOrders = [],
+  recentPendingReviews = [],
   onOpenSidebar,
 }: AdminHeaderProps) {
   return (
@@ -89,8 +100,10 @@ export function AdminHeader({
           <NotificationDropdown
             initialPendingOrdersCount={pendingOrdersCount}
             initialLowStockCount={lowStockCount}
+            pendingReviewsCount={pendingReviewsCount}
             lowStockList={lowStockList}
             recentPendingOrders={recentPendingOrders}
+            recentPendingReviews={recentPendingReviews}
           />
 
           {/* User Profile Chip */}

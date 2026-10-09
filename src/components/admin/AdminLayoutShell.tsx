@@ -23,6 +23,14 @@ interface AdminLayoutShellProps {
     customerName: string;
     createdAt: string;
   }[];
+  recentPendingReviews?: {
+    id: string;
+    rating: number;
+    body: string;
+    userName: string;
+    bookTitle: string;
+    createdAt: string;
+  }[];
   children: React.ReactNode;
 }
 
@@ -33,6 +41,7 @@ export function AdminLayoutShell({
   pendingReviewsCount = 0,
   lowStockList = [],
   recentPendingOrders = [],
+  recentPendingReviews = [],
   children,
 }: AdminLayoutShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -54,8 +63,10 @@ export function AdminLayoutShell({
         user={user}
         pendingOrdersCount={pendingOrdersCount}
         lowStockCount={lowStockCount}
+        pendingReviewsCount={pendingReviewsCount}
         lowStockList={lowStockList}
         recentPendingOrders={recentPendingOrders}
+        recentPendingReviews={recentPendingReviews}
         onOpenSidebar={() => setSidebarOpen(true)}
       />
 
