@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { searchBooksSmart } from '@/lib/elasticsearch';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
 
       return NextResponse.json({
         type: 'popular',
+        source: 'POSTGRESQL_HOT',
         books: hotBooks.map((b) => ({
           id: b.id,
           title: b.title,
@@ -39,64 +41,13 @@ export async function GET(request: Request) {
       });
     }
 
-    // Tạo slug từ khóa để tìm kiếm không dấu trên trường slug
-    const normalizedNoAccent = query
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D');
-
-    const slugSearch = normalizedNoAccent
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    // Tìm kiếm các cuốn sách liên quan nhất theo Tiêu đề, Slug, Tác giả, Thể loại, Mô tả
-    const searchConditions: any[] = [
-      { title: { contains: query, mode: 'insensitive' } },
-      { description: { contains: query, mode: 'insensitive' } },
-      {
-        authors: {
-          some: {
-            author: {
-              name: { contains: query, mode: 'insensitive' },
-            },
-          },
-        },
-      },
-      {
-        categories: {
-          some: {
-            category: {
-              name: { contains: query, mode: 'insensitive' },
-            },
-          },
-        },
-      },
-    ];
-
-    if (slugSearch) {
-      searchConditions.push({ slug: { contains: slugSearch, mode: 'insensitive' } });
-    }
-
-    const books = await prisma.book.findMany({
-      where: {
-        isActive: true,
-        OR: searchConditions,
-      },
-      take: 6,
-      orderBy: [
-        { isBestseller: 'desc' },
-        { soldCount: 'desc' },
-      ],
-      include: {
-        authors: { include: { author: true } },
-        categories: { include: { category: true } },
-      },
-    });
+    // Tìm kiếm thông minh qua Elasticsearch 8.x (kèm PostgreSQL Fallback tự động)
+    const { source, results: books } = await searchBooksSmart(query, 6);
 
     return NextResponse.json({
       type: 'search',
+      source,
+      engine: source === 'ELASTICSEARCH_8' ? 'Elasticsearch 8.x (Vietnamese Analyzer + Fuzzy Matching)' : 'PostgreSQL Full-Text Search (Fallback)',
       query,
       books: books.map((b) => ({
         id: b.id,
@@ -106,8 +57,8 @@ export async function GET(request: Request) {
         originalPrice: b.originalPrice,
         coverUrl: b.coverUrl,
         soldCount: b.soldCount,
-        authorName: b.authors[0]?.author.name || 'Tác giả tuyển chọn',
-        categoryName: b.categories[0]?.category.name || 'Văn học',
+        authorName: b.authors?.[0]?.author?.name || 'Tác giả tuyển chọn',
+        categoryName: b.categories?.[0]?.category?.name || 'Văn học',
       })),
     });
   } catch (error) {
