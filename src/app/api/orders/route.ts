@@ -127,7 +127,11 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // C. Tính phí vận chuyển (Chính sách Freeship >= 150.000đ, ngược lại 25.000đ)
+      // C. Kiểm tra tổng tiền sách và tính phí vận chuyển (Chính sách Freeship >= 150.000đ, ngược lại 25.000đ)
+      if (calculatedSubtotal <= 0) {
+        throw new Error('Giá trị đơn hàng không hợp lệ (tổng tiền sách phải lớn hơn 0).');
+      }
+
       const calculatedShippingFee = calculatedSubtotal >= 150000 ? 0 : 25000;
       const calculatedTotalAmount = calculatedSubtotal + calculatedShippingFee;
 
@@ -180,16 +184,25 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // G. Trừ tồn kho (stockQty) và tăng số lượng bán (soldCount) của từng cuốn sách
+      // G. Trừ tồn kho nguyên tử (Atomic Conditional Decrement) và tăng số lượng bán (soldCount)
       for (const item of items) {
         const qty = Number(item.quantity) || 1;
-        await tx.book.update({
-          where: { id: item.bookId },
+        const updateResult = await tx.book.updateMany({
+          where: {
+            id: item.bookId,
+            stockQty: { gte: qty },
+          },
           data: {
             stockQty: { decrement: qty },
             soldCount: { increment: qty },
           },
         });
+
+        if (updateResult.count === 0) {
+          throw new Error(
+            `Cuốn sách "${item.bookTitle || 'sản phẩm'}" vừa hết hàng hoặc không đủ tồn kho để đáp ứng số lượng bạn mua.`
+          );
+        }
       }
 
       // H. Cập nhật sổ địa chỉ mặc định trong UserProfile nếu khách yêu cầu
