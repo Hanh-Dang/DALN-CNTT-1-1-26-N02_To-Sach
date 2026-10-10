@@ -994,6 +994,7 @@ export function AdminBooksClient({
                                 fill
                                 sizes="40px"
                                 className="object-cover"
+                                unoptimized
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-slate-300">
@@ -1364,6 +1365,7 @@ export function AdminBooksClient({
                           fill
                           sizes="36px"
                           className="object-cover"
+                          unoptimized
                         />
                       </div>
                     )}
@@ -1624,6 +1626,7 @@ export function AdminBooksClient({
                         fill
                         sizes="32px"
                         className="object-cover"
+                        unoptimized
                       />
                     </div>
                     <div className="flex flex-col">
