@@ -61,3 +61,6 @@ PROJECT_DOCUMENTATION.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Large JSON cache in data/
+data/*.json
