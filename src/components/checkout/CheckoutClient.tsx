@@ -19,6 +19,7 @@ import {
   Check,
   ChevronRight,
   Info,
+  X,
 } from 'lucide-react';
 import { useCart, CartItem } from '@/context/CartContext';
 import { formatVND } from '@/lib/utils';
@@ -74,11 +75,13 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   }, []);
 
   const checkoutItems = useMemo(() => {
+    let list = items;
     if (selectedBookIds && selectedBookIds.length > 0) {
       const filtered = items.filter((item) => selectedBookIds.includes(item.bookId));
-      return filtered.length > 0 ? filtered : items;
+      list = filtered.length > 0 ? filtered : items;
     }
-    return items;
+    // 🛑 CHẶN HÀNG HẾT TRONG KHO: Chỉ lấy những tựa sách còn hàng và số lượng mua > 0
+    return list.filter((item) => (item.stockQty || 0) > 0 && item.quantity > 0);
   }, [items, selectedBookIds]);
 
   // 2. FORM STATE (Tự động điền dữ liệu đã lưu trong User Profile)
@@ -241,6 +244,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const [errorMessage, setErrorMessage] = useState('');
   const [copiedBankInfo, setCopiedBankInfo] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // 9. TÍNH TOÁN TIỀN NÔNG
   const subtotal = useMemo(() => {
@@ -259,8 +263,8 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   }, [originalTotal, subtotal]);
 
   const isFreeShip = subtotal >= FREESHIP_THRESHOLD;
-  const shippingFee = checkoutItems.length === 0 ? 0 : isFreeShip ? 0 : STANDARD_SHIPPING_FEE;
-  const totalAmount = subtotal + shippingFee;
+  const shippingFee = checkoutItems.length === 0 || subtotal === 0 ? 0 : isFreeShip ? 0 : STANDARD_SHIPPING_FEE;
+  const totalAmount = subtotal === 0 ? 0 : subtotal + shippingFee;
 
   // 10. TÍNH TOÁN DỰ KIẾN GIAO HÀNG ĐỘNG THEO TỈNH THÀNH (GIẢI PHÁP 2)
   const deliveryEstimate = useMemo(() => {
@@ -318,8 +322,8 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 7. XỬ LÝ ĐẶT HÀNG (Gọi API /api/orders)
-  const handlePlaceOrder = async (e: React.FormEvent) => {
+  // 7. MỞ MODAL XÁC NHẬN TRƯỚC BƯỚC ĐẶT HÀNG CUỐI CÙNG
+  const handleOpenConfirmModal = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -328,12 +332,18 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
       return;
     }
 
-    if (checkoutItems.length === 0) {
-      setErrorMessage('Giỏ hàng của bạn đang trống.');
+    if (checkoutItems.length === 0 || subtotal <= 0) {
+      setErrorMessage('Không có sản phẩm hợp lệ trong đơn hàng hoặc tổng tiền hàng không hợp lệ.');
       return;
     }
 
+    setShowConfirmModal(true);
+  };
+
+  // 8. TIẾN HÀNH ĐẶT HÀNG THỰC TẾ (Gọi API /api/orders)
+  const handleExecuteOrder = async () => {
     setIsSubmitting(true);
+    setErrorMessage('');
 
     try {
       // Ghép địa chỉ hoàn chỉnh chuẩn hóa
@@ -385,6 +395,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
         sessionStorage.removeItem('tosach_checkout_selected_ids');
       }
 
+      setShowConfirmModal(false);
       // Chuyển sang màn hình xác nhận đặt hàng thành công
       router.push(`/order/success?code=${data.orderCode}`);
     } catch (err: any) {
@@ -403,24 +414,24 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
     );
   }
 
-  // Trường hợp giỏ hàng rỗng
-  if (items.length === 0) {
+  // Trường hợp không có sản phẩm hợp lệ để thanh toán
+  if (checkoutItems.length === 0 || subtotal <= 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-5">
         <div className="w-20 h-20 rounded-3xl bg-amber-50 text-[#F5A623] mx-auto flex items-center justify-center">
           <ShoppingBag className="w-10 h-10" />
         </div>
-        <h2 className="text-2xl font-black text-[#0B1F3A]">Không có sản phẩm nào để thanh toán</h2>
+        <h2 className="text-2xl font-black text-[#0B1F3A]">Không có sản phẩm hợp lệ để thanh toán</h2>
         <p className="text-sm text-slate-500 max-w-md mx-auto">
-          Giỏ hàng của bạn đang trống hoặc bạn đã hoàn tất đặt hàng trước đó. Hãy quay lại khám phá thêm các tựa sách hay nhé!
+          Giỏ hàng của bạn đang trống hoặc các cuốn sách bạn chọn hiện đã hết hàng trong kho. Hãy quay lại giỏ hàng để chọn các tựa sách khác nhé!
         </p>
         <div>
           <Link
-            href="/catalog"
+            href="/cart"
             className="inline-flex items-center gap-2 bg-[#0B1F3A] hover:bg-[#163156] text-white font-bold px-6 py-3 rounded-xl text-sm transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Tiếp tục tìm sách</span>
+            <span>Quay lại giỏ hàng</span>
           </Link>
         </div>
       </div>
@@ -475,7 +486,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
       )}
 
       {/* 2. MAIN CHECKOUT FORM & SUMMARY */}
-      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <form onSubmit={handleOpenConfirmModal} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* ================= LEFT COLUMN: THÔNG TIN GIAO HÀNG & THANH TOÁN (7/12) ================= */}
         <div className="lg:col-span-7 space-y-6">
           {/* KHỐI 1: ĐỊA CHỈ NHẬN HÀNG */}
@@ -984,7 +995,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
             <button
               id="btn-confirm-checkout"
               type="submit"
-              disabled={isSubmitting || checkoutItems.length === 0}
+              disabled={isSubmitting || checkoutItems.length === 0 || subtotal <= 0}
               className="w-full bg-[#F5A623] hover:bg-[#e09419] disabled:bg-slate-300 disabled:cursor-not-allowed text-[#0B1F3A] font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-98 cursor-pointer"
             >
               {isSubmitting ? (
@@ -1018,6 +1029,123 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
           </div>
         </div>
       </form>
+
+      {/* 4. MODAL XÁC NHẬN ĐẶT HÀNG TRƯỚC BƯỚC CUỐI CÙNG */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div 
+            className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200 border border-slate-200 relative"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-modal-title"
+          >
+            {/* Nút đóng modal */}
+            <button
+              type="button"
+              onClick={() => !isSubmitting && setShowConfirmModal(false)}
+              disabled={isSubmitting}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50"
+              aria-label="Đóng hộp thoại"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Tiêu đề & Icon */}
+            <div className="flex items-center gap-3.5 pr-8">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#F5A623] flex items-center justify-center shrink-0 ring-4 ring-amber-50/50">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 id="confirm-modal-title" className="text-lg font-black text-[#0B1F3A]">
+                  Xác Nhận Đặt Hàng
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Bạn có chắc chắn muốn tiến hành đặt đơn hàng này với Tổ Sách?
+                </p>
+              </div>
+            </div>
+
+            {/* Khối tóm lược thông tin nhận hàng & thanh toán */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-3 text-xs">
+              <div className="space-y-1 pb-2.5 border-b border-slate-200/60">
+                <span className="text-[11px] text-slate-400 font-medium">Người nhận hàng:</span>
+                <p className="font-bold text-[#0B1F3A]">
+                  {fullName.trim()} • <span className="font-semibold text-slate-600">{phone.trim()}</span>
+                </p>
+                <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-2">
+                  {addressDetail.trim()}, {ward.trim()}, {district.trim()}, {province}
+                </p>
+              </div>
+
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Hình thức thanh toán:</span>
+                <span className="font-bold text-[#0B1F3A]">
+                  {paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản Ngân hàng (VietQR 24/7)' : 'Thanh toán tiền mặt khi nhận (COD)'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Số lượng sách đặt mua:</span>
+                <span className="font-bold text-[#0B1F3A]">{checkoutItems.length} cuốn</span>
+              </div>
+
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Phí vận chuyển:</span>
+                <span className="font-bold text-slate-800">
+                  {shippingFee === 0 ? <strong className="text-emerald-700">Miễn phí 0₫</strong> : formatVND(shippingFee)}
+                </span>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200/80 flex justify-between items-baseline">
+                <span className="font-extrabold text-sm text-[#0B1F3A]">Tổng thanh toán:</span>
+                <span className="text-xl font-black text-[#F5A623]">
+                  {formatVND(totalAmount)}
+                </span>
+              </div>
+            </div>
+
+            {/* Thông báo lỗi nếu có */}
+            {errorMessage && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Nút hành động */}
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Kiểm tra lại
+              </button>
+
+              <button
+                type="button"
+                id="btn-modal-confirm-order"
+                disabled={isSubmitting}
+                onClick={handleExecuteOrder}
+                className="flex-1 py-3 px-4 rounded-xl bg-[#F5A623] hover:bg-[#e09419] disabled:bg-slate-300 text-[#0B1F3A] font-extrabold text-xs transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-[#0B1F3A] border-t-transparent rounded-full animate-spin" />
+                    <span>Đang tạo đơn...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-[#0B1F3A]" />
+                    <span>Đồng Ý Đặt Hàng</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

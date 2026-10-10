@@ -34,6 +34,9 @@ export default function WishlistPage() {
   }, [totalPages, currentPage]);
 
   const handleAddToCart = (item: WishlistItem, e?: React.MouseEvent) => {
+    const realStock = typeof item.stockQty === 'number' ? item.stockQty : 0;
+    if (realStock <= 0) return;
+
     addToCart({
       bookId: item.bookId,
       title: item.title,
@@ -42,7 +45,7 @@ export default function WishlistPage() {
       originalPrice: item.originalPrice,
       coverUrl: item.coverUrl,
       authorName: item.authorName,
-      stockQty: item.stockQty || 50,
+      stockQty: realStock,
     }, 1, e);
 
     setAddedIds((prev) => ({ ...prev, [item.bookId]: true }));
@@ -52,8 +55,9 @@ export default function WishlistPage() {
   };
 
   const handleAddAllToCart = () => {
-    if (items.length === 0) return;
-    for (const item of items) {
+    const validItems = items.filter((item) => (typeof item.stockQty === 'number' ? item.stockQty : 0) > 0);
+    if (validItems.length === 0) return;
+    for (const item of validItems) {
       addToCart({
         bookId: item.bookId,
         title: item.title,
@@ -62,7 +66,7 @@ export default function WishlistPage() {
         originalPrice: item.originalPrice,
         coverUrl: item.coverUrl,
         authorName: item.authorName,
-        stockQty: item.stockQty || 50,
+        stockQty: typeof item.stockQty === 'number' ? item.stockQty : 0,
       });
     }
 
@@ -229,27 +233,37 @@ export default function WishlistPage() {
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={(e) => handleAddToCart(book, e)}
-                      className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors ${
-                        isItemAdded
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-[#0B1F3A] hover:bg-[#163156] text-white'
-                      }`}
-                    >
-                      {isItemAdded ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Đã thêm vào giỏ!</span>
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingBag className="w-3.5 h-3.5 text-[#F5A623]" />
-                          <span>Thêm Vào Giỏ</span>
-                        </>
-                      )}
-                    </button>
+                    {(() => {
+                      const isOutOfStock = typeof book.stockQty === 'number' && book.stockQty <= 0;
+                      return (
+                        <button
+                          type="button"
+                          onClick={(e) => handleAddToCart(book, e)}
+                          disabled={isOutOfStock}
+                          className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors ${
+                            isOutOfStock
+                              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                              : isItemAdded
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-[#0B1F3A] hover:bg-[#163156] text-white cursor-pointer'
+                          }`}
+                        >
+                          {isOutOfStock ? (
+                            <span>Tạm hết hàng</span>
+                          ) : isItemAdded ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Đã thêm vào giỏ!</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="w-3.5 h-3.5 text-[#F5A623]" />
+                              <span>Thêm Vào Giỏ</span>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })()}
                   </div>
                 </article>
               );

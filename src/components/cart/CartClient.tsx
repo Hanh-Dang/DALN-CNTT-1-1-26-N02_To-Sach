@@ -21,13 +21,24 @@ interface CartClientProps {
 
 export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] }) => {
   const router = useRouter();
-  const { items, updateQuantity, removeFromCart, clearCart, isLoaded } = useCart();
+  const { items, updateQuantity, removeFromCart, clearCart, validateCart, isLoaded } = useCart();
 
   // Trạng thái chọn từng sản phẩm để thanh toán
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [sessionAddedIds, setSessionAddedIds] = useState<string[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  // 🔄 Tự động thẩm định lại tồn kho và giá bán từ Database khi nạp giỏ hàng
+  useEffect(() => {
+    if (isLoaded && items.length > 0 && validateCart) {
+      validateCart();
+    }
+  }, [isLoaded]);
+
+  // Phân loại sản phẩm còn hàng và hết hàng
+  const inStockItems = useMemo(() => items.filter((item) => (item.stockQty || 0) > 0), [items]);
+  const outOfStockItems = useMemo(() => items.filter((item) => !item.stockQty || item.stockQty <= 0), [items]);
 
   // 🌟 Tự động tích chọn những cuốn sách được thêm trong phiên mua sắm hiện tại (Session-Based Selection)
   useEffect(() => {
@@ -43,14 +54,14 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
             const nextSelected: Record<string, boolean> = {};
             let hasAnyMatched = false;
 
-            items.forEach((item) => {
+            // CHỈ tự động tick chọn nếu cuốn sách còn hàng trong kho
+            inStockItems.forEach((item) => {
               if (sessionAdded.includes(item.bookId)) {
                 nextSelected[item.bookId] = true;
                 hasAnyMatched = true;
               }
             });
 
-            // Nếu có cuốn sách vừa thêm trong phiên này thì tự động tích chọn các cuốn đó
             if (hasAnyMatched) {
               setSelectedIds(nextSelected);
             }
@@ -60,7 +71,7 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
     } catch {
       // ignore
     }
-  }, [isLoaded, items]);
+  }, [isLoaded, inStockItems]);
 
   // Trạng thái sắp xếp danh sách giỏ hàng (mặc định: Mới nhất từ trên xuống)
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'price_desc' | 'price_asc'>('newest');
@@ -82,10 +93,10 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
     }
   }, [items, sortOrder]);
 
-  // Danh sách các cuốn sách được tick chọn
+  // Danh sách các cuốn sách được tick chọn (CHỈ tính những cuốn còn hàng)
   const selectedItems = useMemo(() => {
-    return items.filter((item) => selectedIds[item.bookId] === true);
-  }, [items, selectedIds]);
+    return inStockItems.filter((item) => selectedIds[item.bookId] === true);
+  }, [inStockItems, selectedIds]);
 
   // Tính toán tiền hàng và chiết khấu
   const selectedSubtotal = useMemo(() => {
@@ -100,23 +111,26 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
     return Math.max(0, selectedOriginalTotal - selectedSubtotal);
   }, [selectedOriginalTotal, selectedSubtotal]);
 
-  // Điều kiện Freeship >= 150.000đ
+  // Điều kiện Freeship >= 150.000đ & Phí vận chuyển (CHỈ TÍNH KHI CÓ SẢN PHẨM HỢP LỆ VÀ TIỀN SÁCH > 0)
   const isFreeShip = selectedSubtotal >= FREESHIP_THRESHOLD;
   const needMoreForFreeShip = Math.max(0, FREESHIP_THRESHOLD - selectedSubtotal);
-  const shippingFee = selectedItems.length === 0 ? 0 : isFreeShip ? 0 : STANDARD_SHIPPING_FEE;
-  const finalTotal = selectedSubtotal + shippingFee;
+  const shippingFee = (selectedItems.length === 0 || selectedSubtotal === 0) ? 0 : isFreeShip ? 0 : STANDARD_SHIPPING_FEE;
+  const finalTotal = selectedSubtotal === 0 ? 0 : selectedSubtotal + shippingFee;
 
-  const allSelected = items.length > 0 && selectedItems.length === items.length;
+  // Trạng thái chọn tất cả (chỉ dựa trên danh sách sách còn hàng)
+  const allSelected = inStockItems.length > 0 && selectedItems.length === inStockItems.length;
 
   const handleToggleSelectAll = (checked: boolean) => {
     const updated: Record<string, boolean> = {};
-    items.forEach((item) => {
+    inStockItems.forEach((item) => {
       updated[item.bookId] = checked;
     });
     setSelectedIds(updated);
   };
 
   const handleToggleItem = (bookId: string) => {
+    const target = items.find((i) => i.bookId === bookId);
+    if (target && (!target.stockQty || target.stockQty <= 0)) return; // Chặn toggle nếu hết hàng
     setSelectedIds((prev) => ({
       ...prev,
       [bookId]: !prev[bookId],
@@ -124,7 +138,7 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
   };
 
   const handleProceedCheckout = () => {
-    if (selectedItems.length === 0) return;
+    if (selectedItems.length === 0 || selectedSubtotal <= 0) return;
     try {
       if (typeof window !== 'undefined') {
         const bookIds = selectedItems.map((i) => i.bookId);
@@ -312,10 +326,21 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
               </div>
             )}
 
+            {/* Cảnh báo sách tạm hết hàng trong kho nếu có */}
+            {outOfStockItems.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 text-xs text-amber-900 shadow-2xs">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <p>
+                  Giỏ hàng có <strong>{outOfStockItems.length} cuốn tạm hết hàng trong kho</strong>. Các tựa sách này sẽ tự động không được tính vào thanh toán.
+                </p>
+              </div>
+            )}
+
             {/* Cart Items List */}
             <div className="space-y-3">
               {sortedItems.map((item) => {
-                const isChecked = selectedIds[item.bookId] === true;
+                const isOutOfStock = !item.stockQty || item.stockQty <= 0;
+                const isChecked = selectedIds[item.bookId] === true && !isOutOfStock;
                 const isSessionAdded = sessionAddedIds.includes(item.bookId);
                 const discount = calculateDiscount(item.originalPrice, item.price);
 
@@ -323,17 +348,21 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
                   <div
                     key={item.bookId}
                     className={`bg-white rounded-2xl border transition-all p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 ${
-                      isChecked
+                      isOutOfStock
+                        ? 'border-rose-200/70 bg-rose-50/20 opacity-75'
+                        : isChecked
                         ? 'border-slate-300 shadow-2xs'
                         : 'border-slate-200/60 opacity-60 bg-slate-50/50'
                     }`}
                   >
-                    {/* Checkbox */}
+                    {/* Checkbox (Vô hiệu hóa hoàn toàn nếu hết hàng) */}
                     <input
                       type="checkbox"
+                      disabled={isOutOfStock}
                       checked={isChecked}
-                      onChange={() => handleToggleItem(item.bookId)}
-                      className="rounded accent-[#0B1F3A] w-4 h-4 cursor-pointer mt-1 sm:mt-0 shrink-0"
+                      onChange={() => !isOutOfStock && handleToggleItem(item.bookId)}
+                      className="rounded accent-[#0B1F3A] w-4 h-4 mt-1 sm:mt-0 shrink-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label={`Chọn mua ${item.title}`}
                     />
 
                     {/* Book Thumbnail */}
@@ -341,7 +370,9 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
                       <img
                         src={item.coverUrl}
                         alt={item.title}
-                        className="w-16 h-22 sm:w-20 sm:h-28 object-cover rounded-xl border border-slate-200 shadow-xs group-hover:scale-105 transition-transform"
+                        className={`w-16 h-22 sm:w-20 sm:h-28 object-cover rounded-xl border border-slate-200 shadow-xs group-hover:scale-105 transition-transform ${
+                          isOutOfStock ? 'grayscale-40' : ''
+                        }`}
                       />
                     </Link>
 
@@ -354,12 +385,17 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
                         >
                           {item.title}
                         </Link>
-                        {isSessionAdded && (
+                        {isOutOfStock ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-md shrink-0">
+                            <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
+                            <span>Tạm hết hàng</span>
+                          </span>
+                        ) : isSessionAdded ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md shrink-0">
                             <Sparkles className="w-2.5 h-2.5 text-[#F5A623]" />
                             <span>Vừa thêm</span>
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       {item.authorName && (
                         <p className="text-xs text-slate-500">Tác giả: <span className="font-semibold text-slate-700">{item.authorName}</span></p>
@@ -367,64 +403,102 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
                       
                       {/* Mobile price row */}
                       <div className="flex items-baseline gap-2 pt-1 sm:hidden">
-                        <span className="font-extrabold text-sm text-[#F5A623]">
-                          {formatVND(item.price)}
-                        </span>
-                        {item.originalPrice > item.price && (
-                          <span className="text-[11px] text-slate-400 line-through">
-                            {formatVND(item.originalPrice)}
-                          </span>
+                        {isOutOfStock ? (
+                          <>
+                            <span className="font-extrabold text-sm text-slate-400 line-through">
+                              {formatVND(item.price)}
+                            </span>
+                            <span className="text-[11px] font-bold text-rose-600">
+                              Hết hàng
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-extrabold text-sm text-[#F5A623]">
+                              {formatVND(item.price)}
+                            </span>
+                            {item.originalPrice > item.price && (
+                              <span className="text-[11px] text-slate-400 line-through">
+                                {formatVND(item.originalPrice)}
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
 
                     {/* Desktop Unit Price */}
                     <div className="hidden sm:block text-right shrink-0 min-w-[100px]">
-                      <span className="font-extrabold text-sm text-[#0B1F3A] block">
-                        {formatVND(item.price)}
-                      </span>
-                      {item.originalPrice > item.price && (
-                        <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                          <span className="text-[11px] text-slate-400 line-through">
-                            {formatVND(item.originalPrice)}
+                      {isOutOfStock ? (
+                        <>
+                          <span className="font-extrabold text-sm text-slate-400 line-through block">
+                            {formatVND(item.price)}
                           </span>
-                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1 rounded">
-                            -{discount}%
+                          <span className="text-[11px] font-bold text-rose-600 block mt-0.5">
+                            Tạm hết hàng
                           </span>
-                        </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-extrabold text-sm text-[#0B1F3A] block">
+                            {formatVND(item.price)}
+                          </span>
+                          {item.originalPrice > item.price && (
+                            <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                              <span className="text-[11px] text-slate-400 line-through">
+                                {formatVND(item.originalPrice)}
+                              </span>
+                              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1 rounded">
+                                -{discount}%
+                              </span>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
 
-                    {/* Quantity Stepper */}
-                    <div className="flex items-center border border-slate-300 rounded-xl bg-slate-50 overflow-hidden text-xs shrink-0 shadow-2xs">
-                      <button
-                        onClick={() => updateQuantity(item.bookId, item.quantity - 1)}
-                        disabled={item.quantity <= 1}
-                        className="px-2.5 py-1.5 text-slate-600 hover:bg-slate-200 disabled:opacity-30 transition-colors cursor-pointer"
-                        type="button"
-                        aria-label="Giảm số lượng"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="w-9 text-center font-bold text-[#0B1F3A]">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => updateQuantity(item.bookId, item.quantity + 1)}
-                        disabled={item.quantity >= item.stockQty}
-                        className="px-2.5 py-1.5 text-slate-600 hover:bg-slate-200 disabled:opacity-30 transition-colors cursor-pointer"
-                        type="button"
-                        aria-label="Tăng số lượng"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    {/* Quantity Stepper (hoặc thông báo hết hàng) */}
+                    {isOutOfStock ? (
+                      <div className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-600 shrink-0">
+                        0 cuốn
+                      </div>
+                    ) : (
+                      <div className="flex items-center border border-slate-300 rounded-xl bg-slate-50 overflow-hidden text-xs shrink-0 shadow-2xs">
+                        <button
+                          onClick={() => updateQuantity(item.bookId, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
+                          className="px-2.5 py-1.5 text-slate-600 hover:bg-slate-200 disabled:opacity-30 transition-colors cursor-pointer"
+                          type="button"
+                          aria-label="Giảm số lượng"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-9 text-center font-bold text-[#0B1F3A]">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(item.bookId, item.quantity + 1)}
+                          disabled={item.quantity >= item.stockQty}
+                          className="px-2.5 py-1.5 text-slate-600 hover:bg-slate-200 disabled:opacity-30 transition-colors cursor-pointer"
+                          type="button"
+                          aria-label="Tăng số lượng"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
 
                     {/* Subtotal Item Line */}
                     <div className="text-right shrink-0 min-w-[100px] hidden sm:block">
-                      <span className="font-black text-sm text-[#F5A623]">
-                        {formatVND(item.price * item.quantity)}
-                      </span>
+                      {isOutOfStock ? (
+                        <span className="font-bold text-xs text-slate-400">
+                          0₫ (Hết hàng)
+                        </span>
+                      ) : (
+                        <span className="font-black text-sm text-[#F5A623]">
+                          {formatVND(item.price * item.quantity)}
+                        </span>
+                      )}
                     </div>
 
                     {/* Delete Item Button */}
@@ -542,9 +616,9 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
               {/* Checkout Action Button */}
               <button
                 id="btn-cart-proceed-checkout"
-                disabled={selectedItems.length === 0}
+                disabled={selectedItems.length === 0 || selectedSubtotal <= 0}
                 onClick={handleProceedCheckout}
-                className="w-full bg-[#F5A623] hover:bg-[#e09419] disabled:bg-slate-300 disabled:cursor-not-allowed text-[#0B1F3A] font-black py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+                className="w-full bg-[#F5A623] hover:bg-[#e09419] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-[#0B1F3A] font-black py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
                 type="button"
               >
                 <span>Tiến Hành Đặt Hàng ({selectedItems.length})</span>

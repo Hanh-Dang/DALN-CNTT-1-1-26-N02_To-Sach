@@ -690,6 +690,7 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
                         fill
                         sizes="36px"
                         className="object-cover"
+                        unoptimized
                       />
                     </div>
                     <div className="flex flex-col min-w-0">
