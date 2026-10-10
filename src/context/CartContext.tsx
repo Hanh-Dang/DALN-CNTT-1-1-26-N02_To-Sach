@@ -28,6 +28,7 @@ interface CartContextType {
   updateQuantity: (bookId: string, quantity: number) => void;
   removeFromCart: (bookId: string) => void;
   clearCart: () => void;
+  validateCart: () => Promise<void>;
   isLoaded: boolean;
 }
 
@@ -220,6 +221,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     qty = 1,
     startSource?: HTMLElement | MouseEvent | React.MouseEvent | TouchEvent | null
   ) => {
+    // 🛑 CHẶN NGAY LẬP TỨC nếu sách đã hết hàng trong kho (stockQty <= 0)
+    if (!newItem.stockQty || newItem.stockQty <= 0) {
+      console.warn(`[Cart] Từ chối thêm cuốn "${newItem.title}" vì tồn kho hiện tại = 0.`);
+      return;
+    }
+
     // 🚀 Kích hoạt hiệu ứng ném sách vào giỏ hàng (Parabolic Fly to Cart)
     try {
       triggerFlyToCart(newItem.coverUrl, startSource);
@@ -249,13 +256,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (existingIndex > -1) {
         const updated = [...prevItems];
         const existing = updated[existingIndex];
-        const newQty = Math.min(existing.quantity + qty, existing.stockQty);
-        // Cập nhật số lượng và cập nhật mốc thời gian mới nhất, đẩy lên đầu danh sách
-        const updatedItem = { ...existing, quantity: newQty, addedAt: now };
+        const maxStock = newItem.stockQty;
+        if (existing.quantity >= maxStock) {
+          return prevItems; // Đã đạt số lượng tồn tối đa
+        }
+        const newQty = Math.min(existing.quantity + qty, maxStock);
+        const updatedItem = { ...existing, stockQty: maxStock, quantity: Math.max(1, newQty), addedAt: now };
         updated.splice(existingIndex, 1);
         return [updatedItem, ...updated];
       } else {
-        const initialQty = Math.min(qty, newItem.stockQty > 0 ? newItem.stockQty : 1);
+        const initialQty = Math.max(1, Math.min(qty, newItem.stockQty));
         // Đưa sách mới thêm lên đầu danh sách giỏ hàng
         return [{ ...newItem, quantity: initialQty, addedAt: now }, ...prevItems];
       }
@@ -307,6 +317,42 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems([]);
   };
 
+  const validateCart = useCallback(async () => {
+    if (items.length === 0) return;
+    try {
+      const res = await fetch('/api/cart/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: items.map((i) => ({ bookId: i.bookId, quantity: i.quantity })) }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.validatedItems)) {
+          setItems((prevItems) => {
+            let hasChange = false;
+            const updated = prevItems.map((item) => {
+              const val = data.validatedItems.find((v: any) => v.bookId === item.bookId);
+              if (val) {
+                const stock = typeof val.stockQty === 'number' ? val.stockQty : 0;
+                const price = typeof val.currentPrice === 'number' ? val.currentPrice : item.price;
+                const origPrice = typeof val.originalPrice === 'number' ? val.originalPrice : item.originalPrice;
+                const adjustedQty = stock <= 0 ? 0 : Math.min(item.quantity, stock);
+                if (item.stockQty !== stock || item.price !== price || item.originalPrice !== origPrice || item.quantity !== adjustedQty) {
+                  hasChange = true;
+                  return { ...item, stockQty: stock, price, originalPrice: origPrice, quantity: adjustedQty };
+                }
+              }
+              return item;
+            });
+            return hasChange ? updated : prevItems;
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Lỗi kiểm tra giỏ hàng:', e);
+    }
+  }, [items]);
+
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -320,6 +366,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateQuantity,
         removeFromCart,
         clearCart,
+        validateCart,
         isLoaded,
       }}
     >
