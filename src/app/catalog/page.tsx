@@ -118,26 +118,32 @@ export default async function CatalogPage() {
     };
   });
 
-  // 3. Tính toán Nhà xuất bản thực tế từ các cuốn sách trong DB
+  // 3. Tính toán Nhà xuất bản thực tế từ các cuốn sách trong DB (Sắp xếp NXB tiêu biểu lên đầu)
   const pubMap = new Map<string, number>();
   rawBooks.forEach((b) => {
     if (b.publisher) {
       pubMap.set(b.publisher, (pubMap.get(b.publisher) || 0) + 1);
     }
   });
-  const publishersData: PublisherFilterItem[] = Array.from(pubMap.entries()).map(([name, count]) => ({
-    name,
-    count,
-  }));
+  const publishersData: PublisherFilterItem[] = Array.from(pubMap.entries())
+    .map(([name, count]) => ({
+      name,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count);
 
-  // 4. Lấy danh sách Tác giả thực tế từ sách trong DB
-  const authorSet = new Set<string>();
+  // 4. Lấy danh sách Tác giả thực tế từ sách trong DB (Sắp xếp tác giả tiêu biểu có nhiều tác phẩm nhất lên đầu)
+  const authorCountMap = new Map<string, number>();
   rawBooks.forEach((b) => {
     b.authors.forEach((a) => {
-      if (a.author?.name) authorSet.add(a.author.name);
+      if (a.author?.name) {
+        authorCountMap.set(a.author.name, (authorCountMap.get(a.author.name) || 0) + 1);
+      }
     });
   });
-  const authorsData: string[] = Array.from(authorSet);
+  const authorsData: string[] = Array.from(authorCountMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([name]) => name);
 
   return (
     <main className="min-h-screen bg-slate-50/60 pb-16">

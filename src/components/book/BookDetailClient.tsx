@@ -539,6 +539,34 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
                   </div>
                 </div>
               )}
+
+              {/* OUT OF STOCK BANNER & WISHLIST CTA */}
+              {book.stockQty <= 0 && (
+                <div className="space-y-3 pt-2">
+                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-sm">Tựa sách này hiện đang tạm hết hàng trong kho</h4>
+                      <p className="text-xs text-rose-700 leading-relaxed">
+                        Tổ Sách đang liên hệ với Nhà xuất bản để nhập bổ sung đợt in mới. Bạn hãy lưu cuốn sách này vào Danh sách yêu thích để nhận thông báo ngay khi có hàng trở lại!
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleToggleWishlist}
+                    className={`w-full py-3.5 px-5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 transition-all cursor-pointer ${
+                      isFavorite
+                        ? 'bg-rose-50 border-rose-300 text-rose-600'
+                        : 'bg-white border-slate-300 hover:border-rose-300 text-slate-700 hover:text-rose-600'
+                    }`}
+                    type="button"
+                  >
+                    <Heart className={`w-4 h-4 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                    <span>{isFavorite ? 'Đã lưu trong Danh sách yêu thích' : 'Thêm vào Danh sách yêu thích để nhận tin'}</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* B2C PERKS GUARANTEE STRIP */}
