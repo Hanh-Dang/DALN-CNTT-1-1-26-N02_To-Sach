@@ -1,7 +1,25 @@
 import { Client } from '@elastic/elasticsearch';
 import { prisma } from './prisma';
+import { removeVietnameseTones } from './utils';
 
 export const ES_INDEX_BOOKS = 'books_v1';
+
+// Vietnamese stop words to filter out (Proposal 3.2)
+export const VIETNAMESE_STOP_WORDS = new Set([
+  'va', 'hoac', 'nhung', 'cac', 'la', 'cua', 'trong', 'voi', 'cho', 've', 'o', 'duoc',
+  'sach', 'cuon', 'quyen', 'tap', 'bo'
+]);
+
+// Vietnamese synonyms mapping (Proposal 3.2)
+export const SYNONYMS: Record<string, string[]> = {
+  'manga': ['truyen tranh', 'comic'],
+  'comic': ['truyen tranh', 'manga'],
+  'truyen tranh': ['manga', 'comic'],
+  'tieu thuyet': ['novel', 'truyen dai'],
+  'novel': ['tieu thuyet'],
+  'kinh te': ['tai chinh', 'dau tu', 'quan tri'],
+  'tai chinh': ['kinh te', 'dau tu'],
+};
 
 // Cấu hình kết nối Elasticsearch 8.x từ biến môi trường
 const esNode = process.env.ELASTICSEARCH_NODE;
@@ -163,7 +181,7 @@ export async function searchBooksSmart(
   limit = 10,
   userPreferenceCategory?: string
 ): Promise<{
-  source: 'ELASTICSEARCH_8' | 'POSTGRESQL_FALLBACK';
+  source: 'ELASTICSEARCH_8' | 'POSTGRESQL_FALLBACK' | 'POSTGRESQL_SMART_FUZZY';
   results: any[];
   facets?: any;
 }> {
@@ -253,31 +271,163 @@ export async function searchBooksSmart(
     }
   }
 
-  // 2. Graceful Fallback: PostgreSQL Full-Text & Insensitive Search
-  const pgResults = await prisma.book.findMany({
-    where: {
-      isActive: true,
-      OR: [
-        { title: { contains: trimmed, mode: 'insensitive' } },
-        { description: { contains: trimmed, mode: 'insensitive' } },
-        { publisher: { contains: trimmed, mode: 'insensitive' } },
-        {
-          authors: {
-            some: {
-              author: {
-                name: { contains: trimmed, mode: 'insensitive' },
+  // 2. Intelligent Vietnamese Smart Search (Unaccent + pg_trgm Fuzzy + Multi-field Boost)
+  try {
+    const cleanQ = removeVietnameseTones(trimmed).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!cleanQ) {
+      return { source: 'POSTGRESQL_FALLBACK', results: [] };
+    }
+
+    // Stop-words filtering if query has multiple words
+    const rawTokens = cleanQ.split(' ').filter(Boolean);
+    const filteredTokens = rawTokens.filter((t) => !VIETNAMESE_STOP_WORDS.has(t));
+    const effectiveQuery = filteredTokens.length > 0 ? filteredTokens.join(' ') : cleanQ;
+
+    // Check synonym expansion
+    let searchTarget = effectiveQuery;
+    for (const [key, syns] of Object.entries(SYNONYMS)) {
+      if (effectiveQuery.includes(key)) {
+        searchTarget = `${effectiveQuery} ${syns.join(' ')}`;
+        break;
+      }
+    }
+
+    const escapedQ = effectiveQuery.replace(/'/g, "''");
+    const escapedTarget = searchTarget.replace(/'/g, "''");
+
+    const sql = `
+      SELECT 
+        b.id, 
+        b.title, 
+        b.slug, 
+        b.price, 
+        b.original_price AS "originalPrice",
+        b.cover_url AS "coverUrl", 
+        b.sold_count AS "soldCount",
+        COALESCE((
+          SELECT a.name FROM book_authors ba 
+          JOIN authors a ON ba.author_id = a.id 
+          WHERE ba.book_id = b.id LIMIT 1
+        ), 'Tổ Sách Tuyển Chọn') AS "authorName",
+        COALESCE((
+          SELECT c.name FROM book_categories bc 
+          JOIN categories c ON bc.category_id = c.id 
+          WHERE bc.book_id = b.id LIMIT 1
+        ), 'Văn học') AS "categoryName",
+        (
+          -- Title exact unaccented ILIKE match (Trọng số cao nhất 6.0)
+          CASE WHEN unaccent(b.title) ILIKE unaccent('%${escapedQ}%') THEN 6.0 ELSE 0.0 END
+          +
+          -- Title Trigram Similarity (Fuzzy cho lỗi chính tả, sai chữ) * 8.0
+          similarity(unaccent(b.title), unaccent('${escapedQ}')) * 8.0
+          +
+          -- Author unaccented / fuzzy match * 4.0
+          COALESCE((
+            SELECT MAX(
+              CASE WHEN unaccent(a.name) ILIKE unaccent('%${escapedQ}%') THEN 5.0 ELSE 0.0 END
+              + similarity(unaccent(a.name), unaccent('${escapedQ}')) * 4.0
+            )
+            FROM book_authors ba JOIN authors a ON ba.author_id = a.id
+            WHERE ba.book_id = b.id
+          ), 0)
+          +
+          -- Category match * 2.0
+          CASE WHEN EXISTS (
+            SELECT 1 FROM book_categories bc 
+            JOIN categories c ON bc.category_id = c.id 
+            WHERE bc.book_id = b.id AND unaccent(c.name) ILIKE unaccent('%${escapedTarget}%')
+          ) THEN 2.0 ELSE 0.0 END
+          +
+          -- Publisher match * 1.5
+          CASE WHEN unaccent(COALESCE(b.publisher, '')) ILIKE unaccent('%${escapedQ}%') THEN 1.5 ELSE 0.0 END
+          +
+          -- Description match * 0.8
+          CASE WHEN unaccent(COALESCE(b.description, '')) ILIKE unaccent('%${escapedQ}%') THEN 0.8 ELSE 0.0 END
+        ) AS search_score
+      FROM books b
+      WHERE b.is_active = true
+        AND (
+          unaccent(b.title) ILIKE unaccent('%${escapedQ}%')
+          OR similarity(unaccent(b.title), unaccent('${escapedQ}')) > 0.2
+          OR EXISTS (
+            SELECT 1 FROM book_authors ba 
+            JOIN authors a ON ba.author_id = a.id 
+            WHERE ba.book_id = b.id AND (
+              unaccent(a.name) ILIKE unaccent('%${escapedQ}%')
+              OR similarity(unaccent(a.name), unaccent('${escapedQ}')) > 0.3
+            )
+          )
+          OR unaccent(COALESCE(b.publisher, '')) ILIKE unaccent('%${escapedQ}%')
+        )
+      ORDER BY search_score DESC, b.sold_count DESC
+      LIMIT ${limit}
+    `;
+
+    const rawRows: any = await prisma.$queryRawUnsafe(sql);
+
+    // Map về cấu trúc Book đầy đủ
+    const books = rawRows.map((r: any) => {
+      const baseScore = Number(r.search_score) || 1.0;
+      const isPreferred =
+        userPreferenceCategory &&
+        r.categoryName &&
+        r.categoryName.toLowerCase().includes(userPreferenceCategory.toLowerCase());
+      const userPreferenceWeight = isPreferred ? 0.35 : 0.0;
+      const finalScore = baseScore * (1 + userPreferenceWeight);
+
+      return {
+        id: r.id,
+        title: r.title,
+        slug: r.slug,
+        price: r.price,
+        originalPrice: r.originalPrice ?? r.price,
+        coverUrl: r.coverUrl || '',
+        soldCount: r.soldCount ?? 0,
+        authorName: r.authorName || 'Tác giả tuyển chọn',
+        categoryName: r.categoryName || 'Văn học',
+        authors: [{ author: { name: r.authorName || 'Tác giả tuyển chọn' } }],
+        categories: [{ category: { name: r.categoryName || 'Văn học' } }],
+        finalScore,
+      };
+    });
+
+    if (userPreferenceCategory) {
+      books.sort((a: any, b: any) => b.finalScore - a.finalScore);
+    }
+
+    return {
+      source: 'POSTGRESQL_SMART_FUZZY',
+      results: books,
+    };
+  } catch (sqlErr) {
+    console.warn('Smart SQL search failed, falling back to basic Prisma search:', sqlErr);
+
+    // 3. Graceful Final Fallback: Basic Prisma ILIKE Search
+    const pgResults = await prisma.book.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { title: { contains: trimmed, mode: 'insensitive' } },
+          { description: { contains: trimmed, mode: 'insensitive' } },
+          { publisher: { contains: trimmed, mode: 'insensitive' } },
+          {
+            authors: {
+              some: {
+                author: {
+                  name: { contains: trimmed, mode: 'insensitive' },
+                },
               },
             },
           },
-        },
-      ],
-    },
-    take: limit,
-    include: {
-      authors: { include: { author: true } },
-      categories: { include: { category: true } },
-    },
-  });
+        ],
+      },
+      take: limit,
+      include: {
+        authors: { include: { author: true } },
+        categories: { include: { category: true } },
+      },
+    });
 
-  return { source: 'POSTGRESQL_FALLBACK', results: pgResults };
+    return { source: 'POSTGRESQL_FALLBACK', results: pgResults };
+  }
 }
