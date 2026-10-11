@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   SlidersHorizontal, X, ChevronUp, ChevronDown, 
-  Star, ShieldCheck, Check
+  Star, ShieldCheck, Check, Search
 } from 'lucide-react';
 import { formatVND } from '@/lib/utils';
 
@@ -58,6 +58,54 @@ export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
   const [publisherOpen, setPublisherOpen] = useState(true);
   const [authorOpen, setAuthorOpen] = useState(true);
   const [ratingOpen, setRatingOpen] = useState(true);
+
+  // Accordion từng nhóm danh mục: MẶC ĐỊNH CHỈ MỞ NHÓM ĐẦU TIÊN (Văn học: 'van-hoc')
+  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({
+    'van-hoc': true,
+  });
+
+  // Tự động mở nhóm danh mục nếu người dùng đang lọc theo một slug con của nhóm đó
+  useEffect(() => {
+    if (filters.category) {
+      categoriesData.forEach((root) => {
+        const hasSub = root.subs?.some((s) => s.slug === filters.category);
+        if (root.slug === filters.category || hasSub) {
+          setExpandedCats((prev) => ({ ...prev, [root.slug]: true }));
+        }
+      });
+    }
+  }, [filters.category, categoriesData]);
+
+  const toggleCategoryGroup = (slug: string) => {
+    setExpandedCats((prev) => ({
+      ...prev,
+      [slug]: !prev[slug],
+    }));
+  };
+
+  // State tìm kiếm & giới hạn hiển thị cho Nhà xuất bản (Mặc định 3-5 tiêu biểu)
+  const [publisherSearch, setPublisherSearch] = useState('');
+  const [showAllPublishers, setShowAllPublishers] = useState(false);
+
+  const displayedPublishers = useMemo(() => {
+    if (publisherSearch.trim()) {
+      const q = publisherSearch.toLowerCase().trim();
+      return publishersData.filter((p) => p.name.toLowerCase().includes(q));
+    }
+    return showAllPublishers ? publishersData : publishersData.slice(0, 5);
+  }, [publishersData, publisherSearch, showAllPublishers]);
+
+  // State tìm kiếm & giới hạn hiển thị cho Tác giả (Mặc định 3-5 tiêu biểu)
+  const [authorSearch, setAuthorSearch] = useState('');
+  const [showAllAuthors, setShowAllAuthors] = useState(false);
+
+  const displayedAuthors = useMemo(() => {
+    if (authorSearch.trim()) {
+      const q = authorSearch.toLowerCase().trim();
+      return authorsData.filter((a) => a.toLowerCase().includes(q));
+    }
+    return showAllAuthors ? authorsData : authorsData.slice(0, 5);
+  }, [authorsData, authorSearch, showAllAuthors]);
 
   // Custom price input buffers
   const [minInput, setMinInput] = useState(filters.minPrice ? String(filters.minPrice) : '');
@@ -284,29 +332,54 @@ export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
           </button>
 
           {catOpen && (
-            <div className="space-y-3 pt-1">
+            <div className="space-y-2 pt-1">
               {categoriesData.map((cat) => {
-                const isSelected = filters.category === cat.slug;
+                const isGroupOpen = Boolean(expandedCats[cat.slug]);
+                const isParentSelected = filters.category === cat.slug;
+
                 return (
-                  <div key={cat.slug} className="space-y-1.5">
+                  <div key={cat.slug} className="border border-slate-100 rounded-xl overflow-hidden bg-white shadow-2xs">
+                    {/* Header Nhóm Ngành Hàng (Cấp 1) */}
                     <button
-                      onClick={() => handleSelectCategory(cat.slug)}
-                      className={`w-full flex items-center justify-between text-xs font-bold text-left transition-colors ${
-                        isSelected ? 'text-[#F5A623]' : 'text-[#0B1F3A] hover:text-[#F5A623]'
+                      type="button"
+                      onClick={() => toggleCategoryGroup(cat.slug)}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-left transition-colors ${
+                        isParentSelected ? 'bg-amber-50 text-[#F5A623]' : 'hover:bg-slate-50 text-[#0B1F3A]'
                       }`}
                     >
-                      <span>{cat.name}</span>
-                      <span className="text-[11px] text-slate-400 font-normal">({cat.count})</span>
+                      <span className="flex items-center gap-1.5 flex-1 pr-1 truncate">
+                        <span className="truncate">{cat.name}</span>
+                        <span className="text-[10px] text-slate-400 font-normal shrink-0">({cat.count})</span>
+                      </span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                          isGroupOpen ? 'rotate-180 text-[#0B1F3A]' : ''
+                        }`}
+                      />
                     </button>
 
-                    {cat.subs && cat.subs.length > 0 && (
-                      <div className="pl-3 space-y-1 text-xs text-slate-600 border-l-2 border-slate-100">
+                    {/* Dropdown Menu Chuyên Mục Con (Cấp 2) */}
+                    {isGroupOpen && cat.subs && cat.subs.length > 0 && (
+                      <div className="px-3 pb-2.5 pt-1 space-y-1 text-xs text-slate-600 bg-slate-50/50 border-t border-slate-100/80 animate-in fade-in-50 duration-150">
+                        {/* Tùy chọn xem tất cả ngành hàng này */}
+                        <label className="flex items-center gap-2 cursor-pointer group py-1 text-[11px] font-bold text-[#0B1F3A] border-b border-slate-200/50 mb-1">
+                          <input
+                            type="checkbox"
+                            checked={isParentSelected}
+                            onChange={() => handleSelectCategory(cat.slug)}
+                            className="w-3.5 h-3.5 rounded text-[#0B1F3A] accent-[#0B1F3A] cursor-pointer"
+                          />
+                          <span className="group-hover:text-[#F5A623] transition-colors">Tất cả {cat.name}</span>
+                          <span className="ml-auto text-[10px] text-slate-400 font-normal">({cat.count})</span>
+                        </label>
+
+                        {/* Danh sách các chuyên mục con */}
                         {cat.subs.map((sub) => {
                           const isSubSelected = filters.category === sub.slug;
                           return (
                             <label
                               key={sub.slug}
-                              className="flex items-center gap-2 cursor-pointer group py-0.5"
+                              className="flex items-center gap-2 cursor-pointer group py-0.5 text-xs text-slate-600 hover:text-[#0B1F3A]"
                             >
                               <input
                                 type="checkbox"
@@ -314,10 +387,10 @@ export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
                                 onChange={() => handleSelectCategory(sub.slug)}
                                 className="w-3.5 h-3.5 rounded text-[#0B1F3A] accent-[#0B1F3A] cursor-pointer"
                               />
-                              <span className={`group-hover:text-[#0B1F3A] ${isSubSelected ? 'font-bold text-[#0B1F3A]' : ''}`}>
+                              <span className={`truncate ${isSubSelected ? 'font-bold text-[#0B1F3A]' : ''}`}>
                                 {sub.name}
                               </span>
-                              <span className="ml-auto text-[10px] text-slate-400">({sub.count})</span>
+                              <span className="ml-auto text-[10px] text-slate-400 font-normal shrink-0">({sub.count})</span>
                             </label>
                           );
                         })}
@@ -431,7 +504,7 @@ export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
 
         <div className="border-t border-slate-100" />
 
-        {/* C. NHÀ XUẤT BẢN */}
+        {/* C. NHÀ XUẤT BẢN (MẶC ĐỊNH 3-5 TIÊU BIỂU + Ô TÌM KIẾM TỐI ƯU UX) */}
         <div className="space-y-3">
           <button
             onClick={() => setPublisherOpen(!publisherOpen)}
@@ -442,34 +515,72 @@ export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
           </button>
 
           {publisherOpen && (
-            <div className="space-y-2 pt-1">
-              {publishersData.map((pub) => {
-                const isChecked = filters.publishers.includes(pub.name);
-                return (
-                  <label
-                    key={pub.name}
-                    className="flex items-center gap-2 cursor-pointer group text-xs text-slate-700 py-0.5"
+            <div className="space-y-2.5 pt-1">
+              {/* Ô tìm kiếm Nhà xuất bản */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={publisherSearch}
+                  onChange={(e) => setPublisherSearch(e.target.value)}
+                  placeholder="Tìm nhà xuất bản..."
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0B1F3A] focus:bg-white transition-all text-slate-800"
+                />
+                {publisherSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setPublisherSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => handleTogglePublisher(pub.name)}
-                      className="w-4 h-4 rounded text-[#0B1F3A] accent-[#0B1F3A] cursor-pointer"
-                    />
-                    <span className={`group-hover:text-[#0B1F3A] ${isChecked ? 'font-bold text-[#0B1F3A]' : ''}`}>
-                      {pub.name}
-                    </span>
-                    <span className="ml-auto text-[11px] text-slate-400 font-normal">({pub.count})</span>
-                  </label>
-                );
-              })}
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Danh sách 3-5 NXB tiêu biểu hoặc kết quả tìm kiếm */}
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                {displayedPublishers.map((pub) => {
+                  const isChecked = filters.publishers.includes(pub.name);
+                  return (
+                    <label
+                      key={pub.name}
+                      className="flex items-center gap-2 cursor-pointer group text-xs text-slate-700 py-0.5 hover:text-[#0B1F3A]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleTogglePublisher(pub.name)}
+                        className="w-4 h-4 rounded text-[#0B1F3A] accent-[#0B1F3A] cursor-pointer"
+                      />
+                      <span className={`truncate ${isChecked ? 'font-bold text-[#0B1F3A]' : ''}`}>
+                        {pub.name}
+                      </span>
+                      <span className="ml-auto text-[11px] text-slate-400 font-normal shrink-0">({pub.count})</span>
+                    </label>
+                  );
+                })}
+                {displayedPublishers.length === 0 && (
+                  <p className="text-[11px] text-slate-400 italic py-1 text-center">Không tìm thấy NXB phù hợp</p>
+                )}
+              </div>
+
+              {/* Nút Xem thêm / Thu gọn (chỉ hiện khi không tìm kiếm) */}
+              {!publisherSearch && publishersData.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllPublishers(!showAllPublishers)}
+                  className="text-[11px] font-bold text-[#F5A623] hover:text-[#d48811] flex items-center gap-1 transition-colors pt-0.5"
+                >
+                  {showAllPublishers ? '‹ Thu gọn (hiện 5 NXB tiêu biểu)' : `› Xem thêm (${publishersData.length - 5} NXB khác)`}
+                </button>
+              )}
             </div>
           )}
         </div>
 
         <div className="border-t border-slate-100" />
 
-        {/* D. TÁC GIẢ TIÊU BIỂU */}
+        {/* D. TÁC GIẢ TIÊU BIỂU (MẶC ĐỊNH 3-5 TIÊU BIỂU + Ô TÌM KIẾM TỐI ƯU UX) */}
         <div className="space-y-3">
           <button
             onClick={() => setAuthorOpen(!authorOpen)}
@@ -480,26 +591,64 @@ export const CatalogFilterSidebar: React.FC<CatalogFilterSidebarProps> = ({
           </button>
 
           {authorOpen && (
-            <div className="space-y-2 pt-1">
-              {authorsData.map((author) => {
-                const isChecked = filters.authors.includes(author);
-                return (
-                  <label
-                    key={author}
-                    className="flex items-center gap-2 cursor-pointer group text-xs text-slate-700 py-0.5"
+            <div className="space-y-2.5 pt-1">
+              {/* Ô tìm kiếm Tác giả */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={authorSearch}
+                  onChange={(e) => setAuthorSearch(e.target.value)}
+                  placeholder="Tìm tác giả..."
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0B1F3A] focus:bg-white transition-all text-slate-800"
+                />
+                {authorSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setAuthorSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => handleToggleAuthor(author)}
-                      className="w-4 h-4 rounded text-[#0B1F3A] accent-[#0B1F3A] cursor-pointer"
-                    />
-                    <span className={`group-hover:text-[#0B1F3A] ${isChecked ? 'font-bold text-[#0B1F3A]' : ''}`}>
-                      {author}
-                    </span>
-                  </label>
-                );
-              })}
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Danh sách 3-5 Tác giả tiêu biểu hoặc kết quả tìm kiếm */}
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                {displayedAuthors.map((author) => {
+                  const isChecked = filters.authors.includes(author);
+                  return (
+                    <label
+                      key={author}
+                      className="flex items-center gap-2 cursor-pointer group text-xs text-slate-700 py-0.5 hover:text-[#0B1F3A]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleToggleAuthor(author)}
+                        className="w-4 h-4 rounded text-[#0B1F3A] accent-[#0B1F3A] cursor-pointer"
+                      />
+                      <span className={`truncate ${isChecked ? 'font-bold text-[#0B1F3A]' : ''}`}>
+                        {author}
+                      </span>
+                    </label>
+                  );
+                })}
+                {displayedAuthors.length === 0 && (
+                  <p className="text-[11px] text-slate-400 italic py-1 text-center">Không tìm thấy tác giả phù hợp</p>
+                )}
+              </div>
+
+              {/* Nút Xem thêm / Thu gọn (chỉ hiện khi không tìm kiếm) */}
+              {!authorSearch && authorsData.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllAuthors(!showAllAuthors)}
+                  className="text-[11px] font-bold text-[#F5A623] hover:text-[#d48811] flex items-center gap-1 transition-colors pt-0.5"
+                >
+                  {showAllAuthors ? '‹ Thu gọn (hiện 5 tác giả tiêu biểu)' : `› Xem thêm (${authorsData.length - 5} tác giả khác)`}
+                </button>
+              )}
             </div>
           )}
         </div>

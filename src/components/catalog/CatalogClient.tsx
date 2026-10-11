@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Home, ChevronRight, LayoutGrid, List,
-  ChevronLeft, ArrowUpDown, Filter, Sparkles, BookOpen
+  ChevronLeft, ArrowUpDown, Filter, Sparkles, BookOpen,
+  ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { CatalogBookCard, CatalogBookItem } from './CatalogBookCard';
 import {
@@ -14,6 +15,7 @@ import {
   CategoryFilterItem,
   PublisherFilterItem
 } from './CatalogFilterSidebar';
+import { removeVietnameseTones } from '@/lib/utils';
 
 interface CatalogClientProps {
   initialBooks: CatalogBookItem[];
@@ -41,7 +43,15 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortOption, setSortOption] = useState(initialSort);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const [jumpPageInput, setJumpPageInput] = useState('');
+  const pageSize = 16; // 16 cuốn/trang tối ưu cho layout 4 cột
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 160, behavior: 'smooth' });
+    }
+  };
 
   const [filters, setFilters] = useState<CatalogFilterState>({
     category: initialCategory,
@@ -115,12 +125,15 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
   // Filter and Sort execution
   const filteredBooks = useMemo(() => {
     return initialBooks.filter((book) => {
-      // 1. Search Query
+      // 1. Search Query (Hỗ trợ tiếng Việt không dấu & có dấu chuẩn xác)
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchTitle = book.title.toLowerCase().includes(q);
-        const matchAuthor = book.author.toLowerCase().includes(q);
-        const matchPublisher = book.publisher.toLowerCase().includes(q);
+        const cleanQ = removeVietnameseTones(searchQuery);
+        const normTitle = removeVietnameseTones(book.title);
+        const normAuthor = removeVietnameseTones(book.author);
+        const normPublisher = removeVietnameseTones(book.publisher);
+        const matchTitle = normTitle.includes(cleanQ);
+        const matchAuthor = normAuthor.includes(cleanQ);
+        const matchPublisher = normPublisher.includes(cleanQ);
         if (!matchTitle && !matchAuthor && !matchPublisher) return false;
       }
 
@@ -330,42 +343,138 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
 
           {/* 4. PAGINATION */}
           {totalPages > 1 && (
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <p className="text-xs text-slate-500">
-                Hiển thị <strong className="text-[#0B1F3A]">{startIndex + 1} - {Math.min(startIndex + pageSize, totalResults)}</strong> trên <strong className="text-[#0B1F3A]">{totalResults}</strong> kết quả
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col lg:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-slate-500 whitespace-nowrap">
+                Hiển thị <strong className="text-[#0B1F3A]">{startIndex + 1} - {Math.min(startIndex + pageSize, totalResults)}</strong> trên <strong className="text-[#0B1F3A]">{totalResults}</strong> cuốn sách
               </p>
 
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors border border-slate-200/80"
-                  aria-label="Trang trước"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <div className="flex items-center gap-3 flex-wrap justify-center">
+                {/* Thanh điều hướng trang thông minh có dấu '...' */}
+                <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                  {/* Về trang đầu tiên */}
                   <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === page
-                        ? 'bg-[#0B1F3A] text-white shadow-xs'
-                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80'
-                      }`}
+                    type="button"
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                    className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors border border-slate-200/80"
+                    aria-label="Về trang đầu"
+                    title="Về trang đầu"
                   >
-                    {page}
+                    <ChevronsLeft className="w-4 h-4" />
                   </button>
-                ))}
 
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors border border-slate-200/80"
-                  aria-label="Trang sau"
+                  {/* Về trang trước */}
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors border border-slate-200/80"
+                    aria-label="Trang trước"
+                    title="Trang trước"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  {/* Dãy số trang với thuật toán Windowing & Ellipsis '...' */}
+                  {(() => {
+                    const getPageNumbers = () => {
+                      if (totalPages <= 7) {
+                        return Array.from({ length: totalPages }, (_, i) => i + 1);
+                      }
+                      if (currentPage <= 4) {
+                        return [1, 2, 3, 4, 5, 'ellipsis-right', totalPages];
+                      }
+                      if (currentPage >= totalPages - 3) {
+                        return [1, 'ellipsis-left', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                      }
+                      return [1, 'ellipsis-left', currentPage - 1, currentPage, currentPage + 1, 'ellipsis-right', totalPages];
+                    };
+
+                    return getPageNumbers().map((item, idx) => {
+                      if (typeof item === 'string') {
+                        return (
+                          <span
+                            key={`ellipsis-${idx}`}
+                            className="w-7 h-8 flex items-center justify-center text-slate-400 font-bold select-none text-xs"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+
+                      const isCurrent = currentPage === item;
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => handlePageChange(item)}
+                          className={`min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition-all ${
+                            isCurrent
+                              ? 'bg-[#0B1F3A] text-white shadow-xs'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80'
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    });
+                  })()}
+
+                  {/* Sang trang sau */}
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors border border-slate-200/80"
+                    aria-label="Trang sau"
+                    title="Trang sau"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  {/* Đến trang cuối cùng */}
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors border border-slate-200/80"
+                    aria-label="Đến trang cuối"
+                    title="Đến trang cuối"
+                  >
+                    <ChevronsRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Nhập trang trực tiếp (Jump to page) */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const p = parseInt(jumpPageInput, 10);
+                    if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                      handlePageChange(p);
+                      setJumpPageInput('');
+                    }
+                  }}
+                  className="flex items-center gap-1.5 pl-3 border-l border-slate-200"
                 >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                  <span className="text-xs text-slate-500 whitespace-nowrap">Đến trang:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={jumpPageInput}
+                    onChange={(e) => setJumpPageInput(e.target.value)}
+                    placeholder={currentPage.toString()}
+                    className="w-14 h-8 px-1.5 text-center text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#0B1F3A] focus:bg-white text-slate-800 transition-colors"
+                  />
+                  <span className="text-xs text-slate-400 font-medium">/{totalPages}</span>
+                  <button
+                    type="submit"
+                    className="h-8 px-2.5 bg-[#0B1F3A] hover:bg-[#163156] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Đi
+                  </button>
+                </form>
               </div>
             </div>
           )}

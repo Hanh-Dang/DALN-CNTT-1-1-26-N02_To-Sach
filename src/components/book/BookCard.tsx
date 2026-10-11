@@ -73,6 +73,10 @@ export const BookCard: React.FC<BookCardProps> = ({ book }) => {
     e.preventDefault();
     e.stopPropagation();
 
+    if (book.stockQty <= 0) {
+      return;
+    }
+
     addToCart({
       bookId: book.id,
       title: book.title,
