@@ -2,7 +2,9 @@
 
 > *"Sách về tổ, tri thức bay xa"*  
 > **Đồ Án Liên Ngành — Ngành Công Nghệ Thông Tin (10/2026)**  
-> **Tác giả:** Nguyễn Mạnh Hòa (Hanh-Dang) | Email: hnhngyndng@gmail.com
+> **Nhóm tác giả thực hiện:**  
+> * **Nguyễn Đăng Hanh** (Hanh-Dang — hnhngyndng@gmail.com)  
+> * **Nguyễn Mạnh Hòa**
 
 ---
 
