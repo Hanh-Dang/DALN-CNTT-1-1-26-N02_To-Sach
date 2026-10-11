@@ -47,7 +47,9 @@ export async function GET(request: Request) {
     return NextResponse.json({
       type: 'search',
       source,
-      engine: source === 'ELASTICSEARCH_8' ? 'Elasticsearch 8.x (Vietnamese Analyzer + Fuzzy Matching)' : 'PostgreSQL Full-Text Search (Fallback)',
+      engine: source === 'ELASTICSEARCH_8'
+        ? 'Elasticsearch 8.x (Vietnamese Analyzer + Fuzzy Matching)'
+        : 'PostgreSQL pg_trgm + unaccent (Vietnamese Fuzzy & Typo Tolerance)',
       query,
       books: books.map((b) => ({
         id: b.id,
@@ -57,8 +59,8 @@ export async function GET(request: Request) {
         originalPrice: b.originalPrice,
         coverUrl: b.coverUrl,
         soldCount: b.soldCount,
-        authorName: b.authors?.[0]?.author?.name || 'Tác giả tuyển chọn',
-        categoryName: b.categories?.[0]?.category?.name || 'Văn học',
+        authorName: b.authors?.[0]?.author?.name || b.authorName || 'Tác giả tuyển chọn',
+        categoryName: b.categories?.[0]?.category?.name || b.categoryName || 'Văn học',
       })),
     });
   } catch (error) {
