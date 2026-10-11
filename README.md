@@ -2,7 +2,7 @@
 
 > *"Sách về tổ, tri thức bay xa"*  
 > **Đồ Án Liên Ngành — Ngành Công Nghệ Thông Tin (10/2026)**  
-> **Tác giả:** Hanh-Dang (hnhngyndng@gmail.com)
+> **Tác giả:** Nguyễn Mạnh Hòa (Hanh-Dang) | Email: hnhngyndng@gmail.com
 
 ---
 
@@ -26,43 +26,111 @@ Chi tiết phân tích kiến trúc, thiết kế cơ sở dữ liệu và bí k
 
 ---
 
-## 🚀 Hướng Dẫn Cài Đặt & Khởi Chạy Local
+## 🚀 Hướng Dẫn Cài Đặt & Khởi Chạy Local (Setup Guide)
 
-### 1. Yêu cầu môi trường
-* Node.js >= 18.x
-* Quản lý gói: `npm` (hoặc `yarn`, `pnpm`)
+Tài liệu hướng dẫn từng bước từ đầu để thiết lập và chạy toàn bộ dự án Tổ Sách trên máy tính cá nhân (hỗ trợ Windows, macOS và Linux).
 
-### 2. Cài đặt thư viện
+### 1. Yêu cầu môi trường chuẩn bị (Prerequisites)
+Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đặt các công cụ sau:
+* **Node.js**: Phiên bản `>= 18.x` hoặc `>= 20.x LTS` (Khuyến nghị dùng Node 20+). Kiểm tra bằng lệnh: `node -v`
+* **Trình quản lý gói**: `npm` (đi kèm sẵn với Node.js) hoặc `pnpm`, `yarn`. Kiểm tra bằng lệnh: `npm -v`
+* **Git**: Dùng để quản lý mã nguồn. Kiểm tra bằng lệnh: `git --version`
+* **Cơ sở dữ liệu PostgreSQL**: Có thể sử dụng tài khoản miễn phí trên [Supabase Cloud](https://supabase.com) (khuyến nghị cho đồ án) hoặc PostgreSQL cài cục bộ (Local).
+
+---
+
+### 2. Tải mã nguồn về máy (Clone Repository)
+Mở Terminal (hoặc PowerShell trên Windows) và chạy lệnh:
+```bash
+# Clone dự án từ GitHub
+git clone https://github.com/Hanh-Dang/DALN-CNTT-1-1-26-N02_To-Sach.git
+
+# Di chuyển vào thư mục dự án
+cd DALN-CNTT-1-1-26-N02_To-Sach
+```
+
+---
+
+### 3. Cài đặt các gói thư viện (Install Dependencies)
+Cài đặt toàn bộ các thư viện cần thiết đã định nghĩa trong `package.json`:
 ```bash
 npm install
 ```
+*(Quá trình này sẽ mất từ 1 đến 2 phút tùy theo tốc độ đường truyền mạng).*
 
-### 3. Cấu hình biến môi trường
-Tạo file `.env` từ file mẫu `.env.example`:
-```bash
-cp .env.example .env
-```
-Điền chuỗi kết nối Database Supabase PostgreSQL vào `.env`:
-```env
-DATABASE_URL="postgresql://postgres.[project-ref]:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.[project-ref]:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
-JWT_SECRET="your-jwt-secret-key"
-```
+---
 
-### 4. Đồng bộ Database & Nạp dữ liệu mẫu
+### 4. Thiết lập biến môi trường (Environment Configuration)
+Dự án sử dụng file `.env` để bảo mật chuỗi kết nối cơ sở dữ liệu và mã khóa bí mật JWT.
+
+1. **Sao chép file mẫu `.env.example` thành `.env`:**
+   * **Trên Windows PowerShell:**
+     ```powershell
+     copy .env.example .env
+     ```
+   * **Trên macOS / Linux:**
+     ```bash
+     cp .env.example .env
+     ```
+
+2. **Mở file `.env` và điền các thông số kết nối của bạn:**
+   ```env
+   # 1. Chuỗi kết nối PostgreSQL thông qua PgBouncer Pooler (cổng 6543)
+   DATABASE_URL="postgresql://postgres.[project-ref]:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+   # 2. Chuỗi kết nối PostgreSQL trực tiếp Direct (cổng 5432 - dùng cho Prisma Migration)
+   DIRECT_URL="postgresql://postgres.[project-ref]:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+
+   # 3. Mã khóa bí mật JWT dùng để ký và xác thực phiên đăng nhập (tùy ý đặt chuỗi ngẫu nhiên dài)
+   JWT_SECRET="tosach_super_secret_jwt_key_2026_proposals"
+
+   # 4. (Tùy chọn) API Key của Google Gemini Flash dùng cho tính năng Trợ lý AI tư vấn sách
+   GEMINI_API_KEY="your-gemini-api-key"
+   ```
+
+---
+
+### 5. Khởi tạo Cơ sở dữ liệu & Nạp dữ liệu mẫu (Database Setup)
+Sử dụng công cụ **Prisma ORM** để tự động tạo 14 bảng quan hệ và nạp dữ liệu mẫu:
+
 ```bash
-# Đẩy schema lên database
+# Bước 5.1: Sinh bộ mã nguồn Prisma Client phù hợp với hệ thống
+npx prisma generate
+
+# Bước 5.2: Đẩy toàn bộ cấu trúc bảng (schema) lên PostgreSQL
 npx prisma db push
 
-# Nạp dữ liệu mẫu ban đầu
+# Bước 5.3: Nạp dữ liệu hạt giống (Seed Data: tài khoản mẫu, danh mục, sách ban đầu)
 npx prisma db seed
 ```
 
-### 5. Chạy môi trường phát triển
+> **Mẹo hữu ích:** Nếu bạn muốn nạp đầy đủ kho sách thực tế 5.000+ cuốn và 50.000+ reviews theo chuẩn Proposal:
+> ```bash
+> npx tsx scripts/seed_5000_books_catalog.ts
+> ```
+
+---
+
+### 6. Khởi động ứng dụng (Start Dev Server)
+Khởi chạy máy chủ phát triển Next.js:
 ```bash
 npm run dev
 ```
-Truy cập ứng dụng tại: `http://localhost:3000`
+
+Mở trình duyệt web và truy cập vào địa chỉ:
+👉 **`http://localhost:3000`**
+
+---
+
+### 7. Các lệnh hữu ích hỗ trợ phát triển (Developer Toolkit)
+
+| Lệnh | Ý nghĩa & Mục đích sử dụng |
+|---|---|
+| `npm run dev` | Khởi chạy máy chủ phát triển Next.js tại `http://localhost:3000` |
+| `npx prisma studio` | Mở giao diện Web quản trị CSDL trực quan tại `http://localhost:5555` để xem/sửa dữ liệu bảng |
+| `npx tsc --noEmit` | Quét và kiểm tra toàn bộ lỗi kiểu dữ liệu TypeScript trong toàn bộ dự án |
+| `npm run build` | Đóng gói và biên dịch dự án tối ưu hóa cho môi trường Production |
+| `npm run start` | Khởi chạy ứng dụng bằng gói build Production đã tạo |
 
 ---
 
