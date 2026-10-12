@@ -84,47 +84,122 @@ export async function sendOtpEmail(email: string, otp: string, fullName: string)
   const gmailUser = process.env.GMAIL_USER;
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 
+  const formattedOtp = otp.split('').join(' ');
+  const recipientName = fullName && fullName.trim() ? fullName.trim() : 'Quý độc giả';
+
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="vi">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Mã xác thực Tổ Sách</title>
       <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #F8FAFC; margin: 0; padding: 24px; color: #1E293B; }
-        .container { max-width: 520px; margin: 0 auto; background: #FFFFFF; border-radius: 20px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .header { background: #0B1F3A; padding: 32px 24px; text-align: center; }
-        .header h1 { color: #FFFFFF; font-size: 22px; margin: 0; font-weight: 900; letter-spacing: 0.5px; }
-        .header p { color: #F5A623; font-size: 13px; margin: 6px 0 0; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        .content { padding: 32px 28px; line-height: 1.6; }
-        .greeting { font-size: 15px; font-weight: 600; color: #0B1F3A; margin-bottom: 12px; }
-        .otp-box { background: #FFF8E7; border: 2px dashed #F5A623; border-radius: 16px; padding: 20px; text-align: center; margin: 24px 0; }
-        .otp-code { font-size: 34px; font-weight: 900; color: #0B1F3A; letter-spacing: 8px; font-family: monospace; }
-        .otp-note { font-size: 12px; color: #8C6D23; margin-top: 8px; font-weight: 500; }
-        .footer { background: #F1F5F9; padding: 20px 24px; text-align: center; font-size: 12px; color: #64748B; border-top: 1px solid #E2E8F0; }
+        body { margin: 0; padding: 0; background-color: #F0F4F8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        .wrapper { width: 100%; table-layout: fixed; background-color: #F0F4F8; padding: 36px 12px; }
+        .container { max-width: 560px; margin: 0 auto; background-color: #FFFFFF; border-radius: 18px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(11, 31, 58, 0.08), 0 8px 10px -6px rgba(11, 31, 58, 0.04); border: 1px solid #E2E8F0; }
+        .header { background: linear-gradient(180deg, #09172B 0%, #0F2547 100%); padding: 34px 24px 26px; text-align: center; }
+        .header-logo-row { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .book-icon-badge { display: inline-block; border: 1.5px solid #F5A623; border-radius: 8px; padding: 3px 6px; font-size: 15px; line-height: 1; color: #F5A623; vertical-align: middle; }
+        .header-brand { font-size: 23px; font-weight: 900; color: #FFFFFF; letter-spacing: 1px; display: inline-block; vertical-align: middle; margin-left: 6px; }
+        .header-slogan { font-size: 11px; font-weight: 800; color: #F5A623; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 8px; }
+        .meta-bar { padding: 12px 32px; background-color: #FFFFFF; border-bottom: 1px solid #F1F5F9; font-size: 12px; color: #64748B; }
+        .meta-left { float: left; }
+        .meta-right { float: right; color: #94A3B8; }
+        .clear { clear: both; }
+        .body-content { padding: 32px 32px 20px; }
+        .greeting { font-size: 18px; font-weight: 800; color: #0F172A; margin: 0 0 14px 0; }
+        .intro-text { font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 24px 0; }
+        .otp-container { background-color: #FFFDF7; border: 1.5px solid #FDE68A; border-radius: 16px; padding: 22px 20px; text-align: center; margin: 0 0 24px 0; }
+        .otp-label { font-size: 11px; font-weight: 800; color: #B45309; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; }
+        .otp-pill { display: inline-block; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 32px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .otp-digits { font-size: 34px; font-weight: 800; color: #0F172A; letter-spacing: 10px; font-family: 'Courier New', Courier, monospace; display: inline-block; margin-left: 10px; }
+        .otp-expiry { font-size: 12px; color: #64748B; margin-top: 12px; font-weight: 500; }
+        .security-box { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px 20px; margin: 0 0 24px 0; text-align: left; }
+        .security-title { font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 6px; }
+        .security-desc { font-size: 12px; color: #64748B; line-height: 1.6; }
+        .support-line { text-align: center; font-size: 12px; color: #64748B; margin-bottom: 24px; }
+        .footer-section { border-top: 1px solid #E2E8F0; padding: 24px 32px 28px; text-align: center; background-color: #FFFFFF; }
+        .footer-copyright { font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 8px; }
+        .footer-info { font-size: 11px; color: #94A3B8; line-height: 1.5; margin-bottom: 4px; }
+        .footer-links { font-size: 11px; color: #2563EB; margin-top: 12px; }
+        .footer-link { color: #2563EB; text-decoration: none; }
       </style>
     </head>
     <body>
-      <div class="container">
-        <div class="header">
-          <h1>TỔ SÁCH</h1>
-          <p>Kho Tàng Tri Thức Việt</p>
-        </div>
-        <div class="content">
-          <div class="greeting">Xin chào <strong>${fullName || 'Độc giả'}</strong>,</div>
-          <p style="font-size: 14px; color: #475569; margin: 0 0 16px;">
-            Cảm ơn bạn đã lựa chọn tham gia cộng đồng độc giả yêu sách tại Tổ Sách. Dưới đây là mã xác minh bảo mật một lần (OTP) để hoàn tất kích hoạt tài khoản của bạn:
-          </p>
-          <div class="otp-box">
-            <div class="otp-code">${otp}</div>
-            <div class="otp-note">⏱️ Mã có hiệu lực trong vòng 5 phút (300 giây)</div>
+      <div class="wrapper">
+        <div class="container">
+          <!-- 1. HEADER BRANDING -->
+          <div class="header">
+            <div class="header-logo-row">
+              <span class="book-icon-badge">📖</span>
+              <span class="header-brand">TỔ SÁCH</span>
+            </div>
+            <div class="header-slogan">SÁCH VỀ TỔ, TRI THỨC BAY XA</div>
           </div>
-          <p style="font-size: 13px; color: #64748B; margin: 0;">
-            Vì lý do bảo mật, vui lòng không chia sẻ mã OTP này cho bất kỳ ai. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.
-          </p>
-        </div>
-        <div class="footer">
-          <p style="margin: 0;">© 2026 Tổ Sách Studio. Đồ án Tốt nghiệp CNTT.</p>
-          <p style="margin: 4px 0 0;">Phát triển bởi Nguyễn Đăng Hanh & Nguyễn Mạnh Hòa</p>
+
+          <!-- 2. SUB-HEADER META BAR -->
+          <div class="meta-bar">
+            <div class="meta-left">
+              Từ: <strong style="color: #0B1F3A;">Tổ Sách</strong> &lt;no-reply@tosach.vn&gt;
+            </div>
+            <div class="meta-right">
+              Thư xác thực hệ thống
+            </div>
+            <div class="clear"></div>
+          </div>
+
+          <!-- 3. BODY CONTENT -->
+          <div class="body-content">
+            <h2 class="greeting">Xin chào ${recipientName},</h2>
+            <p class="intro-text">
+              Cảm ơn bạn đã lựa chọn tham gia cộng đồng yêu sách tại <strong style="color: #0B1F3A;">Tổ Sách</strong>. Dưới đây là mã xác thực bảo mật một lần (OTP) để xác minh tài khoản của bạn:
+            </p>
+
+            <!-- OTP Highlight Card -->
+            <div class="otp-container">
+              <div class="otp-label">MÃ XÁC THỰC MỘT LẦN (OTP)</div>
+              <div class="otp-pill">
+                <span class="otp-digits">${formattedOtp}</span>
+              </div>
+              <div class="otp-expiry">
+                Mã có hiệu lực trong vòng <strong style="color: #0F172A;">5 phút</strong>
+              </div>
+            </div>
+
+            <!-- Security Advisory -->
+            <div class="security-box">
+              <div class="security-title">Lưu ý bảo mật từ Tổ Sách</div>
+              <div class="security-desc">
+                Vì lý do an toàn cho tài khoản, vui lòng <strong style="color: #334155;">tuyệt đối không chia sẻ mã OTP</strong> này cho bất kỳ ai, kể cả nhân viên hỗ trợ của Tổ Sách. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc thông báo ngay cho ban hỗ trợ của chúng tôi.
+              </div>
+            </div>
+
+            <!-- Support Hotline -->
+            <div class="support-line">
+              Cần hỗ trợ? Liên hệ Tổng đài: <strong style="color: #1E40AF;">1900 6868</strong> hoặc email: <a href="mailto:hotro@tosach.vn" style="color: #2563EB; text-decoration: none; font-weight: 600;">hotro@tosach.vn</a>
+            </div>
+          </div>
+
+          <!-- 4. OFFICIAL FOOTER -->
+          <div class="footer-section">
+            <div class="footer-copyright">
+              © 2026 Nhà sách Trực tuyến Tổ Sách. Bảo lưu mọi quyền.
+            </div>
+            <div class="footer-info">
+              Trụ sở: Tòa nhà Tri Thức, 123 Đường Sách, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh
+            </div>
+            <div class="footer-info">
+              Giấy phép cung cấp dịch vụ Sàn TMĐT số 0316889901 do Sở KH&ĐT TP.HCM cấp.
+            </div>
+            <div class="footer-links">
+              <a href="https://tosach.vn/terms" class="footer-link">Điều khoản sử dụng</a>
+              &nbsp;&nbsp;•&nbsp;&nbsp;
+              <a href="https://tosach.vn/privacy" class="footer-link">Chính sách bảo mật</a>
+              &nbsp;&nbsp;•&nbsp;&nbsp;
+              <a href="https://tosach.vn/help" class="footer-link">Trung tâm trợ giúp</a>
+            </div>
+          </div>
         </div>
       </div>
     </body>

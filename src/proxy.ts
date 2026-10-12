@@ -10,12 +10,19 @@ export async function proxy(request: NextRequest) {
 
   const token = request.cookies.get('tosach_token')?.value;
 
+  // Helper điều hướng về trang đăng nhập và xóa token lỗi/hết hạn
+  const redirectToAuth = () => {
+    const loginUrl = new URL('/auth', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete('tosach_token');
+    return response;
+  };
+
   // Protect Admin routes
   if (pathname.startsWith('/admin')) {
     if (!token) {
-      const loginUrl = new URL('/auth', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return redirectToAuth();
     }
 
     try {
@@ -27,46 +34,34 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/', request.url));
       }
     } catch {
-      // Invalid token
-      const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete('tosach_token');
-      return response;
+      // Invalid or expired token
+      return redirectToAuth();
     }
   }
 
-  // Protect Checkout route (Trường phái 1: Guest cart allowed, Auth required at checkout)
+  // Protect Checkout route (Guest cart allowed, Auth required at checkout)
   if (pathname.startsWith('/checkout')) {
     if (!token) {
-      const loginUrl = new URL('/auth', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return redirectToAuth();
     }
 
     try {
       await jwtVerify(token, key);
     } catch {
-      const loginUrl = new URL('/auth', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete('tosach_token');
-      return response;
+      return redirectToAuth();
     }
   }
 
   // Protect User Account & Orders routes
   if (pathname.startsWith('/account') || pathname.startsWith('/profile')) {
     if (!token) {
-      const loginUrl = new URL('/auth', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      return redirectToAuth();
     }
 
     try {
       await jwtVerify(token, key);
     } catch {
-      const response = NextResponse.redirect(new URL('/auth', request.url));
-      response.cookies.delete('tosach_token');
-      return response;
+      return redirectToAuth();
     }
   }
 
