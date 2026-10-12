@@ -28,13 +28,9 @@ export default async function AccountOrdersPage() {
   });
 
   return (
-    <div className="bg-slate-50/60 min-h-screen py-8 sm:py-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <OrdersClient 
-          initialOrders={JSON.parse(JSON.stringify(orders))} 
-          userName={user.fullName || user.email}
-        />
-      </div>
-    </div>
+    <OrdersClient 
+      initialOrders={JSON.parse(JSON.stringify(orders))} 
+      userName={user.fullName || user.email}
+    />
   );
 }

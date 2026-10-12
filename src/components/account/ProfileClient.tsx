@@ -101,46 +101,6 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
 
   return (
     <div className="space-y-6">
-      {/* 1. HEADER SECTION */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#0B1F3A]">
-            Hồ Sơ Của Tôi
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Quản lý thông tin bảo mật, ảnh đại diện và địa chỉ nhận sách của bạn.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Link
-            href="/account/orders"
-            className="inline-flex items-center gap-2 bg-white hover:bg-slate-100 text-[#0B1F3A] font-bold px-4 py-2.5 rounded-xl text-xs transition-colors border border-slate-200 shadow-2xs"
-          >
-            <Package className="w-4 h-4 text-[#F5A623]" />
-            <span>Xem Đơn Mua</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* 2. NAVIGATION TABS */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-1.5 shadow-2xs flex items-center gap-1">
-        <Link
-          href="/account/profile"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0B1F3A] text-white shadow-xs transition-all"
-        >
-          <User className="w-4 h-4 text-[#F5A623]" />
-          <span>Hồ sơ cá nhân</span>
-        </Link>
-        <Link
-          href="/account/orders"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-[#0B1F3A] hover:bg-slate-50 transition-all"
-        >
-          <Package className="w-4 h-4" />
-          <span>Lịch sử đơn mua</span>
-        </Link>
-      </div>
-
       {/* THÔNG BÁO TRẠNG THÁI */}
       {successMessage && (
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center gap-3 animate-in fade-in">
