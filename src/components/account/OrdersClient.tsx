@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
-  Package, Truck, Clock, CheckCircle2, XCircle, 
+  User, Package, Truck, Clock, CheckCircle2, XCircle, 
   ChevronRight, ArrowRight, ShoppingBag, ExternalLink,
   CreditCard, MapPin, Calendar, AlertCircle, RefreshCw
 } from 'lucide-react';
@@ -226,12 +226,39 @@ export default function OrdersClient({ initialOrders, userName }: OrdersClientPr
           </p>
         </div>
 
+        <div className="flex items-center gap-2">
+          <Link
+            href="/account/profile"
+            className="inline-flex items-center gap-2 bg-white hover:bg-slate-100 text-[#0B1F3A] font-bold px-4 py-2.5 rounded-xl text-xs transition-colors border border-slate-200 shadow-2xs"
+          >
+            <User className="w-4 h-4 text-[#F5A623]" />
+            <span>Hồ Sơ Của Tôi</span>
+          </Link>
+          <Link
+            href="/catalog"
+            className="inline-flex items-center gap-2 bg-[#0B1F3A] hover:bg-[#163156] text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-colors self-start sm:self-auto shadow-xs"
+          >
+            <ShoppingBag className="w-4 h-4 text-[#F5A623]" />
+            <span>Mua thêm sách mới</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* 1.5. ACCOUNT NAVIGATION TABS */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-1.5 shadow-2xs flex items-center gap-1">
         <Link
-          href="/catalog"
-          className="inline-flex items-center gap-2 bg-[#0B1F3A] hover:bg-[#163156] text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-colors self-start sm:self-auto shadow-xs"
+          href="/account/profile"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-[#0B1F3A] hover:bg-slate-50 transition-all"
         >
-          <ShoppingBag className="w-4 h-4 text-[#F5A623]" />
-          <span>Mua thêm sách mới</span>
+          <User className="w-4 h-4" />
+          <span>Hồ sơ cá nhân</span>
+        </Link>
+        <Link
+          href="/account/orders"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0B1F3A] text-white shadow-xs transition-all"
+        >
+          <Package className="w-4 h-4 text-[#F5A623]" />
+          <span>Lịch sử đơn mua</span>
         </Link>
       </div>
 

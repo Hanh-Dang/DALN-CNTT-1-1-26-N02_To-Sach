@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   BookOpen, Lock, Mail, Phone, User, Eye, EyeOff, 
   ArrowRight, ShieldCheck, AlertCircle, CheckCircle2, 
-  Loader2, Sparkles 
+  Loader2, Sparkles, X, KeyRound, RefreshCw, MailCheck 
 } from 'lucide-react';
 import { ToSachLogo } from '@/components/brand/ToSachLogo';
 
@@ -62,10 +62,26 @@ function AuthContent() {
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
+  // OTP Verification state
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [demoOtpCode, setDemoOtpCode] = useState<string | null>(null);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [countdown, setCountdown] = useState(60);
+
   // UI status
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Đếm ngược 60s gửi lại mã OTP
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showOtpModal && countdown > 0) {
+      timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [showOtpModal, countdown]);
 
   // Quick fill demo account
   const handleQuickFill = (email: string, pass: string) => {
@@ -120,11 +136,56 @@ function AuthContent() {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Bước 1: Gửi mã OTP xác minh về hòm thư Gmail
+  const handleInitiateRegister = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!regName.trim() || !regEmail.trim() || !regPassword) {
+      setErrorMsg('Vui lòng điền đầy đủ họ tên, email và mật khẩu');
+      return;
+    }
+
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
+
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: regEmail.trim(),
+          fullName: regName.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error || 'Không thể gửi mã xác minh tới email');
+        setIsLoading(false);
+        return;
+      }
+
+      setDemoOtpCode(data.demoOtp || null);
+      setOtpCode('');
+      setShowOtpModal(true);
+      setCountdown(60);
+      setIsLoading(false);
+    } catch {
+      setErrorMsg('Không thể kết nối máy chủ để gửi mã xác minh');
+      setIsLoading(false);
+    }
+  };
+
+  // Bước 2: Xác minh mã OTP 6 số và hoàn tất tạo tài khoản
+  const handleConfirmRegisterWithOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!otpCode.trim() || otpCode.trim().length !== 6) {
+      setErrorMsg('Vui lòng nhập đúng 6 chữ số mã xác minh OTP');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setErrorMsg(null);
 
     try {
       const res = await fetch('/api/auth/register', {
@@ -135,19 +196,20 @@ function AuthContent() {
           email: regEmail.trim(),
           password: regPassword,
           phone: regPhone.trim() || undefined,
+          otp: otpCode.trim(),
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMsg(data.message || 'Đăng ký tài khoản không thành công!');
-        setIsLoading(false);
+        setErrorMsg(data.error || data.message || 'Xác minh OTP thất bại!');
+        setIsVerifyingOtp(false);
         return;
       }
 
-      setSuccessMsg('Đăng ký tài khoản thành công! Đang chuyển tiếp...');
-
+      setShowOtpModal(false);
+      setSuccessMsg('Xác minh Gmail & Đăng ký tài khoản thành công! Đang chuyển tiếp...');
       window.dispatchEvent(new Event('auth-change'));
 
       setTimeout(() => {
@@ -159,8 +221,8 @@ function AuthContent() {
         router.refresh();
       }, 700);
     } catch {
-      setErrorMsg('Không thể kết nối máy chủ. Vui lòng kiểm tra lại!');
-      setIsLoading(false);
+      setErrorMsg('Không thể kết nối máy chủ khi xác minh OTP');
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -314,7 +376,7 @@ function AuthContent() {
             </form>
           ) : (
             /* ================= REGISTER FORM ================= */
-            <form onSubmit={handleRegister} className="space-y-3.5 text-xs">
+            <form onSubmit={handleInitiateRegister} className="space-y-3.5 text-xs">
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700">Họ và tên độc giả</label>
                 <div className="relative">
@@ -388,11 +450,11 @@ function AuthContent() {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-[#0B1F3A]" />
-                    <span>Đang khởi tạo tài khoản...</span>
+                    <span>Đang gửi mã xác minh...</span>
                   </>
                 ) : (
                   <>
-                    <span>Đăng Ký Tài Khoản</span>
+                    <span>Tiếp tục: Nhận mã OTP qua Email</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -448,6 +510,138 @@ function AuthContent() {
           </Link>
         </div>
       </div>
+
+      {/* OTP Verification Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all scale-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-[#0B1F3A] px-6 py-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-[#F5A623]">
+                  <MailCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base leading-snug">Xác minh hòm thư Gmail</h3>
+                  <p className="text-[11px] text-slate-300">Bảo mật tài khoản 2 lớp (OTP)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOtpModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <form onSubmit={handleConfirmRegisterWithOtp} className="p-6 space-y-4">
+              <div className="text-xs text-slate-600 leading-relaxed">
+                Mã OTP 6 chữ số vừa được gửi đến địa chỉ email:
+                <div className="font-bold text-[#0B1F3A] bg-slate-100 px-2.5 py-1.5 rounded-lg mt-1 font-mono text-center text-xs">
+                  {regEmail}
+                </div>
+              </div>
+
+              {/* Demo OTP 1-click fallback badge for thesis defense */}
+              {demoOtpCode && (
+                <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-amber-900 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-[#F5A623]" />
+                      Mã kiểm thử Hội đồng chấm thi
+                    </span>
+                    <span className="text-[10px] bg-amber-200/70 text-amber-900 px-1.5 py-0.5 rounded font-mono font-bold">
+                      {demoOtpCode}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOtpCode(demoOtpCode)}
+                    className="w-full text-left text-[11px] text-amber-800 hover:text-amber-900 font-medium bg-amber-100/60 hover:bg-amber-100 px-2 py-1.5 rounded-lg transition-colors flex items-center justify-between cursor-pointer"
+                  >
+                    <span>⚡ Bấm để tự động điền mã demo</span>
+                    <span className="font-mono font-black">{demoOtpCode}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* OTP Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-slate-400" />
+                  Nhập mã xác thực 6 chữ số
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoFocus
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="••••••"
+                  className="w-full text-center text-2xl font-black font-mono tracking-widest bg-slate-50 border-2 border-slate-200 focus:border-[#0B1F3A] focus:bg-white rounded-xl py-3 text-[#0B1F3A] focus:outline-hidden transition-all"
+                />
+                <p className="text-[11px] text-slate-500 text-center">
+                  Mã xác thực có hiệu lực trong vòng 5 phút
+                </p>
+              </div>
+
+              {errorMsg && (
+                <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[11px] flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="space-y-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={isVerifyingOtp || otpCode.length !== 6}
+                  className="w-full bg-[#0B1F3A] hover:bg-[#163156] disabled:opacity-50 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                >
+                  {isVerifyingOtp ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#F5A623]" />
+                      <span>Đang xác minh OTP...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Xác minh & Hoàn tất đăng ký</span>
+                      <ArrowRight className="w-4 h-4 text-[#F5A623]" />
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-between text-[11px] pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowOtpModal(false)}
+                    className="text-slate-500 hover:text-slate-700 underline cursor-pointer"
+                  >
+                    Sửa lại thông tin
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={countdown > 0 || isLoading}
+                    onClick={() => handleInitiateRegister()}
+                    className="text-[#0B1F3A] hover:text-[#F5A623] font-semibold disabled:text-slate-400 disabled:no-underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+                    {countdown > 0 ? `Gửi lại sau ${countdown}s` : 'Gửi lại mã OTP'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

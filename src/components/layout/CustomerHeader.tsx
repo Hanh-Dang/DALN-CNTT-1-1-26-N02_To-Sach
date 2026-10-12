@@ -401,7 +401,7 @@ export const CustomerHeader: React.FC = () => {
                           {searchResults.slice(0, 5).map((book) => (
                             <Link
                               key={book.id}
-                              href={`/books/${book.slug}`}
+                              href={`/book/${book.slug}`}
                               onClick={() => setIsSearchFocused(false)}
                               className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#F0F3FF] transition-colors group"
                             >
@@ -466,7 +466,7 @@ export const CustomerHeader: React.FC = () => {
                         {searchResults.slice(0, 3).map((book) => (
                           <Link
                             key={book.id}
-                            href={`/books/${book.slug}`}
+                            href={`/book/${book.slug}`}
                             onClick={() => setIsSearchFocused(false)}
                             className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-[#F0F3FF] transition-colors group"
                           >
