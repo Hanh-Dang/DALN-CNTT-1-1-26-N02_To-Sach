@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { CustomerHeader } from './CustomerHeader';
 import { CustomerFooter } from './CustomerFooter';
+import { FloatingChatbot } from '@/components/chat/FloatingChatbot';
 import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <CustomerHeader />
         <main className="flex-1 flex flex-col">{children}</main>
         <CustomerFooter />
+        <FloatingChatbot />
       </WishlistProvider>
     </CartProvider>
   );
