@@ -138,7 +138,7 @@ export async function sendOtpEmail(email: string, otp: string, fullName: string)
         service: 'gmail',
         auth: {
           user: gmailUser,
-          pass: gmailAppPassword,
+          pass: gmailAppPassword.replace(/\s+/g, ''),
         },
       });
 
