@@ -5,7 +5,7 @@ import { UserRole } from '@prisma/client';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, fullName, phone } = await req.json();
+    const { email, password, fullName, phone, otp } = await req.json();
 
     if (!email || !password || !fullName) {
       return NextResponse.json(
@@ -15,6 +15,18 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+
+    // Xác minh mã OTP nếu có gửi lên
+    if (otp) {
+      const { verifyOtp } = await import('@/lib/email');
+      const isValidOtp = await verifyOtp(normalizedEmail, otp);
+      if (!isValidOtp) {
+        return NextResponse.json(
+          { error: 'Mã xác minh không chính xác hoặc đã hết hạn (quá 5 phút)' },
+          { status: 400 }
+        );
+      }
+    }
 
     // Check existing email
     const existing = await prisma.user.findUnique({
@@ -37,6 +49,7 @@ export async function POST(req: NextRequest) {
         fullName: fullName.trim(),
         phone: phone ? phone.trim() : null,
         role: UserRole.USER,
+        emailVerified: !!otp,
         profile: {
           create: {},
         },

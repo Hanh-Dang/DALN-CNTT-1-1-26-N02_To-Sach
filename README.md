@@ -4,7 +4,7 @@
 > **Đồ Án Liên Ngành — Ngành Công Nghệ Thông Tin (10/2026)**  
 > **Nhóm tác giả thực hiện:**  
 > * **Nguyễn Đăng Hanh** (Hanh-Dang — hnhngyndng@gmail.com)  
-> * **Nguyễn Mạnh Hòa**
+> * **Nguyễn Mạnh Hòa** (ManhHoa2405 — manhhoa02042005@gmail.com)
 
 ---
 
