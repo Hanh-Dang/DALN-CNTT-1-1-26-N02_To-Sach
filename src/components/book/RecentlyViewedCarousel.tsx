@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { History, ChevronRight, Zap } from 'lucide-react';
+import { History, ChevronRight } from 'lucide-react';
 import { BookCard } from '@/components/book/BookCard';
 
 export function RecentlyViewedCarousel({ currentBookId }: { currentBookId?: string }) {
@@ -62,13 +62,9 @@ export function RecentlyViewedCarousel({ currentBookId }: { currentBookId?: stri
                 <h2 className="text-xl sm:text-2xl font-black text-[#0B1F3A] tracking-tight">
                   Sách Bạn Vừa Xem Gần Đây
                 </h2>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                  <Zap className="w-3 h-3 text-[#F5A623]" />
-                  <span>Redis Cache • TTL 30 Ngày</span>
-                </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Lịch sử duyệt sách được đồng bộ thời gian thực qua In-Memory Cache
+                Danh sách các đầu sách bạn đã quan tâm và mở xem gần đây
               </p>
             </div>
           </div>
