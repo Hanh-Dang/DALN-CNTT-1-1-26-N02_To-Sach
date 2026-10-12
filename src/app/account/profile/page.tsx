@@ -30,11 +30,5 @@ export default async function AccountProfilePage() {
 
   const { passwordHash, ...safeUser } = fullUser;
 
-  return (
-    <div className="bg-slate-50/60 min-h-screen py-8 sm:py-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <ProfileClient initialUser={JSON.parse(JSON.stringify(safeUser))} />
-      </div>
-    </div>
-  );
+  return <ProfileClient initialUser={JSON.parse(JSON.stringify(safeUser))} />;
 }
