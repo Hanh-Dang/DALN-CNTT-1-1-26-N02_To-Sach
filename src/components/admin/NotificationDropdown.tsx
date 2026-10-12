@@ -46,6 +46,10 @@ export interface NotificationItem {
 
 // Props truyền từ AdminHeader và Server Component Layout
 interface NotificationDropdownProps {
+  user?: {
+    role: string;
+    permissions?: string[];
+  };
   initialPendingOrdersCount: number; // Số đơn chờ duyệt từ CSDL
   initialLowStockCount?: number; // Số sách sắp hết từ CSDL
   pendingReviewsCount?: number; // Số đánh giá chờ duyệt từ CSDL
@@ -71,6 +75,7 @@ interface NotificationDropdownProps {
 const STORAGE_KEY = 'tosach_admin_dismissed_notifications';
 
 export function NotificationDropdown({
+  user,
   initialPendingOrdersCount,
   initialLowStockCount = 0,
   pendingReviewsCount = 0,
@@ -78,11 +83,18 @@ export function NotificationDropdown({
   recentPendingOrders = [],
   recentPendingReviews = [],
 }: NotificationDropdownProps) {
+  // Xác định thẩm quyền tài khoản (RBAC Scoping)
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const perms = user?.permissions || [];
+  const canManageBooks = isSuperAdmin || perms.includes('MANAGE_BOOKS');
+  const canManageOrders = isSuperAdmin || perms.includes('MANAGE_ORDERS');
+  const canManageReviews = isSuperAdmin || perms.includes('MANAGE_REVIEWS');
+
   // State quản lý việc đóng/mở popover dropdown quả chuông
   const [isOpen, setIsOpen] = useState(false);
 
-  // State quản lý tab lọc đang kích hoạt: 'all' (Tất cả) | 'inventory' (Kho) | 'orders' (Đơn hàng)
-  const [activeTab, setActiveTab] = useState<'all' | 'inventory' | 'orders'>('all');
+  // State quản lý tab lọc đang kích hoạt
+  const [activeTab, setActiveTab] = useState<'all' | 'inventory' | 'orders' | 'reviews'>('all');
 
   // State lưu danh sách thông báo hiện thời
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -103,134 +115,146 @@ export function NotificationDropdown({
 
       const items: NotificationItem[] = [];
 
-      // --- MỤC 1: CẢNH BÁO KHO SÁCH (ƯU TIÊN CAO NHẤT - HIGH PRIORITY) ---
-      // Lấy từ CSDL thực tế: sách hết hàng hoặc dưới minStock (<= 10)
-      lowStockList.forEach((book, idx) => {
-        const notifId = `inv-${book.id}`;
-        if (!dismissedIds.includes(notifId)) {
-          const isOutOfStock = book.stockQty <= 0;
-          items.push({
-            id: notifId,
-            type: 'INVENTORY_ALERT',
-            priority: 'HIGH',
-            title: isOutOfStock ? '🚨 Hết sạch tồn kho (Cháy hàng)' : '⚠️ Sắp hết sách trong kho',
-            message: isOutOfStock
-              ? `Tựa sách "${book.title}" đã chạm mức 0 cuốn. Cần nhập gấp để tiếp tục bán!`
-              : `Tựa sách "${book.title}" chỉ còn ${book.stockQty} cuốn trong kho (dưới mức an toàn 10 cuốn).`,
-            createdAt: new Date(Date.now() - (idx + 1) * 12 * 60 * 1000).toISOString(),
-            timeAgo: idx === 0 ? '12 phút trước' : `${(idx + 1) * 12} phút trước`,
-            // Chuyển thẳng tới trang quản lý kho sách và tự động lọc tựa sách đó
-            linkUrl: `/admin/books?q=${encodeURIComponent(book.title)}`,
-            read: false,
-            meta: {
-              bookTitle: book.title,
-              stockQty: book.stockQty,
-            },
-          });
-        }
-      });
-
-      // --- MỤC 2: ĐƠN HÀNG MỚI (ÁP DỤNG THUẬT TOÁN GOM NHÓM SMART AGGREGATION) ---
-      if (recentPendingOrders.length >= 3) {
-        // 2.1. Đơn mới nhất hiển thị riêng -> Click vào mở thẳng đơn hàng đó
-        const newestOrder = recentPendingOrders[0];
-        const newestId = `ord-${newestOrder.id}`;
-        if (!dismissedIds.includes(newestId)) {
-          items.push({
-            id: newestId,
-            type: 'ORDER_NEW',
-            priority: 'NORMAL',
-            title: '🛒 Đơn hàng mới vừa đặt',
-            message: `Khách ${newestOrder.customerName} vừa đặt đơn #${newestOrder.orderCode} (${formatVND(newestOrder.totalAmount)})`,
-            createdAt: new Date(newestOrder.createdAt).toISOString(),
-            timeAgo: '5 phút trước',
-            // Chuyển thẳng đến trang đơn hàng và tự động mở Drawer chi tiết đơn
-            linkUrl: `/admin/orders?code=${newestOrder.orderCode}`,
-            read: false,
-            meta: {
-              orderCode: newestOrder.orderCode,
-              customerName: newestOrder.customerName,
-              amount: newestOrder.totalAmount,
-            },
-          });
-        }
-
-        // 2.2. Gom nhóm các đơn tiếp theo thành 1 dòng tổng hợp chống spam -> Click chuyển tab chờ duyệt
-        const batchOrders = recentPendingOrders.slice(1);
-        const batchTotal = batchOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-        const batchId = 'ord-batch-recent';
-        if (!dismissedIds.includes(batchId)) {
-          items.push({
-            id: batchId,
-            type: 'ORDER_BATCH',
-            priority: 'NORMAL',
-            title: `📦 Gom nhóm: ${batchOrders.length} đơn hàng mới cần duyệt`,
-            message: `Ghi nhận ${batchOrders.length} đơn phát sinh liên tiếp trong ca trực (Tổng: ${formatVND(batchTotal)}).`,
-            createdAt: new Date(batchOrders[0].createdAt).toISOString(),
-            timeAgo: '20 phút trước',
-            linkUrl: '/admin/orders?status=PENDING',
-            read: false,
-            meta: {
-              orderCode: batchOrders[0].orderCode,
-              batchCount: batchOrders.length,
-              amount: batchTotal,
-            },
-          });
-        }
-      } else {
-        // Nếu ít đơn (1-2 đơn), hiển thị riêng lẻ từng đơn
-        recentPendingOrders.forEach((order, idx) => {
-          const ordId = `ord-${order.id}`;
-          if (!dismissedIds.includes(ordId)) {
+      // --- MỤC 1: CẢNH BÁO KHO SÁCH (CHỈ CHO SUPER_ADMIN HOẶC CÓ QUYỀN MANAGE_BOOKS) ---
+      if (canManageBooks) {
+        lowStockList.forEach((book, idx) => {
+          const notifId = `inv-${book.id}`;
+          if (!dismissedIds.includes(notifId)) {
+            const isOutOfStock = book.stockQty <= 0;
             items.push({
-              id: ordId,
-              type: 'ORDER_NEW',
-              priority: 'NORMAL',
-              title: '🛒 Đơn hàng mới cần xác nhận',
-              message: `Khách ${order.customerName} đặt #${order.orderCode} giá trị ${formatVND(order.totalAmount)}.`,
-              createdAt: new Date(order.createdAt).toISOString(),
-              timeAgo: idx === 0 ? '5 phút trước' : `${(idx + 1) * 15} phút trước`,
-              linkUrl: `/admin/orders?code=${order.orderCode}`,
+              id: notifId,
+              type: 'INVENTORY_ALERT',
+              priority: 'HIGH',
+              title: isOutOfStock ? '🚨 Hết sạch tồn kho (Cháy hàng)' : '⚠️ Sắp hết sách trong kho',
+              message: isOutOfStock
+                ? `Tựa sách "${book.title}" đã chạm mức 0 cuốn. Cần nhập gấp để tiếp tục bán!`
+                : `Tựa sách "${book.title}" chỉ còn ${book.stockQty} cuốn trong kho (dưới mức an toàn 10 cuốn).`,
+              createdAt: new Date(Date.now() - (idx + 1) * 12 * 60 * 1000).toISOString(),
+              timeAgo: idx === 0 ? '12 phút trước' : `${(idx + 1) * 12} phút trước`,
+              // Chuyển thẳng tới trang quản lý kho sách và tự động lọc tựa sách đó
+              linkUrl: `/admin/books?q=${encodeURIComponent(book.title)}`,
               read: false,
               meta: {
-                orderCode: order.orderCode,
-                customerName: order.customerName,
-                amount: order.totalAmount,
+                bookTitle: book.title,
+                stockQty: book.stockQty,
               },
             });
           }
         });
       }
 
-      // --- MỤC 3: ĐÁNH GIÁ MỚI CHỜ KIỂM DUYỆT TỪ KHÁCH HÀNG ---
-      recentPendingReviews.forEach((rev, idx) => {
-        const revId = `rev-${rev.id}`;
-        if (!dismissedIds.includes(revId)) {
-          items.push({
-            id: revId,
-            type: 'REVIEW',
-            priority: 'NORMAL',
-            title: `⭐ Đánh giá mới cần duyệt (${rev.rating} sao)`,
-            message: `Khách ${rev.userName} đánh giá sách "${rev.bookTitle}": "${rev.body.slice(0, 50)}${rev.body.length > 50 ? '...' : ''}"`,
-            createdAt: new Date(rev.createdAt).toISOString(),
-            timeAgo: idx === 0 ? '8 phút trước' : `${(idx + 1) * 20} phút trước`,
-            linkUrl: '/admin/reviews',
-            read: false,
-            meta: {
-              rating: rev.rating,
-              reviewAuthor: rev.userName,
-              bookTitle: rev.bookTitle,
-              reviewBody: rev.body,
-            },
+      // --- MỤC 2: ĐƠN HÀNG MỚI (CHỈ CHO SUPER_ADMIN HOẶC CÓ QUYỀN MANAGE_ORDERS) ---
+      if (canManageOrders) {
+        if (recentPendingOrders.length >= 3) {
+          // 2.1. Đơn mới nhất hiển thị riêng -> Click vào mở thẳng đơn hàng đó
+          const newestOrder = recentPendingOrders[0];
+          const newestId = `ord-${newestOrder.id}`;
+          if (!dismissedIds.includes(newestId)) {
+            items.push({
+              id: newestId,
+              type: 'ORDER_NEW',
+              priority: 'NORMAL',
+              title: '🛒 Đơn hàng mới vừa đặt',
+              message: `Khách ${newestOrder.customerName} vừa đặt đơn #${newestOrder.orderCode} (${formatVND(newestOrder.totalAmount)})`,
+              createdAt: new Date(newestOrder.createdAt).toISOString(),
+              timeAgo: '5 phút trước',
+              // Chuyển thẳng đến trang đơn hàng và tự động mở Drawer chi tiết đơn
+              linkUrl: `/admin/orders?code=${newestOrder.orderCode}`,
+              read: false,
+              meta: {
+                orderCode: newestOrder.orderCode,
+                customerName: newestOrder.customerName,
+                amount: newestOrder.totalAmount,
+              },
+            });
+          }
+
+          // 2.2. Gom nhóm các đơn tiếp theo thành 1 dòng tổng hợp chống spam -> Click chuyển tab chờ duyệt
+          const batchOrders = recentPendingOrders.slice(1);
+          const batchTotal = batchOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+          const batchId = 'ord-batch-recent';
+          if (!dismissedIds.includes(batchId)) {
+            items.push({
+              id: batchId,
+              type: 'ORDER_BATCH',
+              priority: 'NORMAL',
+              title: `📦 Gom nhóm: ${batchOrders.length} đơn hàng mới cần duyệt`,
+              message: `Ghi nhận ${batchOrders.length} đơn phát sinh liên tiếp trong ca trực (Tổng: ${formatVND(batchTotal)}).`,
+              createdAt: new Date(batchOrders[0].createdAt).toISOString(),
+              timeAgo: '20 phút trước',
+              linkUrl: '/admin/orders?status=PENDING',
+              read: false,
+              meta: {
+                orderCode: batchOrders[0].orderCode,
+                batchCount: batchOrders.length,
+                amount: batchTotal,
+              },
+            });
+          }
+        } else {
+          // Nếu ít đơn (1-2 đơn), hiển thị riêng lẻ từng đơn
+          recentPendingOrders.forEach((order, idx) => {
+            const ordId = `ord-${order.id}`;
+            if (!dismissedIds.includes(ordId)) {
+              items.push({
+                id: ordId,
+                type: 'ORDER_NEW',
+                priority: 'NORMAL',
+                title: '🛒 Đơn hàng mới cần xác nhận',
+                message: `Khách ${order.customerName} đặt #${order.orderCode} giá trị ${formatVND(order.totalAmount)}.`,
+                createdAt: new Date(order.createdAt).toISOString(),
+                timeAgo: idx === 0 ? '5 phút trước' : `${(idx + 1) * 15} phút trước`,
+                linkUrl: `/admin/orders?code=${order.orderCode}`,
+                read: false,
+                meta: {
+                  orderCode: order.orderCode,
+                  customerName: order.customerName,
+                  amount: order.totalAmount,
+                },
+              });
+            }
           });
         }
-      });
+      }
+
+      // --- MỤC 3: ĐÁNH GIÁ MỚI CHỜ KIỂM DUYỆT (CHỈ CHO SUPER_ADMIN HOẶC CÓ QUYỀN MANAGE_REVIEWS) ---
+      if (canManageReviews) {
+        recentPendingReviews.forEach((rev, idx) => {
+          const revId = `rev-${rev.id}`;
+          if (!dismissedIds.includes(revId)) {
+            items.push({
+              id: revId,
+              type: 'REVIEW',
+              priority: 'NORMAL',
+              title: `⭐ Đánh giá mới cần duyệt (${rev.rating} sao)`,
+              message: `Khách ${rev.userName} đánh giá sách "${rev.bookTitle}": "${rev.body.slice(0, 50)}${rev.body.length > 50 ? '...' : ''}"`,
+              createdAt: new Date(rev.createdAt).toISOString(),
+              timeAgo: idx === 0 ? '8 phút trước' : `${(idx + 1) * 20} phút trước`,
+              linkUrl: '/admin/reviews',
+              read: false,
+              meta: {
+                rating: rev.rating,
+                reviewAuthor: rev.userName,
+                bookTitle: rev.bookTitle,
+                reviewBody: rev.body,
+              },
+            });
+          }
+        });
+      }
 
       setNotifications(items);
     } catch (e) {
       console.error('Lỗi khi nạp dữ liệu thông báo admin:', e);
     }
-  }, [lowStockList, recentPendingOrders, recentPendingReviews]);
+  }, [
+    lowStockList,
+    recentPendingOrders,
+    recentPendingReviews,
+    canManageBooks,
+    canManageOrders,
+    canManageReviews,
+  ]);
 
   // =============================================================================
   // 3. TỰ ĐỘNG ĐÓNG DROPDOWN KHI CLICK RA NGOÀI HOẶC BẤM PHÍM ESCAPE
@@ -333,6 +357,7 @@ export function NotificationDropdown({
   const filteredNotifications = notifications.filter((item) => {
     if (activeTab === 'inventory') return item.type === 'INVENTORY_ALERT';
     if (activeTab === 'orders') return item.type === 'ORDER_NEW' || item.type === 'ORDER_BATCH';
+    if (activeTab === 'reviews') return item.type === 'REVIEW';
     return true;
   });
 
@@ -340,6 +365,59 @@ export function NotificationDropdown({
   const unreadCount = notifications.filter((n) => !n.read).length;
   const inventoryAlertsCount = notifications.filter((n) => n.type === 'INVENTORY_ALERT').length;
   const ordersCount = notifications.filter((n) => n.type === 'ORDER_NEW' || n.type === 'ORDER_BATCH').length;
+  const reviewsCount = notifications.filter((n) => n.type === 'REVIEW').length;
+
+  // Xây dựng danh sách các tab theo quyền thực tế của nhân sự
+  const availableTabs: {
+    key: 'all' | 'inventory' | 'orders' | 'reviews';
+    label: string;
+    count: number;
+    activeText: string;
+    badgeBg: string;
+    badgeText: string;
+  }[] = [
+    {
+      key: 'all',
+      label: 'Tất cả',
+      count: notifications.length,
+      activeText: 'text-[#0B1F3A]',
+      badgeBg: 'bg-slate-200',
+      badgeText: 'text-slate-700',
+    },
+  ];
+
+  if (canManageBooks) {
+    availableTabs.push({
+      key: 'inventory',
+      label: 'Kho',
+      count: inventoryAlertsCount,
+      activeText: 'text-[#BA1A1A]',
+      badgeBg: 'bg-[#FFDAD6]',
+      badgeText: 'text-[#BA1A1A]',
+    });
+  }
+
+  if (canManageOrders) {
+    availableTabs.push({
+      key: 'orders',
+      label: 'Đơn hàng',
+      count: ordersCount,
+      activeText: 'text-[#006699]',
+      badgeBg: 'bg-[#DEE8FF]',
+      badgeText: 'text-[#0B1F3A]',
+    });
+  }
+
+  if (canManageReviews) {
+    availableTabs.push({
+      key: 'reviews',
+      label: 'Đánh giá',
+      count: reviewsCount,
+      activeText: 'text-[#B45309]',
+      badgeBg: 'bg-[#FEF3C7]',
+      badgeText: 'text-[#92400E]',
+    });
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -390,7 +468,13 @@ export function NotificationDropdown({
                   )}
                 </h3>
                 <p className="text-[10px] text-slate-300 truncate">
-                  Kho bãi, đơn hàng & đánh giá
+                  {isSuperAdmin
+                    ? 'Toàn hệ thống (Kho, đơn & đánh giá)'
+                    : canManageBooks && !canManageOrders
+                    ? 'Cảnh báo kho bãi & tồn sách'
+                    : canManageOrders && !canManageBooks
+                    ? 'Đơn hàng & tương tác khách hàng'
+                    : 'Cập nhật hoạt động vận hành'}
                 </p>
               </div>
             </div>
@@ -409,60 +493,38 @@ export function NotificationDropdown({
             )}
           </div>
 
-          {/* 2. TAB BỘ LỌC THÔNG MINH */}
-          <div className="grid grid-cols-3 px-2 py-1.5 border-b border-slate-100 bg-slate-50/80 gap-1 shrink-0 text-[11px] font-semibold select-none">
-            {/* Tab: Tất cả */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('all')}
-              className={`py-1 px-1.5 rounded-lg transition-colors flex items-center justify-center gap-1 border cursor-pointer ${
-                activeTab === 'all'
-                  ? 'bg-white text-[#0B1F3A] border-slate-200 shadow-xs font-bold'
-                  : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-100/60'
-              }`}
+          {/* 2. TAB BỘ LỌC THÔNG MINH (TỰ CO GIÃN THEO QUYỀN HẠN) */}
+          {availableTabs.length > 1 && (
+            <div
+              className="grid px-2 py-1.5 border-b border-slate-100 bg-slate-50/80 gap-1 shrink-0 text-[11px] font-semibold select-none"
+              style={{
+                gridTemplateColumns: `repeat(${availableTabs.length}, minmax(0, 1fr))`,
+              }}
             >
-              <span>Tất cả</span>
-              <span className="text-[9px] px-1 py-0.1 rounded-full bg-slate-200 text-slate-700 font-bold">
-                {notifications.length}
-              </span>
-            </button>
-
-            {/* Tab: Cảnh báo kho */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('inventory')}
-              className={`py-1 px-1.5 rounded-lg transition-colors flex items-center justify-center gap-1 border cursor-pointer ${
-                activeTab === 'inventory'
-                  ? 'bg-white text-[#BA1A1A] border-slate-200 shadow-xs font-bold'
-                  : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-100/60'
-              }`}
-            >
-              <span>Kho</span>
-              {inventoryAlertsCount > 0 && (
-                <span className="text-[9px] px-1 py-0.1 rounded-full bg-[#FFDAD6] text-[#BA1A1A] font-bold">
-                  {inventoryAlertsCount}
-                </span>
-              )}
-            </button>
-
-            {/* Tab: Đơn hàng */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('orders')}
-              className={`py-1 px-1.5 rounded-lg transition-colors flex items-center justify-center gap-1 border cursor-pointer ${
-                activeTab === 'orders'
-                  ? 'bg-white text-[#006699] border-slate-200 shadow-xs font-bold'
-                  : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-100/60'
-              }`}
-            >
-              <span>Đơn hàng</span>
-              {ordersCount > 0 && (
-                <span className="text-[9px] px-1 py-0.1 rounded-full bg-[#DEE8FF] text-[#0B1F3A] font-bold">
-                  {ordersCount}
-                </span>
-              )}
-            </button>
-          </div>
+              {availableTabs.map((tab) => {
+                const isActive = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`py-1 px-1 rounded-lg transition-colors flex items-center justify-center gap-1 border cursor-pointer ${
+                      isActive
+                        ? `bg-white ${tab.activeText} border-slate-200 shadow-xs font-bold`
+                        : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-100/60'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    {tab.count > 0 && (
+                      <span className={`text-[9px] px-1 py-0.1 rounded-full ${tab.badgeBg} ${tab.badgeText} font-bold`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* 3. KHU VỰC DANH SÁCH THÔNG BÁO (CLICK VÀO CHUYỂN THẲNG ĐẾN TRANG CÓ MỤC ĐÓ) */}
           <div
@@ -483,6 +545,8 @@ export function NotificationDropdown({
                     ? 'Kho sách hiện ở mức an toàn.'
                     : activeTab === 'orders'
                     ? 'Đơn hàng mới đã được xử lý xong.'
+                    : activeTab === 'reviews'
+                    ? 'Không có đánh giá mới chờ duyệt.'
                     : 'Hệ thống vận hành ổn định.'}
                 </p>
               </div>
@@ -589,12 +653,18 @@ export function NotificationDropdown({
             </button>
 
             <Link
-              href="/admin/orders"
+              href={canManageOrders ? '/admin/orders' : canManageBooks ? '/admin/books' : '/admin'}
               prefetch={true}
               onClick={() => setIsOpen(false)}
               className="font-bold text-[#0B1F3A] hover:underline flex items-center gap-0.5 px-1.5 py-1 cursor-pointer"
             >
-              <span>Quản lý đơn hàng</span>
+              <span>
+                {canManageOrders
+                  ? 'Quản lý đơn hàng'
+                  : canManageBooks
+                  ? 'Quản lý kho sách'
+                  : 'Về trang quản trị'}
+              </span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
