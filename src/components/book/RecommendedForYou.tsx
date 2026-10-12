@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, ChevronRight, Cpu } from 'lucide-react';
+import { Sparkles, ChevronRight } from 'lucide-react';
 import { BookCard } from '@/components/book/BookCard';
 
 export function RecommendedForYou() {
@@ -52,13 +52,9 @@ export function RecommendedForYou() {
                 <h2 className="text-xl sm:text-2xl font-black text-[#0B1F3A] tracking-tight">
                   Gợi Ý Dành Riêng Cho Bạn
                 </h2>
-                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#0B1F3A] bg-[#F5A623] px-2.5 py-0.5 rounded-full shadow-2xs">
-                  <Cpu className="w-3 h-3 text-[#0B1F3A]" />
-                  <span>5 Trọng Số AI • Proposal 3.1</span>
-                </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Cá nhân hóa từ lịch sử tương tác: Collab (35%) + Thể loại (25%) + Hành vi (15%) + Đánh giá (20%) + Xu hướng (5%)
+                Tuyển chọn đặc biệt dựa trên sở thích đọc và thói quen quan tâm của bạn
               </p>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose';
 const JWT_SECRET = process.env.JWT_SECRET || 'default_tosach_jwt_secret_dev_2026';
 const key = new TextEncoder().encode(JWT_SECRET);
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const token = request.cookies.get('tosach_token')?.value;
@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
       }
     } catch {
       // Invalid token
-      const response = NextResponse.redirect(new URL('/auth', request.url));
+      const response = NextResponse.redirect(loginUrl);
       response.cookies.delete('tosach_token');
       return response;
     }
