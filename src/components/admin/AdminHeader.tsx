@@ -98,6 +98,7 @@ export function AdminHeader({
 
           {/* Notification Bell Dropdown (Thông báo thông minh có phân cấp & Xóa tất cả) */}
           <NotificationDropdown
+            user={user}
             initialPendingOrdersCount={pendingOrdersCount}
             initialLowStockCount={lowStockCount}
             pendingReviewsCount={pendingReviewsCount}
