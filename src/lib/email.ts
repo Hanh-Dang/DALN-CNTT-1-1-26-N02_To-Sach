@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import path from 'path';
+import fs from 'fs';
 import { redis } from './redis';
 
 // Bộ nhớ đệm fallback nếu Redis chưa cấu hình
@@ -132,7 +134,7 @@ export async function sendOtpEmail(email: string, otp: string, fullName: string)
           <!-- 1. HEADER BRANDING -->
           <div class="header">
             <div class="header-logo-row">
-              <span class="book-icon-badge">📖</span>
+              <img src="cid:tosach-logo" width="38" height="38" alt="Tổ Sách" style="display: inline-block; vertical-align: middle; border-radius: 9px; border: 1.5px solid #F5A623; margin-right: 8px;" />
               <span class="header-brand">TỔ SÁCH</span>
             </div>
             <div class="header-slogan">SÁCH VỀ TỔ, TRI THỨC BAY XA</div>
@@ -217,11 +219,23 @@ export async function sendOtpEmail(email: string, otp: string, fullName: string)
         },
       });
 
+      const logoPath = path.join(process.cwd(), 'public/logo-icon.png');
+      const attachments = fs.existsSync(logoPath)
+        ? [
+            {
+              filename: 'logo-icon.png',
+              path: logoPath,
+              cid: 'tosach-logo',
+            },
+          ]
+        : [];
+
       await transporter.sendMail({
         from: `"Nhà Sách Tổ Sách" <${gmailUser}>`,
         to: email,
         subject: `[Tổ Sách] Mã xác minh tài khoản của bạn: ${otp}`,
         html: htmlContent,
+        attachments,
       });
 
       console.log(`✅ [GMAIL SMTP] Đã gửi mã OTP ${otp} tới ${email} thành công!`);
