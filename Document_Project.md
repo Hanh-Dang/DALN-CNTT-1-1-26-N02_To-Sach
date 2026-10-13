@@ -858,127 +858,102 @@ graph TD
 ## 7.1 Sơ đồ Hoạt động 1: Quy trình Đặt hàng & Thanh toán (Checkout Flow)
 
 ```mermaid
-stateDiagram-v2
-    [*] --> XemGioHang: Khách hàng mở trang Giỏ hàng (/cart)
-    XemGioHang --> KiemTraGio: Nhấn nút 'Tiến hành đặt hàng'
+graph TD
+    Start(["Khách hàng mở trang Giỏ hàng (/cart)"]) --> ActionCheckout["Nhấn nút 'Tiến hành đặt hàng'"]
+    ActionCheckout --> CheckCart{"Kiểm tra số lượng sách trong giỏ"}
 
-    state KiemTraGio <<choice>>
-    KiemTraGio --> GioRong: Số lượng = 0
-    GioRong --> XemGioHang: Báo lỗi 'Giỏ hàng đang trống'
-    KiemTraGio --> KiemTraDangNhap: Số lượng >= 1
+    CheckCart -->|"Số lượng = 0"| CartEmpty["Báo lỗi 'Giỏ hàng đang trống'"]
+    CartEmpty --> Start
+    CheckCart -->|"Số lượng >= 1"| CheckLogin{"Kiểm tra trạng thái đăng nhập"}
 
-    state KiemTraDangNhap <<choice>>
-    KiemTraDangNhap --> DiChuyenAuth: Chưa đăng nhập
-    DiChuyenAuth --> DangNhapThanhCong: Đăng nhập hoặc Đăng ký OTP
-    DangNhapThanhCong --> NhapThongTinNhan: Tự động điền sổ địa chỉ đã lưu
-    KiemTraDangNhap --> NhapThongTinNhan: Đã đăng nhập sẵn
+    CheckLogin -->|"Chưa đăng nhập"| GoAuth["Chuyển hướng sang /auth?redirect=/checkout"]
+    GoAuth --> AuthDone["Đăng nhập hoặc Đăng ký OTP"]
+    AuthDone --> FillAddress["Tự động điền sổ địa chỉ đã lưu"]
+    CheckLogin -->|"Đã đăng nhập"| FillAddress
 
-    NhapThongTinNhan --> ChonPhuongThucThanhToan: Nhập Họ tên, SĐT, Tỉnh/Huyện/Xã
+    FillAddress --> InputInfo["Nhập Họ tên, SĐT, Tỉnh/Huyện/Xã"]
+    InputInfo --> SelectPayment{"Chọn phương thức thanh toán"}
 
-    state ChonPhuongThucThanhToan <<choice>>
-    ChonPhuongThucThanhToan --> ChonCOD: Chọn Tiền mặt khi nhận hàng (COD)
-    ChonPhuongThucThanhToan --> ChonVietQR: Chọn Chuyển khoản VietQR MBBank
+    SelectPayment -->|"Tiền mặt COD"| PayCOD["Chọn Tiền mặt khi nhận hàng (COD)"]
+    SelectPayment -->|"Chuyển khoản VietQR"| PayVietQR["Chọn Chuyển khoản VietQR MBBank"]
 
-    ChonVietQR --> SinhMaQR: Hệ thống hiển thị mã QR động có sẵn nội dung
-    ChonCOD --> XacNhanDatHang: Khách nhấn 'Hoàn tất đặt hàng'
-    SinhMaQR --> XacNhanDatHang: Khách quét mã thanh toán
+    PayVietQR --> GenQR["Hệ thống hiển thị mã QR động có sẵn nội dung"]
+    PayCOD --> ConfirmOrder["Khách nhấn 'Hoàn tất đặt hàng'"]
+    GenQR --> ScanQR["Khách quét mã thanh toán"] --> ConfirmOrder
 
-    XacNhanDatHang --> MoPrismaTransaction: Server nhận request POST /api/orders
+    ConfirmOrder --> ServerReceive["Server nhận request POST /api/orders"]
+    ServerReceive --> OpenTx["Mở Prisma Transaction (ACID)"]
+    OpenTx --> CheckStock{"Kiểm tra tồn kho từng cuốn sách"}
+
+    CheckStock -->|"Hết hàng (stockQty không đủ)"| RollbackTx["Rollback Transaction & Báo sách hết hàng"]
+    RollbackTx --> FixCart["Yêu cầu khách giảm số lượng"] --> Start
+
+    CheckStock -->|"Còn hàng (stockQty đáp ứng đủ)"| DeductStock["Trừ stockQty, Tăng soldCount"]
+    DeductStock --> CreateOrder["Tạo Order (order_code) & OrderItems"]
+    CreateOrder --> CommitTx["Commit Transaction thành công!"]
     
-    state KiemTraTonKhoDB <<choice>>
-    MoPrismaTransaction --> KiemTraTonKhoDB: Kiểm tra stockQty từng cuốn sách
-    KiemTraTonKhoDB --> HetHang: stockQty < Số lượng mua
-    HetHang --> RollbackDB: Rollback Transaction & Báo sách hết hàng
-    RollbackDB --> XemGioHang: Yêu cầu khách giảm số lượng
-
-    KiemTraTonKhoDB --> ConHang: stockQty >= Số lượng mua
-    ConHang --> TruTonKho: Trừ stockQty, Tăng soldCount
-    TruTonKho --> TaoDonHang: Tạo Order (order_code) & OrderItems
-    TaoDonHang --> CommitTransaction: Commit Transaction thành công!
-    
-    CommitTransaction --> XoaGioHangLocal: Xóa sạch giỏ hàng trong LocalStorage
-    XoaGioHangLocal --> GuiMailHoaDon: Kích hoạt gửi Email hóa đơn xác nhận
-    GuiMailHoaDon --> TrangThanhCong: Điều hướng sang trang /order/success
-    TrangThanhCong --> [*]
+    CommitTx --> ClearLocalCart["Xóa sạch giỏ hàng trong LocalStorage"]
+    ClearLocalCart --> SendInvoiceMail["Kích hoạt gửi Email hóa đơn xác nhận"]
+    SendInvoiceMail --> SuccessPage["Điều hướng sang trang /order/success"]
+    SuccessPage --> Finish(["Kết thúc"])
 ```
 
 ## 7.2 Sơ đồ Hoạt động 2: Quy trình Xác thực & Kiểm soát Biên giới (Edge Guard Middleware & RBAC)
 
 ```mermaid
-stateDiagram-v2
-    [*] --> RequestDen: Người dùng gửi Request tới URL
-    RequestDen --> MiddlewareChotChan: Next.js Edge Middleware / Proxy đón chặn
+graph TD
+    StartReq(["Người dùng gửi Request tới URL"]) --> EdgeMiddleware["Next.js Edge Middleware / Proxy đón chặn"]
+    EdgeMiddleware --> CheckRoute{"Kiểm tra loại đường dẫn URL"}
 
-    state KiemTraRoute <<choice>>
-    MiddlewareChotChan --> RouteCongKhai: Route Public (/, /catalog, /book/*, /cart, /wishlist)
-    MiddlewareChotChan --> RouteBaoVe: Route Bảo Vệ (/checkout, /account/*, /admin/*)
+    CheckRoute -->|"Route Công khai: /, /catalog, /book/*, /cart, /wishlist"| AllowPublic["Cho phép truy cập bình thường"]
+    CheckRoute -->|"Route Bảo vệ: /checkout, /account/*, /admin/*"| CheckToken{"Đọc cookie HttpOnly tosach_token"}
 
-    RouteCongKhai --> RenderTrang: Cho phép truy cập bình thường
+    CheckToken -->|"Không có Token hoặc Rỗng"| RedirectAuth["Redirect về /auth?redirect=URL"]
+    CheckToken -->|"Có Token"| DecodeJWT["Giải mã JWT bằng jose (HS256)"]
 
-    state KiemTraTokenCookie <<choice>>
-    RouteBaoVe --> KiemTraTokenCookie: Đọc cookie HttpOnly tosach_token
-    KiemTraTokenCookie --> KhongCoToken: Token không tồn tại hoặc Rỗng
-    KhongCoToken --> ChuyenHuongAuth: Redirect về /auth?redirect=URL
+    DecodeJWT --> CheckSignature{"Kiểm tra chữ ký & Hạn dùng (exp)"}
+    CheckSignature -->|"Chữ ký giả mạo hoặc Hết hạn"| ClearCookie["Xóa cookie tosach_token & Redirect /auth"]
+    CheckSignature -->|"Payload hợp lệ: userId, role"| CheckAdminPath{"Request truy cập vào /admin/*?"}
 
-    KiemTraTokenCookie --> CoToken: Giải mã JWT bằng jose (HS256)
-    
-    state XacThucChuKy <<choice>>
-    CoToken --> XacThucChuKy: Kiểm tra chữ ký & Hạn dùng (exp)
-    XacThucChuKy --> TokenLoi: Chữ ký giả mạo hoặc Hết hạn
-    TokenLoi --> XoaCookieLoi: Xóa cookie tosach_token & Redirect /auth
-    
-    XacThucChuKy --> TokenHopLe: Payload hợp lệ { userId, role }
+    CheckAdminPath -->|"Không: /checkout hoặc /account"| AllowAccess["Cấp quyền truy cập"]
+    CheckAdminPath -->|"Có: /admin/*"| CheckRole{"Kiểm tra role trong payload"}
 
-    state KiemTraPhanQuyenAdmin <<choice>>
-    TokenHopLe --> KiemTraPhanQuyenAdmin: Request truy cập vào /admin/*
-    KiemTraPhanQuyenAdmin --> RouteKhongPhaiAdmin: Truy cập /checkout hoặc /account
-    RouteKhongPhaiAdmin --> RenderTrang: Cho phép truy cập
+    CheckRole -->|"role == 'USER'"| Block403["Chặn truy cập 403 (Redirect về Trang chủ /)"]
+    CheckRole -->|"role == 'STAFF' hoặc 'SUPER_ADMIN'"| GrantAdmin["Cấp quyền vào Dashboard Admin"]
 
-    KiemTraPhanQuyenAdmin --> RouteAdmin: Truy cập trang quản trị /admin/*
-    
-    state KiemTraRoleAdmin <<choice>>
-    RouteAdmin --> KiemTraRoleAdmin: Kiểm tra role trong payload
-    KiemTraRoleAdmin --> RoleUserThuong: role == 'USER'
-    RoleUserThuong --> Chan403: Chặn truy cập (Redirect về Trang chủ /)
-    
-    KiemTraRoleAdmin --> RoleStaffAdmin: role == 'STAFF' hoặc 'SUPER_ADMIN'
-    RoleStaffAdmin --> RenderTrang: Cấp quyền vào Dashboard Admin
-
-    RenderTrang --> [*]
-    ChuyenHuongAuth --> [*]
-    Chan403 --> [*]
-    XoaCookieLoi --> [*]
+    AllowPublic --> RenderPage(["Hiển thị trang giao diện"])
+    AllowAccess --> RenderPage
+    GrantAdmin --> RenderPage
+    RedirectAuth --> EndBlock(["Dừng phiên & Chờ đăng nhập"])
+    Block403 --> EndBlock
+    ClearCookie --> EndBlock
 ```
 
 ## 7.3 Sơ đồ Hoạt động 3: Quy trình Quản lý Kho sách & Nhập xuất tồn
 
 ```mermaid
-stateDiagram-v2
-    [*] --> MoTrangKho: Nhân viên Kho mở /admin/books
-    MoTrangKho --> XemDanhSachTon: Tải danh sách sách kèm số lượng tồn kho
+graph TD
+    StartWarehouse(["Nhân viên Kho mở /admin/books"]) --> LoadBooks["Tải danh sách sách kèm số lượng tồn kho"]
+    LoadBooks --> CheckThreshold{"Quét kiểm tra stockQty"}
 
-    state KiemTraTonAnToan <<choice>>
-    XemDanhSachTon --> KiemTraTonAnToan: Quét kiểm tra stockQty
-    KiemTraTonAnToan --> CanhBaoDo: stockQty < 10 cuốn
-    CanhBaoDo --> HienThiBadgeKhapCap: Đánh dấu huy hiệu Đỏ 'Sắp hết hàng'
-    KiemTraTonAnToan --> TonAnToan: stockQty >= 10 cuốn
-    TonAnToan --> HienThiBinhThuong: Đánh dấu huy hiệu Xanh 'Ổn định'
+    CheckThreshold -->|"stockQty < 10 cuốn"| DangerAlert["Đánh dấu huy hiệu Đỏ 'Sắp hết hàng'"]
+    CheckThreshold -->|"stockQty >= 10 cuốn"| SafeStatus["Đánh dấu huy hiệu Xanh 'Ổn định'"]
 
-    HienThiBadgeKhapCap --> ChonHanhDongNhap: Nhân viên quyết định nhập thêm sách
-    HienThiBinhThuong --> ChonHanhDongNhap: Cập nhật định kỳ
+    DangerAlert --> DecideRestock{"Nhân viên quyết định nhập thêm sách"}
+    SafeStatus --> DecideRestock
 
-    state ChonHanhDongNhap <<choice>>
-    ChonHanhDongNhap --> NhapThuCong: Nhấn nút 'Sửa' trên giao diện
-    ChonHanhDongNhap --> NhapHangLoat: Nhấn nút 'Nhập từ file Excel/CSV'
+    DecideRestock -->|"Nhập thủ công"| EditSingle["Nhấn nút 'Sửa' trên giao diện"]
+    DecideRestock -->|"Nhập hàng loạt"| ImportBatch["Nhấn nút 'Nhập từ file Excel/CSV'"]
 
-    NhapThuCong --> CapNhatGiaTri: Điền số lượng mới & Lưu
-    NhapHangLoat --> ParseFileExcel: Hệ thống đọc file, validate mã ISBN
-    ParseFileExcel --> CapNhatDatabase: Cập nhật hàng loạt vào PostgreSQL
-    CapNhatGiaTri --> CapNhatDatabase: Cập nhật bản ghi đơn lẻ
+    EditSingle --> InputNewQty["Điền số lượng mới & Lưu"]
+    ImportBatch --> ParseFile["Hệ thống đọc file, validate mã ISBN"]
 
-    CapNhatDatabase --> GhiAuditLog: Tự động ghi lại lịch sử vào admin_audit_logs
-    GhiAuditLog --> LamMoiTrang: Reload danh sách & Cập nhật quả chuông thông báo
-    LamMoiTrang --> [*]
+    InputNewQty --> UpdateDatabase["Cập nhật bản ghi vào PostgreSQL"]
+    ParseFile --> UpdateDatabase
+
+    UpdateDatabase --> SaveAudit["Tự động ghi lại lịch sử vào admin_audit_logs"]
+    SaveAudit --> RefreshData["Reload danh sách & Cập nhật quả chuông thông báo"]
+    RefreshData --> FinishWarehouse(["Hoàn tất quy trình"])
 ```
 
 ---
@@ -1207,39 +1182,39 @@ sequenceDiagram
 ## 9.1 Sơ đồ Trạng thái Đơn hàng (OrderStatus State Machine)
 
 ```mermaid
-stateDiagram-v2
-    [*] --> PENDING: Khách đặt hàng thành công (Đơn mới tạo)
+graph TD
+    StartOrder(["Khách đặt hàng thành công"]) --> PENDING["PENDING (Chờ xác nhận)"]
 
-    PENDING --> CONFIRMED: Nhân viên Đơn hàng xác nhận thông tin hợp lệ
-    PENDING --> CANCELLED: Khách bấm Hủy đơn / Phát hiện sai lệch thông tin
+    PENDING -->|"Nhân viên duyệt đơn hợp lệ"| CONFIRMED["CONFIRMED (Đã xác nhận)"]
+    PENDING -->|"Khách hủy / Sai thông tin"| CANCELLED["CANCELLED (Đã hủy)"]
 
-    CONFIRMED --> SHIPPING: Đóng gói hoàn tất, bàn giao cho bưu tá giao hàng
-    CONFIRMED --> CANCELLED: Khách yêu cầu hủy đơn trước khi xuất kho
+    CONFIRMED -->|"Đóng gói & Bàn giao bưu tá"| SHIPPING["SHIPPING (Đang giao hàng)"]
+    CONFIRMED -->|"Khách yêu cầu hủy trước xuất kho"| CANCELLED
 
-    SHIPPING --> DELIVERED: Khách nhận hàng thành công & Thanh toán hoàn tất
-    SHIPPING --> REFUNDED: Giao hàng thất bại 3 lần / Khách từ chối nhận hàng (Hoàn đơn)
+    SHIPPING -->|"Giao thành công & Thu tiền"| DELIVERED["DELIVERED (Giao thành công)"]
+    SHIPPING -->|"Giao thất bại 3 lần / Khách từ chối"| REFUNDED["REFUNDED (Hoàn tiền / Trả hàng)"]
 
-    DELIVERED --> REFUNDED: Đơn hàng bị khiếu nại lỗi in ấn, chấp thuận đổi trả 7 ngày
+    DELIVERED -->|"Khiếu nại lỗi in ấn (Đổi trả 7 ngày)"| REFUNDED
 
-    CANCELLED --> [*]: Kết thúc chu trình (Đơn hủy)
-    DELIVERED --> [*]: Kết thúc chu trình thành công
-    REFUNDED --> [*]: Kết thúc chu trình hoàn tiền
+    CANCELLED --> EndOrder(["Kết thúc"])
+    DELIVERED --> EndOrder
+    REFUNDED --> EndOrder
 ```
 
 ## 9.2 Sơ đồ Trạng thái Đánh giá Độc giả (ReviewStatus State Machine)
 
 ```mermaid
-stateDiagram-v2
-    [*] --> PENDING: Độc giả gửi nhận xét & Chấm sao sau khi mua sách
+graph TD
+    StartReview(["Độc giả gửi nhận xét & Chấm sao"]) --> PENDING_REV["PENDING (Chờ kiểm duyệt)"]
 
-    PENDING --> APPROVED: Nhân viên kiểm duyệt nội dung văn minh, lịch sự, đúng sự thật
-    PENDING --> REJECTED: Phát hiện từ ngữ thô tục, quảng cáo rác, hoặc spam link xấu
+    PENDING_REV -->|"Nội dung lịch sự, văn minh, đúng sự thật"| APPROVED["APPROVED (Đã duyệt xuất bản)"]
+    PENDING_REV -->|"Phát hiện từ ngữ thô tục, spam link xấu"| REJECTED["REJECTED (Bị từ chối)"]
 
-    APPROVED --> REJECTED: Ẩn đánh giá nếu có tranh chấp hoặc khiếu nại phát sinh sau này
-    REJECTED --> APPROVED: Khôi phục hiển thị nếu nhân viên xem xét lại hợp lệ
+    APPROVED -->|"Ẩn đánh giá nếu có tranh chấp phát sinh"| REJECTED
+    REJECTED -->|"Khôi phục hiển thị sau khi xem xét lại"| APPROVED
 
-    APPROVED --> [*]: Xuất hiện công khai trên trang chi tiết sách (/book/[slug])
-    REJECTED --> [*]: Lưu trữ nội bộ, không hiển thị ra ngoài giao diện
+    APPROVED --> PublicDisplay(["Hiển thị công khai trên /book/[slug]"])
+    REJECTED --> HiddenArchive(["Lưu trữ nội bộ, không hiển thị"])
 ```
 
 ---
