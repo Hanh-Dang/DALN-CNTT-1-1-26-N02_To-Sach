@@ -62,11 +62,10 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
 
-  // Gallery state
-  const allImages = [
-    book.coverUrl,
-    ...(book.extraImages && book.extraImages.length > 0 ? book.extraImages : [])
-  ].filter(Boolean);
+  // Gallery state: Đảm bảo lọc sạch trùng lặp, nếu chỉ có 1 ảnh thì chỉ hiển thị 1 ảnh
+  const allImages = Array.from(
+    new Set([book.coverUrl, ...(book.extraImages && book.extraImages.length > 0 ? book.extraImages : [])].filter(Boolean))
+  );
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // Purchase quantity state

@@ -141,10 +141,8 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
       if (filters.category) {
         const cat = filters.category.toLowerCase().trim();
         const bookSlugs = (book.categorySlug || '').toLowerCase().split(/\s+/);
-        // Khớp trực tiếp slug hoặc khớp slug nhánh cha/con
-        const matchesCategory =
-          bookSlugs.includes(cat) ||
-          bookSlugs.some((s) => s.includes(cat) || cat.includes(s));
+        // Khớp chính xác slug chuyên mục (hoặc cấp cha nếu lọc theo cấp cha đã được tổng hợp)
+        const matchesCategory = bookSlugs.includes(cat);
         if (!matchesCategory) return false;
       }
 
