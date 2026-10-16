@@ -4,8 +4,23 @@ import { cookies } from 'next/headers';
 import { prisma } from './prisma';
 import { UserRole } from '@prisma/client';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default_tosach_jwt_secret_dev_2026';
-const key = new TextEncoder().encode(JWT_SECRET);
+export function getJwtSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.trim().length < 32) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'CRITICAL SECURITY ERROR: JWT_SECRET environment variable is missing or shorter than 32 characters in production! Server refused to start.'
+      );
+    }
+    console.warn(
+      '[SECURITY WARNING] process.env.JWT_SECRET is missing or under 32 chars. Using dev fallback.'
+    );
+    return new TextEncoder().encode(secret || 'default_tosach_jwt_secret_dev_2026_dev_only');
+  }
+  return new TextEncoder().encode(secret);
+}
+
+const key = getJwtSecretKey();
 
 export interface TokenPayload {
   userId: string;
