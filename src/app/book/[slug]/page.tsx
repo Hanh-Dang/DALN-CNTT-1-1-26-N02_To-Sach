@@ -225,10 +225,12 @@ export default async function BookDetailPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-slate-50/70 pb-16">
-      {/* JSON-LD Script */}
+      {/* JSON-LD Script (Safe serialization preventing Stored XSS) */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productJsonLd).replace(/</g, '\\u003c'),
+        }}
       />
       <BookDetailClient book={bookData} relatedBooks={relatedBooksData} />
       <div className="mt-12">
