@@ -34,7 +34,9 @@
 - [CHƯƠNG 4: THIẾT KẾ CƠ SỞ DỮ LIỆU & TỪ ĐIỂN DỮ LIỆU CHI TIẾT (DATABASE & ERD)](#chương-4-thiết-kế-cơ-sở-dữ-liệu--từ-điển-dữ-liệu-chi-tiết-database--erd)
   - [4.1 Quy trình chuẩn hóa quan hệ bậc 3 (3NF)](#41-quy-trình-chuẩn-hóa-quan-hệ-bậc-3-3nf)
   - [4.2 Sơ đồ Thực thể Quan hệ Toàn diện (ERD 14 Thực thể)](#42-sơ-đồ-thực-thể-quan-hệ-toàn-diện-erd-14-thực-thể)
-  - [4.3 Từ điển Dữ liệu Chi tiết 14 Bảng (Data Dictionary)](#43-từ-điển-dữ-liệu-chi-tiết-14-bảng-data-dictionary)
+  - [4.3 Phân Tích Chuyên Sâu Chỉ Số ISBN & Từ Điển Dữ Liệu Chi Tiết 14 Bảng (Data Dictionary)](#43-phân-tích-chuyên-sâu-chỉ-số-isbn--từ-điển-dữ-liệu-chi-tiết-14-bảng-data-dictionary)
+    - [4.3.1 Chỉ số ISBN trong Cơ sở dữ liệu là gì?](#431-chỉ-số-isbn-trong-cơ-sở-dữ-liệu-là-gì)
+    - [4.3.2 Từ Điển Dữ Liệu Chi Tiết Từng Cột Của 14 Bảng CSDL (Field-by-Field Data Dictionary)](#432-từ-điển-dữ-liệu-chi-tiết-từng-cột-của-14-bảng-csdl-field-by-field-data-dictionary)
   - [4.4 Chiến lược Lập chỉ mục (Index Optimization Strategy)](#44-chiến-lược-lập-chỉ-mục-index-optimization-strategy)
   - [4.5 Cơ chế Giao dịch Nguyên tử (ACID Transactions) & Khóa chống Bán vượt tồn kho](#45-cơ-chế-giao-dịch-nguyên-tử-acid-transactions--khóa-chống-bán-vượt-tồn-kho)
 - [CHƯƠNG 5: HỆ THỐNG SƠ ĐỒ LUỒNG DỮ LIỆU (DATA FLOW DIAGRAMS - DFD)](#chương-5-hệ-thống-sơ-đồ-luồng-dữ-liệu-data-flow-diagrams---dfd)
@@ -67,6 +69,11 @@
   - [11.1 Kịch bản Demo 15 Phút Chuẩn Mực Trước Hội Đồng](#111-kịch-bản-demo-15-phút-chuẩn-mực-trước-hội-đồng)
   - [11.2 Bộ 10 Câu hỏi Phản biện Trọng điểm & Câu trả lời Mẫu Đạt Điểm Tuyệt Đối](#112-bộ-10-câu-hỏi-phản-biện-trọng-điểm--câu-trả-lời-mẫu-đạt-điểm-tuyệt-đối)
   - [11.3 Kết luận & Định hướng Phát triển](#113-kết-luận--định-hướng-phát-triển)
+- [CHƯƠNG 12: TỔNG KẾT TOÀN DIỆN DỰ ÁN TỪ ĐẦU ĐẾN CUỐI (A - Z) DÀNH CHO 2 THÀNH VIÊN ÔN TẬP VÀ BÁO CÁO](#chương-12-tổng-kết-toàn-diện-dự-án-từ-đầu-đến-cuối-a---z-dành-cho-2-thành-viên-ôn-tập-và-báo-cáo)
+  - [12.1 Bức Tranh Toàn Cảnh: Dự Án "Tổ Sách" Đã Làm Được Những Gì?](#121-bức-tranh-toàn-cảnh-dự-án-tổ-sách-đã-làm-được-những-gì)
+  - [12.2 Hành Trình Phát Triển 8 Giai Đoạn Từ Đầu Đến Cuối](#122-hành-trình-phát-triển-8-giai-đoạn-từ-đầu-đến-cuối)
+  - [12.3 Phân Công Vai Trò Cụ Thể Của 2 Thành Viên Khi Đi Báo Cáo](#123-phân-công-vai-trò-cụ-thể-của-2-thành-viên-khi-đi-báo-cáo)
+  - [12.4 Checklist 5 Bước Demo Chuẩn Điểm Cao Trước Hội Đồng](#124-checklist-5-bước-demo-chuẩn-điểm-cao-trước-hội-đồng)
 
 ---
 
@@ -532,24 +539,264 @@ erDiagram
     }
 ```
 
-## 4.3 Từ điển Dữ liệu Chi tiết 14 Bảng (Data Dictionary)
+## 4.3 Phân Tích Chuyên Sâu Chỉ Số ISBN & Từ Điển Dữ Liệu Chi Tiết 14 Bảng (Data Dictionary)
 
-| STT | Tên Bảng Vật Lý | Tên Model Prisma | Chức Năng Nghiệp Vụ Cốt Lõi | Ràng Buộc & Khóa |
-|:---:|---|---|---|---|
-| **1** | `users` | `User` | Lưu trữ tài khoản, thông tin cơ bản, mật khẩu băm, vai trò 3 cấp (`USER`, `STAFF`, `SUPER_ADMIN`). | PK: `id`, UK: `email`, UK: `phone` |
-| **2** | `user_profiles` | `UserProfile` | Lưu trữ hồ sơ độc giả, sổ địa chỉ nhận hàng nhiều cấp, sở thích thể loại, cấp độ đọc sách. | PK: `id`, FK: `user_id` $\rightarrow$ `users(id)` (1-1) |
-| **3** | `permissions` | `Permission` | Danh mục mã quyền hạn hệ thống (`MANAGE_BOOKS`, `MANAGE_ORDERS`, `MANAGE_USERS`, `MANAGE_REVIEWS`). | PK: `id`, UK: `code` |
-| **4** | `staff_permissions` | `StaffPermission` | Phân quyền động cho từng nhân viên, ghi nhận lịch sử ai là người phân quyền (`assigned_by_id`). | PK: `id`, FK: `staff_id`, `permission_id`, `assigned_by_id` |
-| **5** | `categories` | `Category` | Cây danh mục 3 cấp (L1 Ngành hàng, L2 Chuyên mục, L3 Chi tiết) với quan hệ tự tham chiếu (`parent_id`). | PK: `id`, UK: `slug`, FK: `parent_id` $\rightarrow$ `categories(id)` |
-| **6** | `authors` | `Author` | Hồ sơ tác giả văn học và khoa học, tiểu sử, đường dẫn slug tra cứu. | PK: `id`, UK: `slug` |
-| **7** | `books` | `Book` | Thông tin xuất bản: ISBN, tên sách, giá bìa, giá bán, tồn kho thực tế, số lượng đã bán, đánh giá. | PK: `id`, UK: `slug`, UK: `isbn` |
-| **8** | `book_authors` | `BookAuthor` | Bảng trung gian liên kết Nhiều-Nhiều (N-N) giữa Sách và các Tác giả cùng chắp bút. | Composite PK: (`book_id`, `author_id`) |
-| **9** | `book_categories` | `BookCategory` | Bảng trung gian liên kết Nhiều-Nhiều (N-N) giữa Sách và các Danh mục thể loại. | Composite PK: (`book_id`, `category_id`) |
-| **10** | `orders` | `Order` | Lưu trữ đơn đặt hàng với mã `TS-YYYYMMDD-XXXX`, thông tin người nhận, tiền hàng, phí ship, trạng thái. | PK: `id`, UK: `order_code`, FK: `user_id` $\rightarrow$ `users(id)` |
-| **11** | `order_items` | `OrderItem` | Chi tiết từng sản phẩm trong đơn, lưu snapshot tên sách và giá mua để bảo toàn lịch sử giao dịch. | PK: `id`, FK: `order_id` $\rightarrow$ `orders(id)`, `book_id` $\rightarrow$ `books(id)` |
-| **12** | `reviews` | `Review` | Đánh giá sao (1-5) và nhận xét của độc giả, có cờ người mua thật và trạng thái duyệt của Admin. | PK: `id`, FK: `book_id` $\rightarrow$ `books(id)`, `user_id` $\rightarrow$ `users(id)` |
-| **13** | `admin_audit_logs` | `AuditLog` | Nhật ký kiểm toán bảo mật: ghi nhận mọi thao tác thêm/sửa/xóa nhạy cảm của Admin và Staff. | PK: `id`, FK: `user_id` $\rightarrow$ `users(id)` |
-| **14** | `user_behavior_events` | `BehaviorEvent` | Thu thập hành vi người dùng (xem sách, thêm giỏ, tìm kiếm, mua hàng) phục vụ thống kê & gợi ý AI. | PK: `id`, FK: `user_id` $\rightarrow$ `users(id)`, `book_id` $\rightarrow$ `books(id)` |
+### 4.3.1 Chỉ số ISBN trong Cơ sở dữ liệu là gì?
+
+Trong bảng `books`, trường `isbn` (International Standard Book Number - Mã số tiêu chuẩn quốc tế cho sách) là **thuộc tính định danh độc nhất trên phạm vi toàn cầu** được cấp theo tiêu chuẩn quốc tế **ISO 2108**.
+
+#### A. Cấu trúc chuẩn của một mã ISBN-13 (Ví dụ thực tế trong hệ thống Tổ Sách: `978-604-0013-71-2`)
+Mã ISBN gồm 13 chữ số, chia làm 5 phần phân tách bởi dấu gạch ngang:
+1. **Tiền tố GS1 (GS1 Prefix - `978` hoặc `979`):** 3 chữ số đầu tiên định danh ngành xuất bản sách trong hệ thống mã vạch toàn cầu.
+2. **Mã nhóm quốc gia / Khu vực ngôn ngữ (Registration Group - `604`):** Định danh quốc gia xuất bản (`604` là mã quốc gia chính thức của **Việt Nam** do Tổ chức ISBN Quốc tế chỉ định; `0` hoặc `1` là khu vực nói tiếng Anh...).
+3. **Mã Nhà xuất bản (Registrant Element - `0013`):** Định danh nhà xuất bản cụ thể trong nước (Ví dụ: NXB Trẻ, NXB Giáo Dục, NXB Kim Đồng, Nhã Nam...).
+4. **Mã ấn phẩm (Publication Element - `71`):** Mã số phân biệt do nhà xuất bản gán riêng cho từng ấn bản cụ thể (từng tựa sách, phân biệt rõ bản bìa cứng, bìa mềm, hoặc lần tái bản sửa đổi).
+5. **Số kiểm tra (Check Digit - `2`):** Chữ số cuối cùng được tính toán theo thuật toán Modulo 10 (với trọng số 1 và 3 xen kẽ) để máy quét mã vạch và phần mềm tự động phát hiện lỗi gõ sai.
+
+#### B. Vai trò và Ý nghĩa kỹ thuật của ISBN trong Hệ sinh thái Tổ Sách
+- **Khóa duy nhất cấp nghiệp vụ (`@unique` constraint):** Một cuốn sách có thể trùng tên với cuốn khác (*"Chiến Tranh và Hòa Bình"*, *"Đắc Nhân Tâm"* có nhiều nhà xuất bản dịch và in), nhưng mã ISBN của từng bản in là **duy nhất tuyệt đối**. Đặt cờ `@unique` trên cột `isbn` giúp CSDL tự động chặn 100% rủi ro trùng lặp dữ liệu khi nhân viên kho nhập sách hoặc khi chạy pipeline nạp dữ liệu.
+- **Tích hợp máy quét mã vạch Barcode (EAN-13):** Khi quét mã vạch ở bìa sau cuốn sách thực tế tại quầy hoặc kho bãi, đầu đọc mã vạch trả về chính xác chuỗi số ISBN. Nhờ đó, nhân viên kho chỉ cần "bắn mã" là hệ thống tự động tìm đúng cuốn sách trong 5.125 đầu sách để nhập kho hoặc đóng gói đơn hàng.
+- **Tối ưu hóa tìm kiếm & Lập chỉ mục Elasticsearch:** Người đọc hoặc thủ thư có thể dán trực tiếp mã ISBN vào thanh tìm kiếm Header để ra đúng phiên bản sách mong muốn mà không cần gõ tên dài.
+- **Chuẩn hóa đối chiếu với các bên thứ ba:** Giúp hệ thống dễ dàng kết nối và đối chiếu dữ liệu với Thư viện Quốc gia, cơ sở dữ liệu OpenLibrary, Google Books API và các đối tác phân phối sách.
+
+---
+
+### 4.3.2 Từ Điển Dữ Liệu Chi Tiết Từng Cột Của 14 Bảng CSDL (Field-by-Field Data Dictionary)
+
+#### 1. Bảng `books` (Thông tin Sách trong kho & Niêm yết)
+*Bảng thực thể trung tâm của toàn bộ hệ thống, lưu trữ 5.125 đầu sách.*
+
+| Tên Cột (Field) | Kiểu Dữ Liệu | Ràng Buộc / Khóa | Ý Nghĩa Nghiệp Vụ Thực Tế & Ràng Buộc | Dữ Liệu Mẫu Thực Tế |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Khóa chính định danh duy nhất cuốn sách | `0006763b-3a1c-4db9-b929-af2b73d6d671` |
+| `isbn` | `TEXT` | **UK**, Index | Mã chuẩn quốc tế ISBN-13 (kiểm soát nguồn gốc, quét mã vạch) | `978-604-0013-71-2` |
+| `title` | `TEXT` | NOT NULL | Tên sách chính thức trên bìa | `Gà Mèo Chăm Sóc Chuột Con 8` |
+| `slug` | `TEXT` | **UK**, Index | Chuỗi URL thân thiện SEO (duy nhất, không dấu gạch ngang) | `ga-meo-cham-soc-chuot-con-8-124` |
+| `description` | `TEXT` | Nullable | Mô tả chi tiết nội dung sách, tóm tắt cốt truyện | `*Gà Mèo Chăm Sóc Chuột Con 8* của tác giả...` |
+| `price` | `INTEGER` | NOT NULL | Giá bán thực tế hiện tại (VNĐ), đã trừ khuyến mại | `25500` |
+| `original_price`| `INTEGER` | NOT NULL | Giá bìa niêm yết ban đầu của nhà xuất bản (VNĐ) | `45000` |
+| `stock_qty` | `INTEGER` | Default 0 | Số lượng sách thực tế còn trong kho vật lý | `42` |
+| `sold_count` | `INTEGER` | Default 0 | Tổng số cuốn đã bán thành công (để xếp hạng Bestseller) | `185` |
+| `page_count` | `INTEGER` | Nullable | Số trang của cuốn sách | `180` |
+| `language` | `TEXT` | Default 'Tiếng Việt'| Ngôn ngữ ấn bản | `Tiếng Việt` |
+| `publish_year` | `INTEGER` | Nullable | Năm xuất bản của ấn bản này | `2023` |
+| `publisher` | `TEXT` | Nullable | Tên Nhà xuất bản cấp phép | `NXB Kim Đồng` |
+| `cover_url` | `TEXT` | NOT NULL | Đường dẫn URL ảnh bìa chính (CDN salt.tikicdn.com) | `https://salt.tikicdn.com/cache/...jpg` |
+| `extra_images` | `TEXT[]` | Default `{}` | Mảng đường dẫn các ảnh chụp mục lục, trang trong | `{"https://.../img1.jpg"}` |
+| `avg_rating` | `DOUBLE PRECISION`| Default 0.0 | Điểm đánh giá trung bình (1.0 đến 5.0) | `4.8` |
+| `rating_count` | `INTEGER` | Default 0 | Tổng số lượt khách hàng đã gửi đánh giá sao | `26` |
+| `weight_g` | `INTEGER` | Nullable | Trọng lượng sách (gram) để tính phí vận chuyển | `320` |
+| `size_cm` | `TEXT` | Nullable | Kích thước sách (Dài x Rộng cm) | `14 x 20.5 cm` |
+| `format` | `TEXT` | Default 'Bìa mềm' | Quy cách đóng sách: 'Bìa mềm' hoặc 'Bìa cứng' | `Bìa mềm` |
+| `translator` | `TEXT` | Nullable | Họ tên dịch giả (nếu là tác phẩm nước ngoài dịch) | `Nguyễn Lệ Chi` |
+| `tags` | `TEXT[]` | Default `{}` | Mảng từ khóa hỗ trợ tìm kiếm nhanh & Faceted Filter | `{"thiếu nhi", "truyện tranh", "động vật"}` |
+| `is_active` | `BOOLEAN` | Default true | Trạng thái hiển thị mở bán (`true`: bán, `false`: ẩn kho) | `true` |
+| `is_bestseller`| `BOOLEAN` | Default false| Cờ đánh dấu sách bán chạy nhất để gắn huy hiệu | `true` |
+| `is_new` | `BOOLEAN` | Default false| Cờ sách mới phát hành (trong vòng 30 ngày) | `false` |
+| `is_featured` | `BOOLEAN` | Default false| Cờ sách nổi bật hiển thị ở Banner trang chủ | `true` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm tạo bản ghi sách | `2026-09-10 08:30:00+07` |
+| `updated_at` | `TIMESTAMPTZ` | Auto update | Thời điểm chỉnh sửa thông tin gần nhất | `2026-10-12 14:20:15+07` |
+
+---
+
+#### 2. Bảng `authors` (Tác giả Sách)
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh duy nhất của tác giả | `a1b2c3d4-0001-4000-8000-000000000001` |
+| `name` | `TEXT` | NOT NULL | Họ và tên tác giả hoặc bút danh | `Nguyễn Nhật Ánh` |
+| `slug` | `TEXT` | **UK**, Index | Đường dẫn URL tra cứu sách của tác giả | `nguyen-nhat-anh` |
+| `bio` | `TEXT` | Nullable | Giới thiệu tiểu sử, phong cách sáng tác, giải thưởng | `Nhà văn chuyên viết cho thanh thiếu niên...`|
+| `avatar_url` | `TEXT` | Nullable | Ảnh chân dung tác giả | `https://.../author_nna.jpg` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm tạo bản ghi tác giả | `2026-09-10 08:00:00+07` |
+
+---
+
+#### 3. Bảng `categories` (Danh Mục Phân Cấp 3 Tầng)
+*Thiết kế cấu trúc cây (Hierarchical Tree) thông qua quan hệ tự tham chiếu `parent_id`.*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh duy nhất của danh mục | `c1d2e3f4-0001-4000-8000-000000000001` |
+| `parent_id` | `TEXT` (UUID) | **FK** | Khóa ngoại trỏ đến `categories.id` cha (`NULL` = Ngành hàng gốc) | `c1d2e3f4-0000-4000-8000-000000000000` |
+| `name` | `TEXT` | NOT NULL | Tên hiển thị của danh mục | `Văn Học Kinh Điển` |
+| `slug` | `TEXT` | **UK**, Index | Đường dẫn SEO danh mục trên thanh điều hướng | `van-hoc-kinh-dien` |
+| `level` | `INTEGER` | Default 1 | Cấp phân nhánh (1: Ngành hàng lớn, 2: Chuyên mục, 3: Chi tiết) | `2` |
+| `sort_order` | `INTEGER` | Default 0 | Thứ tự hiển thị ưu tiên trên Menu thanh Header | `1` |
+| `image_url` | `TEXT` | Nullable | Ảnh đại diện danh mục (hiển thị trên Grid trang chủ) | `https://.../cat_van_hoc.png` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm tạo danh mục | `2026-09-10 08:00:00+07` |
+
+---
+
+#### 4. Bảng `book_authors` (Liên Kết Sách - Tác Giả N:N)
+*Giải quyết bài toán 1 cuốn sách có thể có nhiều đồng tác giả, và 1 tác giả viết nhiều cuốn sách.*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ |
+| :--- | :--- | :---: | :--- |
+| `book_id` | `TEXT` (UUID) | **PK, FK** | Khóa ngoại trỏ đến `books.id` (Xóa sách tự động xóa liên kết - CASCADE) |
+| `author_id` | `TEXT` (UUID) | **PK, FK** | Khóa ngoại trỏ đến `authors.id` (CASCADE) |
+
+---
+
+#### 5. Bảng `book_categories` (Liên Kết Sách - Danh Mục N:N)
+*Một cuốn sách có thể xuất hiện đồng thời trong ngành hàng cha và chuyên mục con.*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ |
+| :--- | :--- | :---: | :--- |
+| `book_id` | `TEXT` (UUID) | **PK, FK** | Khóa ngoại trỏ đến `books.id` (CASCADE) |
+| `category_id` | `TEXT` (UUID) | **PK, FK** | Khóa ngoại trỏ đến `categories.id` (CASCADE) |
+
+---
+
+#### 6. Bảng `users` (Tài Khoản Người Dùng & Quản Trị)
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh duy nhất người dùng | `u1a2b3c4-0001-4000-8000-000000000001` |
+| `email` | `TEXT` | **UK**, Index | Email đăng nhập chính thức | `hnhngyndng@gmail.com` |
+| `password_hash`| `TEXT` | NOT NULL | Mật khẩu mã hóa Bcrypt 10 vòng bảo mật cao | `$2b$10$wK3e8...XyZ` |
+| `full_name` | `TEXT` | NOT NULL | Họ và tên hiển thị của người dùng | `Nguyễn Đăng Hanh` |
+| `phone` | `TEXT` | **UK**, Nullable | Số điện thoại liên hệ nhận hàng | `0987654321` |
+| `avatar_url` | `TEXT` | Nullable | Ảnh đại diện tài khoản | `https://.../avatar.jpg` |
+| `role` | `UserRole` (Enum)| Default 'USER' | Vai trò cốt lõi: `USER`, `STAFF`, hoặc `SUPER_ADMIN` | `SUPER_ADMIN` |
+| `status` | `UserStatus`(Enum)| Default 'ACTIVE'| Trạng thái tài khoản: `ACTIVE`, `BANNED`, `UNVERIFIED` | `ACTIVE` |
+| `email_verified`| `BOOLEAN` | Default false | Cờ xác nhận đã xác thực email thành công qua mã OTP | `true` |
+| `last_login_at`| `TIMESTAMPTZ` | Nullable | Lần đăng nhập hệ thống gần nhất | `2026-10-15 14:00:00+07` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm đăng ký tài khoản | `2026-09-10 09:00:00+07` |
+| `updated_at` | `TIMESTAMPTZ` | Auto update | Thời điểm cập nhật hồ sơ gần nhất | `2026-10-14 20:10:00+07` |
+
+---
+
+#### 7. Bảng `user_profiles` (Hồ Sơ Mở Rộng & Sở Thích Độc Giả)
+*Tách riêng quan hệ 1-1 với `users` để tối ưu kích thước bản ghi bảng users khi đăng nhập.*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh hồ sơ | `up-0001-4000-8000` |
+| `user_id` | `TEXT` (UUID) | **FK, UK** | Liên kết duy nhất đến `users.id` (1-1) | `u1a2b3c4-0001-4000-8000-000000000001` |
+| `birthday` | `TIMESTAMPTZ` | Nullable | Ngày sinh độc giả | `2002-05-15` |
+| `gender` | `TEXT` | Nullable | Giới tính: 'Nam', 'Nữ', 'Khác' | `Nam` |
+| `address_province`| `TEXT` | Nullable | Tỉnh / Thành phố nhận hàng (Tầng 1) | `Thành phố Hà Nội` |
+| `address_district`| `TEXT` | Nullable | Quận / Huyện nhận hàng (Tầng 2) | `Quận Cầu Giấy` |
+| `address_ward` | `TEXT` | Nullable | Phường / Xã nhận hàng (Tầng 3) | `Phường Dịch Vọng Hậu` |
+| `address_detail` | `TEXT` | Nullable | Số nhà, ngõ ngách, tên đường chi tiết | `Số 144 Xuân Thủy` |
+| `preferred_genres`| `TEXT[]` | Default `{}` | Danh sách thể loại sách yêu thích (phục vụ AI gợi ý) | `{"Văn học", "Kỹ năng sống"}` |
+| `preferred_langs` | `TEXT[]` | Default `{}` | Ngôn ngữ đọc ưu tiên: `{"Tiếng Việt", "English"}` | `{"Tiếng Việt"}` |
+| `reading_level` | `TEXT` | Default 'casual'| Tần suất đọc sách ('casual', 'avid', 'scholar') | `avid` |
+| `metadata` | `JSONB` | Nullable | Thuộc tính JSON động mở rộng sở thích | `{"favorite_author": "Nguyễn Nhật Ánh"}` |
+| `updated_at` | `TIMESTAMPTZ` | Auto update | Thời gian cập nhật sổ địa chỉ gần nhất | `2026-10-12 11:00:00+07` |
+
+---
+
+#### 8. Bảng `permissions` (Danh Mục Quyền Hạn RBAC)
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh quyền hạn | `p-001` |
+| `code` | `TEXT` | **UK**, Index | Mã quyền dùng kiểm tra trong Middleware & API | `MANAGE_BOOKS` |
+| `name` | `TEXT` | NOT NULL | Tên hiển thị tiếng Việt trên giao diện phân quyền | `Quản lý kho sách` |
+| `description` | `TEXT` | Nullable | Giải thích quyền: Xem, thêm, sửa, xóa sách, nhập kho | `Cho phép CRUD sách và cập nhật số lượng tồn kho` |
+
+---
+
+#### 9. Bảng `staff_permissions` (Ma Trận Phân Quyền Nhân Viên)
+*Cho phép cấp quyền linh hoạt từng tính năng độc lập cho từng nhân sự.*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ |
+| :--- | :--- | :---: | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh phân quyền |
+| `staff_id` | `TEXT` (UUID) | **FK** | Khóa ngoại trỏ đến `users.id` (Nhân viên được gán quyền) |
+| `permission_id`| `TEXT` (UUID) | **FK** | Khóa ngoại trỏ đến `permissions.id` (Mã quyền được gán) |
+| `assigned_by_id`| `TEXT` (UUID)| **FK**, Nullable| Khóa ngoại trỏ đến `users.id` (Super Admin đã thực hiện gán quyền) |
+| `assigned_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm trao quyền phục vụ kiểm toán |
+
+---
+
+#### 10. Bảng `orders` (Đơn Hàng Giao Dịch)
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh hệ thống của đơn hàng | `ord-0001-4000-8000` |
+| `order_code` | `TEXT` | **UK**, Index | Mã đơn hàng đối ngoại khách hàng tra cứu | `TS-20261015-8942` |
+| `user_id` | `TEXT` (UUID) | **FK**, Nullable| Khóa ngoại trỏ đến `users.id` (`NULL` nếu là khách vãng lai) | `u1a2b3c4-0001-4000` |
+| `customer_name`| `TEXT` | NOT NULL | Họ tên người nhận hàng ghi trên bưu kiện | `Trần Văn An` |
+| `customer_phone`| `TEXT` | NOT NULL | Số điện thoại shipper gọi giao hàng | `0912345678` |
+| `customer_email`| `TEXT` | Nullable | Email nhận thông báo hóa đơn và mã vận đơn | `an.tran@gmail.com` |
+| `shipping_address`| `TEXT` | NOT NULL | Địa chỉ nhận hàng đầy đủ 3 cấp hành chính | `Số 12 Chùa Bộc, P. Quang Trung, Đống Đa, Hà Nội` |
+| `subtotal` | `INTEGER` | NOT NULL | Tổng tiền sách trước khi cộng cước (VNĐ) | `255000` |
+| `shipping_fee` | `INTEGER` | Default 30000 | Cước phí vận chuyển (Tự động 0đ nếu đơn $\ge$ 250.000đ) | `0` |
+| `total_amount` | `INTEGER` | NOT NULL | Tổng số tiền khách cần thanh toán: `subtotal + shipping_fee` | `255000` |
+| `payment_method`| `PaymentMethod`| Default 'COD' | Hình thức: `COD` (tiền mặt) hoặc `BANK_TRANSFER` (VietQR) | `BANK_TRANSFER` |
+| `payment_status`| `PaymentStatus`| Default 'PENDING'| Tình trạng tiền: `PENDING`, `PAID`, `FAILED`, `REFUNDED` | `PAID` |
+| `status` | `OrderStatus` | Default 'PENDING'| Vòng đời đơn: `PENDING`, `CONFIRMED`, `SHIPPING`, `DELIVERED`, `CANCELLED` | `CONFIRMED` |
+| `tracking_code`| `TEXT` | Nullable | Mã vận đơn của đối tác bưu cục (GHTK, GHN, ViettelPost) | `GHTK-882910394VN` |
+| `note` | `TEXT` | Nullable | Ghi chú của khách hàng (VD: Giao trong giờ hành chính) | `Giao giờ hành chính giúp mình` |
+| `timeline` | `JSONB` | Nullable | Lịch sử vết chuyển trạng thái kèm timestamp và người duyệt | `[{"status":"PENDING","at":"..."},{"status":"CONFIRMED","at":"..."}]` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm khách nhấn nút Chốt đơn | `2026-10-15 10:15:00+07` |
+| `updated_at` | `TIMESTAMPTZ` | Auto update | Thời điểm trạng thái đơn thay đổi gần nhất | `2026-10-15 11:00:00+07` |
+
+---
+
+#### 11. Bảng `order_items` (Chi Tiết Món Hàng Trong Đơn)
+*Lưu ý kiến trúc: Bắt buộc snapshot `book_title`, `cover_url`, `unit_price` tại thời điểm mua để sau này NXB tăng giá sách thì hóa đơn cũ không bao giờ bị sai lệch.*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh dòng chi tiết | `oi-0001` |
+| `order_id` | `TEXT` (UUID) | **FK** | Khóa ngoại trỏ đến `orders.id` (Xóa đơn xóa chi tiết - CASCADE) | `ord-0001-4000-8000` |
+| `book_id` | `TEXT` (UUID) | **FK** | Khóa ngoại trỏ đến `books.id` (RESTRICT - cấm xóa sách đã có trong đơn) | `0006763b-3a1c-4db9` |
+| `book_title` | `TEXT` | NOT NULL | Bản chụp (Snapshot) tên sách lúc đặt mua | `Gà Mèo Chăm Sóc Chuột Con 8` |
+| `cover_url` | `TEXT` | NOT NULL | Bản chụp ảnh bìa sách | `https://salt.tikicdn.com/...` |
+| `unit_price` | `INTEGER` | NOT NULL | Bản chụp giá bán tại thời điểm bấm mua (VNĐ) | `25500` |
+| `quantity` | `INTEGER` | Default 1 | Số lượng cuốn khách đặt mua | `2` |
+| `total_price` | `INTEGER` | NOT NULL | Thành tiền của dòng: `unit_price * quantity` | `51000` |
+
+---
+
+#### 12. Bảng `reviews` (Đánh Giá & Nhận Xét Độc Giả)
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh nhận xét | `rev-0001` |
+| `book_id` | `TEXT` (UUID) | **FK** | Khóa ngoại trỏ đến `books.id` | `0006763b-3a1c-4db9` |
+| `user_id` | `TEXT` (UUID) | **FK** | Khóa ngoại trỏ đến `users.id` người viết review | `u1a2b3c4-0001` |
+| `rating` | `INTEGER` | NOT NULL | Số sao đánh giá từ 1 đến 5 sao | `5` |
+| `title` | `TEXT` | Nullable | Tiêu đề tóm tắt nhận xét | `Sách in đẹp, đóng gói cẩn thận` |
+| `body` | `TEXT` | NOT NULL | Nội dung đánh giá chi tiết cảm nhận khi đọc | `Sách chuẩn chính hãng, giấy xốp chống lóa...` |
+| `is_verified_purchase`| `BOOLEAN` | Default false | Cờ xác nhận người đánh giá đã thực sự mua cuốn sách này | `true` |
+| `status` | `ReviewStatus`| Default 'APPROVED'| Trạng thái duyệt: `PENDING`, `APPROVED`, `REJECTED` | `APPROVED` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm gửi nhận xét | `2026-10-14 16:30:00+07` |
+| `updated_at` | `TIMESTAMPTZ` | Auto update | Thời điểm chỉnh sửa nhận xét | `2026-10-14 16:30:00+07` |
+
+---
+
+#### 13. Bảng `admin_audit_logs` (Nhật Ký Kiểm Toán Bảo Mật)
+*Ghi nhận toàn bộ thao tác thay đổi nhạy cảm của nhân viên và quản trị viên (Audit Trail).*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh vết kiểm toán | `aud-0001` |
+| `user_id` | `TEXT` (UUID) | **FK** | Khóa ngoại trỏ đến `users.id` nhân viên thao tác | `u1a2b3c4-0001` |
+| `action` | `TEXT` | NOT NULL | Hành động: `CREATE_BOOK`, `UPDATE_STOCK`, `CONFIRM_ORDER`, `ASSIGN_PERM` | `UPDATE_STOCK` |
+| `target_type` | `TEXT` | NOT NULL | Loại thực thể bị tác động: `BOOK`, `ORDER`, `USER`, `REVIEW` | `BOOK` |
+| `target_id` | `TEXT` | Nullable | Mã ID của đối tượng bị thay đổi | `0006763b-3a1c-4db9` |
+| `details` | `JSONB` | Nullable | Dữ liệu trước và sau khi thay đổi (Before/After Payload) | `{"old_stock": 2, "new_stock": 50}` |
+| `ip_address` | `TEXT` | Nullable | Địa chỉ IP của máy nhân viên thực hiện thao tác | `118.70.12.34` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm xảy ra thao tác (chống chối bỏ) | `2026-10-15 09:12:00+07` |
+
+---
+
+#### 14. Bảng `user_behavior_events` (Dữ Liệu Lớn Thu Thập Hành Vi Phục Vụ AI & Phân Tích)
+*Thu thập 200.000 sự kiện tương tác thời gian thực của người dùng phục vụ Động cơ gợi ý lai ghép 5 yếu tố (Mục 3.1 Proposal).*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã sự kiện hành vi | `evt-0001` |
+| `user_id` | `TEXT` (UUID) | **FK**, Nullable| Mã người dùng (nếu đã đăng nhập, `NULL` nếu là khách vãng lai) | `u1a2b3c4-0001` |
+| `session_id` | `TEXT` | NOT NULL | Mã phiên làm việc trên trình duyệt của người dùng | `sess_9a8b7c6d` |
+| `event_type` | `TEXT` | NOT NULL | Loại hành vi: `view` (xem), `add_to_cart` (thêm giỏ), `wishlist`, `purchase`, `search` | `add_to_cart` |
+| `book_id` | `TEXT` (UUID) | **FK**, Nullable| Mã cuốn sách phát sinh tương tác | `0006763b-3a1c-4db9` |
+| `search_query` | `TEXT` | Nullable | Từ khóa người dùng đã gõ tìm kiếm | `nguyễn nhật ánh` |
+| `duration_sec` | `INTEGER` | Nullable | Thời gian người dùng dừng lại đọc trang chi tiết sách (giây) | `45` |
+| `metadata` | `JSONB` | Nullable | Thông tin bổ sung: nguồn giới thiệu (referrer), thiết bị | `{"device": "mobile", "ref": "facebook"}` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm sự kiện phát sinh | `2026-10-15 13:45:10+07` |
+
+---
 
 ## 4.4 Chiến lược Lập chỉ mục (Index Optimization Strategy)
 Để đảm bảo tốc độ phản hồi dưới **50ms** trên tập dữ liệu hơn 5.100 đầu sách và 200.000 bản ghi sự kiện:
@@ -1382,4 +1629,118 @@ Hệ thống đã triển khai pipeline nạp dữ liệu quy mô lớn, vượt
   3. Xây dựng ứng dụng di động đa nền tảng (React Native) đồng bộ tài khoản với hệ sinh thái web.
 
 ---
+
+# CHƯƠNG 12: TỔNG KẾT TOÀN DIỆN DỰ ÁN TỪ ĐẦU ĐẾN CUỐI (A - Z) DÀNH CHO 2 THÀNH VIÊN ÔN TẬP VÀ BÁO CÁO
+
+> **Tài liệu đọc nhanh trước khi bước vào phòng bảo vệ:**  
+> Bản tổng kết này giúp **Nguyễn Đăng Hanh** và **Nguyễn Mạnh Hòa** nắm chắc toàn bộ hành trình công nghệ, cấu trúc hệ thống, phân công nhiệm vụ và kịch bản phối hợp để tự tin trả lời bất kỳ câu hỏi nào của Hội đồng.
+
+---
+
+## 12.1 Bức Tranh Toàn Cảnh: Dự Án "Tổ Sách" Đã Làm Được Những Gì?
+
+Hệ thống **Tổ Sách** là một nền tảng thương mại điện tử chuyên sâu cho thị trường sách theo mô hình **B2C (Business-to-Consumer)**, được xây dựng hoàn chỉnh từ con số 0 với 4 trụ cột chính:
+
+```
++----------------------------------------------------------------------------------------------------+
+|                                HỆ SINH THÁI THƯƠNG MẠI ĐIỆN TỬ TỔ SÁCH                             |
++----------------------------------------------------------------------------------------------------+
+|  1. CỬA HÀNG KHÁCH HÀNG (Storefront B2C)   |  2. QUẢN TRỊ & VẬN HÀNH (Admin Portal)               |
+|  - Trang chủ động, Banner, 60fps GPU        |  - AppShell cách ly, Dashboard doanh thu thời gian thực|
+|  - Cây danh mục 3 tầng, Lọc đa chiều        |  - Quản lý kho sách 5.125 cuốn, Import/Export CSV    |
+|  - Giỏ hàng thông minh (Smart Cart Merge)  |  - Vòng đời đơn hàng State Machine & Hủy hoàn tồn kho|
+|  - Thanh toán VietQR MBBank tự động         |  - Phân quyền động nhân viên (RBAC) & Quả chuông lọc |
+|  - Tra cứu tài khoản, OTP Gmail bảo mật    |  - Nhật ký kiểm toán an ninh (Admin Audit Logs)      |
++--------------------------------------------+------------------------------------------------------+
+|  3. CÔNG NGHỆ NÂNG CAO THEO PROPOSAL       |  4. DỮ LIỆU LỚN & TRÍ TUỆ NHÂN TẠO                   |
+|  - Mục 3.1: Hybrid Recommendation (5 yếu tố)|  - 5.125 sách thật, 2.790 tác giả, 169 danh mục DDC |
+|  - Mục 3.2: Elasticsearch 8.x + Fuzzy      |  - 50k đánh giá, 200k sự kiện hành vi, 10k đơn hàng  |
+|  - Mục 3.4: Redis In-Memory Cache (TTL 30d)|  - Trợ lý AI RAG Chatbot (Gemini 1.5 Flash-Lite)     |
+|  - An toàn giao dịch ACID chống bán âm kho |  - 14 miền tri thức nội bộ xử lý phản hồi trong 50ms |
++----------------------------------------------------------------------------------------------------+
+```
+
+---
+
+## 12.2 Hành Trình Phát Triển 8 Giai Đoạn Từ Đầu Đến Cuối
+
+### Giai đoạn 1: Khởi tạo Kiến trúc & Thiết kế Cơ sở Dữ liệu Chuẩn 3NF
+- **Khởi tạo Codebase:** Sử dụng Next.js 15/16 App Router với TypeScript nghiêm ngặt, Tailwind CSS và ESLint.
+- **Thiết kế Database:** Xây dựng lược đồ CSDL trên **PostgreSQL (Supabase)** gồm **14 bảng quan hệ chuẩn 3NF**, phân định rõ các bảng thực thể (`books`, `authors`, `categories`, `users`, `orders`), bảng hồ sơ mở rộng (`user_profiles`), bảng trung gian N:N (`book_authors`, `book_categories`), bảng bảo mật (`permissions`, `staff_permissions`, `admin_audit_logs`) và bảng dữ liệu lớn (`user_behavior_events`).
+- **Quản lý Schema bằng Prisma ORM:** Áp dụng cơ chế Migration, Connection Pooling qua PgBouncer cổng 6543 giúp chịu tải cao.
+
+### Giai đoạn 2: Xác thực Bảo mật & Phân Quyền Vai Trò (Auth & RBAC)
+- **Cơ chế Token an toàn:** Mã hóa mật khẩu bằng Bcrypt 10 vòng; cấp phát token JWT lưu hoàn toàn trong **HttpOnly Cookie** với cờ `SameSite=Lax`, triệt tiêu rủi ro XSS và CSRF.
+- **Edge Guard Proxy (proxy.ts):** Đón đầu cơ chế của Next.js 16, kiểm soát phiên đăng nhập tại biên (Edge), tự động bảo vệ các tuyến đường riêng tư như `/checkout`, `/account/*`, và phân hệ `/admin/*`.
+- **Hệ thống gửi mã OTP qua Gmail:** Tích hợp SMTP gửi mã xác thực tài khoản 6 chữ số với giao diện email HTML mang thương hiệu Tổ Sách.
+
+### Giai đoạn 3: Xây dựng Trải nghiệm Mua Hàng Độc Giả (Storefront B2C)
+- **Header Chống Giật Bố Cục (Zero CLS):** Giữ cố định kích thước và vị trí các thành phần tài khoản, giỏ hàng khi người dùng đăng nhập/đăng xuất.
+- **Giỏ Hàng Thông Minh Đa Thiết Bị (Smart Cart Merge):** Khi khách vãng lai thêm sách vào giỏ rồi mới đăng nhập, hệ thống tự động gộp giỏ hàng tạm với giỏ hàng trên tài khoản theo thuật toán thông minh, tự động đồng bộ ngầm lên máy chủ.
+- **Hiệu Ứng Ném Sách Vào Giỏ Parabol 60fps:** Tính toán quỹ đạo toán học Parabol, tận dụng card đồ họa GPU (`translate3d`) mang lại cảm giác mua sắm sống động.
+- **Điều Hướng Danh Mục Phân Cấp 3 Tầng:** Hỗ trợ duyệt cây ngành hàng (Ngành hàng lớn $\rightarrow$ Chuyên mục $\rightarrow$ Chi tiết), thanh lọc đa chiều theo giá tiền, tag, và tình trạng còn hàng.
+
+### Giai đoạn 4: Quy Trình Đặt Hàng & Thanh Toán Tự Động (Checkout & VietQR)
+- **Chọn Lọc Sách Cần Mua (Selective Checkout):** Cho phép tích chọn những cuốn muốn mua trong giỏ, không bắt buộc mua toàn bộ.
+- **Sổ Địa Chỉ Hành Chính 3 Cấp:** Tích hợp bộ chọn Tỉnh/Thành phố $\rightarrow$ Quận/Huyện $\rightarrow$ Phường/Xã chuẩn hành chính Việt Nam.
+- **Thanh Toán Tự Động VietQR MBBank:** Tự sinh chuỗi mã chuẩn Napas 247 kèm mã đơn `TS-YYYYMMDD-XXXX` và số tiền chính xác, khách hàng chỉ cần quét app ngân hàng trong 3 giây.
+- **Giao Dịch ACID Chống Bán Âm Kho (`prisma.$transaction`):** Khóa hàng nguyên tử, nếu 2 người cùng mua cuốn cuối cùng, người đến trước sẽ mua thành công, người đến sau nhận thông báo hết hàng thân thiện mà kho không bao giờ bị âm.
+
+### Giai đoạn 5: Phân Hệ Quản Trị & Vận Hành Doanh Nghiệp (Admin Portal)
+- **AppShell Cách Ly Tuyệt Đối:** Giao diện Admin chạy trên layout riêng biệt, thanh điều hướng Sidebar chuyên nghiệp.
+- **Realtime Dashboard:** Thống kê tổng doanh thu, số đơn hàng, số sách trong kho với hiệu ứng đếm số Count-up và biểu đồ sóng doanh thu.
+- **Quản Lý Kho Sách Toàn Diện:** Thêm, sửa, xóa sách, nhập/xuất file CSV hàng loạt, cập nhật số lượng tồn kho tức thì, gắn cờ Bestseller/Nổi bật.
+- **Quản Lý Vòng Đời Đơn Hàng Theo State Machine:** Quy trình chuẩn: `PENDING` $\rightarrow$ `CONFIRMED` $\rightarrow$ `SHIPPING` $\rightarrow$ `DELIVERED` (hoặc `CANCELLED`). Hủy đơn tự động hoàn trả tồn kho (Stock Rollback). Khách hàng có quyền tự hủy đơn khi đơn còn ở trạng thái `PENDING`.
+- **Quản Lý Nhân Sự & Phân Quyền Ma Trận RBAC:** Cấp tài khoản nhân viên và gán quyền linh hoạt (`MANAGE_BOOKS`, `MANAGE_ORDERS`, `MANAGE_USERS`...). Quả chuông thông báo thông minh tự động lọc đúng việc theo quyền hạn (nhân viên kho chỉ thấy cảnh báo hết hàng, nhân viên đơn chỉ thấy đơn mới).
+- **Nhật Ký Kiểm Toán An Ninh (Audit Logs):** Ghi vết toàn bộ hành vi thêm/sửa/xóa của ban quản trị để phục vụ đối soát, chống gian lận.
+
+### Giai đoạn 6: Triển Khai Các Hạng Mục Nâng Cao Đúng Đề Cương Proposal
+- **Mục 3.1 Proposal — Động cơ Gợi ý Sách Lai ghép 5 Trọng số (Hybrid Recommendation):**
+  Kết hợp đồng thời 5 yếu tố: Tương đồng Thể loại (30%) + Cùng Tác giả (25%) + Hành vi Đọc quá khứ (20%) + Điểm Đánh giá & Độ phổ biến (15%) + Phân khúc Giá tương đương (10%).
+- **Mục 3.2 Proposal — Cụm Tìm kiếm Thông minh Elasticsearch 8.x:**
+  Tích hợp bộ phân tích tiếng Việt (Vietnamese Analyzer), loại bỏ Stop words, tự động sửa lỗi chính tả bằng thuật toán mờ Fuzzy khoảng cách Levenshtein $\le 2$, phân nhóm Faceted Aggregations và cơ chế chuyển tiếp an toàn (Fallback) sang PostgreSQL Full-Text Search.
+- **Mục 3.4 Proposal — Bộ nhớ đệm In-Memory Redis Cache & Recently Viewed:**
+  Lưu trữ danh sách "Sách vừa xem gần đây" phân vùng theo người dùng với thời gian sống (TTL) 30 ngày, giảm tải 85% truy vấn dư thừa vào Database chính.
+
+### Giai đoạn 7: Tích Hợp Trí Tuệ Nhân Tạo RAG Chatbot (Gemini 1.5 Flash-Lite)
+- **Kiến trúc RAG Thực thụ:** Không chỉ trả lời chung chung, Chatbot kết nối trực tiếp với CSDL PostgreSQL của Tổ Sách để nắm bắt giá cả, số lượng tồn kho và tình trạng đơn hàng thực tế của khách.
+- **14 Miền Tri Thức Nội Bộ Tự Dự Phòng:** Tích hợp bộ tri thức thương hiệu (Founder, cam kết sách thật 100%, đóng gói 3 lớp, freeship 250k, chính sách đồng kiểm, đổi trả 7 ngày). Khi API ngoài gặp sự cố, Chatbot tự động phản hồi trong 50ms, đảm bảo tính sẵn sàng 99.99%.
+- **Trải Nghiệm Thấu Cảm:** Chatbot biết lắng nghe cảm xúc người đọc (buồn, cô đơn, mất định hướng) để gợi ý đúng cuốn sách chữa lành kèm thẻ sách trực quan để thêm ngay vào giỏ hàng.
+
+### Giai đoạn 8: Pipeline Nạp Dữ Liệu Lớn & Chuẩn Bị Báo Cáo
+- **Bộ dữ liệu thực tế khổng lồ:** Nạp và làm sạch thành công **5.125 cuốn sách thật** từ Tiki CDN, **2.790 tác giả**, **169 danh mục chuẩn DDC**, **50.000 đánh giá**, **200.000 sự kiện hành vi** và **10.000 đơn hàng**.
+- **Chuẩn hóa Commit Git:** Toàn bộ 60 commit trong lịch sử mã nguồn được viết lại bằng tiếng Việt có dấu chuẩn quy cách, thể hiện tác phong kỹ sư chuyên nghiệp.
+- **Bộ tài liệu báo cáo toàn diện:** Biên soạn đầy đủ báo cáo học thuật `Document_Project.md`, kịch bản thuyết trình demo, và bộ câu hỏi phản biện bảo vệ đồ án.
+
+---
+
+## 12.3 Phân Công Vai Trò Cụ Thể Của 2 Thành Viên Khi Đi Báo Cáo
+
+| Thành Viên | Vai Trò Chính | Các Phần Việc Đảm Nhiệm Cốt Lõi | Nội Dung Trình Bày Trước Hội Đồng |
+| :--- | :--- | :--- | :--- |
+| **Nguyễn Đăng Hanh**<br/>(`hnhngyndng@gmail.com`) | **Lead Developer & System Architect** | - Thiết kế lược đồ CSDL PostgreSQL 14 bảng chuẩn 3NF.<br/>- Xây dựng Backend API Routes và Server Actions.<br/>- Đảm bảo an toàn giao dịch ACID kiểm soát kho sách.<br/>- Triển khai bảo mật Edge Guard, JWT HttpOnly và phân quyền RBAC.<br/>- Xây dựng động cơ gợi ý Hybrid Recommendation (Mục 3.1) và tìm kiếm Elasticsearch 8.x (Mục 3.2).<br/>- Xây dựng kiến trúc RAG AI Chatbot kết nối Gemini. | **Thuyết trình phần "Nội lực Kỹ thuật":**<br/>1. Kiến trúc hệ thống phân tầng và CSDL 14 bảng.<br/>2. Cơ chế Transaction ACID chống bán âm tồn kho.<br/>3. Ma trận phân quyền RBAC đa cấp độ.<br/>4. Hoạt động của thuật toán tìm kiếm mờ và AI RAG. |
+| **Nguyễn Mạnh Hòa**<br/>(`manhhoa02042005@gmail.com`)| **Co-Developer & Frontend UX Lead** | - Xây dựng Design System Figma chuẩn nhận diện thương hiệu.<br/>- Lựa chọn bảng màu Hải quân `#0B1F3A` và Cam mật `#F5A623`, font chữ Plus Jakarta Sans.<br/>- Phát triển giao diện Storefront B2C và Admin AppShell.<br/>- Tối ưu hiệu năng 60fps và triệt tiêu giật layout (Zero CLS).<br/>- Lập trình hiệu ứng ném sách Parabol bằng GPU `translate3d`.<br/>- Xây dựng giỏ hàng thông minh (Smart Cart Merge), quy trình Checkout VietQR và bộ lọc danh mục đa tầng. | **Thuyết trình phần "Trải nghiệm & Nghiệp vụ":**<br/>1. Bối cảnh thị trường, vấn nạn sách lậu và mô hình B2C.<br/>2. Trực tiếp thao tác chuột demo hành trình mua sách của khách hàng.<br/>3. Trình diễn hiệu ứng vi tương tác 60fps và thanh toán VietQR.<br/>4. Demo quy trình duyệt đơn và quản lý kho phía Admin. |
+
+---
+
+## 12.4 Checklist 5 Bước Demo Chuẩn Điểm Cao Trước Hội Đồng
+
+1. **Bước 1: Mở Trang chủ & Thanh Tìm kiếm (Hòa nói - 3 phút):**
+   - Giới thiệu giao diện, tính năng Zero CLS, font chữ đẹp mắt.
+   - Thao tác gõ sai chính tả trên thanh tìm kiếm: gõ *"dac nhan tam"* hoặc *"pytnhon"* $\rightarrow$ Hệ thống vẫn tìm ra đúng sách nhờ Elasticsearch Fuzzy Levenshtein $\le 2$.
+2. **Bước 2: Xem Chi tiết Sách & Thêm Vào Giỏ Hàng (Hòa nói - 2 phút):**
+   - Bấm vào cuốn sách, chỉ rõ thông số ISBN, NXB, số trang.
+   - Bấm nút "Thêm vào giỏ" $\rightarrow$ Cuốn sách bay hình vòng cung Parabol 60fps vào chiếc giỏ hàng góc trên.
+3. **Bước 3: Chốt Đơn & Thanh Toán VietQR (Hòa nói - 3 phút):**
+   - Vào `/checkout`, chọn địa chỉ Hà Nội $\rightarrow$ Cầu Giấy $\rightarrow$ Dịch Vọng Hậu.
+   - Chọn VietQR $\rightarrow$ Mã QR ngân hàng hiển thị tức thì với đúng số tiền và mã đơn.
+4. **Bước 4: Chatbot Tư Vấn & Gợi Ý Sách Thông Minh (Hanh nói - 3 phút):**
+   - Bật bong bóng chat: Hỏi *"Tôi đang cảm thấy áp lực và buồn bã"* $\rightarrow$ AI đồng cảm và trả về thẻ sách tâm lý trực tiếp từ CSDL.
+   - Hỏi *"Chính sách đổi trả và freeship thế nào?"* $\rightarrow$ AI trả lời ngay chính sách 7 ngày và freeship từ 250k.
+5. **Bước 5: Đăng Nhập Phân Hệ Admin & Chứng Minh RBAC (Hanh nói - 4 phút):**
+   - Đăng nhập tài khoản Nhân viên Kho: Quả chuông chỉ báo cảnh báo sách sắp hết hàng; không có quyền duyệt đơn.
+   - Đăng nhập Super Admin: Mở Dashboard doanh thu, bảng Audit Logs và giải thích cơ chế Transaction ACID khóa kho khi khách mua hàng.
+
+---
 *Bản tài liệu tổng hợp toàn diện được biên soạn chuẩn mực phục vụ công tác Viết Quyển Báo Cáo Đồ Án Tốt Nghiệp và Bảo Vệ Trước Hội Đồng Chấm Thi Công Nghệ Thông Tin.*
+
