@@ -102,10 +102,11 @@ export async function POST(req: NextRequest) {
           throw new Error(`Không tìm thấy cuốn sách với mã ${item.bookId}`);
         }
 
-        const qty = Number(item.quantity) || 1;
-        if (qty <= 0) {
-          throw new Error(`Số lượng mua cuốn "${book.title}" không hợp lệ.`);
+        const rawQty = Number(item.quantity);
+        if (!Number.isFinite(rawQty) || !Number.isInteger(rawQty) || rawQty < 1 || rawQty > 99) {
+          throw new Error(`Số lượng mua cuốn "${book.title}" không hợp lệ (phải là số nguyên từ 1 đến 99).`);
         }
+        const qty = rawQty;
 
         // Chống Over-selling: kiểm tra tồn kho thời gian thực
         if (book.stockQty < qty) {
