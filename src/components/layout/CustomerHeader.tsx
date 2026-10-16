@@ -208,8 +208,28 @@ export const CustomerHeader: React.FC = () => {
   const { totalWishlist, isLoaded: isWishlistLoaded } = useWishlist();
 
   const megaMenuRef = useRef<HTMLDivElement>(null);
+  const megaMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const categoryTriggerRef = useRef<HTMLDivElement>(null);
+  const subCategoryTriggerRef = useRef<HTMLAnchorElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleOpenMegaMenu = () => {
+    if (megaMenuTimeoutRef.current) {
+      clearTimeout(megaMenuTimeoutRef.current);
+      megaMenuTimeoutRef.current = null;
+    }
+    setShowMegaMenu(true);
+  };
+
+  const handleCloseMegaMenu = (delay = 150) => {
+    if (megaMenuTimeoutRef.current) {
+      clearTimeout(megaMenuTimeoutRef.current);
+    }
+    megaMenuTimeoutRef.current = setTimeout(() => {
+      setShowMegaMenu(false);
+    }, delay);
+  };
 
   const POPULAR_SEARCHES = [
     'Tâm lý học',
@@ -299,14 +319,43 @@ export const CustomerHeader: React.FC = () => {
     };
   }, [fetchUser]);
 
-  // Đóng user menu & search suggestions khi click ra ngoài
+  // Tự động đóng menu khi chuyển trang
+  useEffect(() => {
+    setShowMegaMenu(false);
+    if (megaMenuTimeoutRef.current) {
+      clearTimeout(megaMenuTimeoutRef.current);
+      megaMenuTimeoutRef.current = null;
+    }
+  }, [pathname]);
+
+  // Dọn dẹp timer khi unmount
+  useEffect(() => {
+    return () => {
+      if (megaMenuTimeoutRef.current) {
+        clearTimeout(megaMenuTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Đóng user menu, mega menu & search suggestions khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
         setShowUserMenu(false);
       }
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(target)) {
         setIsSearchFocused(false);
+      }
+      if (
+        megaMenuRef.current &&
+        !megaMenuRef.current.contains(target) &&
+        categoryTriggerRef.current &&
+        !categoryTriggerRef.current.contains(target) &&
+        subCategoryTriggerRef.current &&
+        !subCategoryTriggerRef.current.contains(target)
+      ) {
+        setShowMegaMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -402,11 +451,14 @@ export const CustomerHeader: React.FC = () => {
 
             {/* Nút Danh Mục: Pill trắng khi ở catalog, hover thả Mega Menu, click dẫn vào /catalog */}
             <div 
+              ref={categoryTriggerRef}
               className="relative"
-              onMouseEnter={() => setShowMegaMenu(true)}
+              onMouseEnter={handleOpenMegaMenu}
+              onMouseLeave={() => handleCloseMegaMenu(150)}
             >
               <Link
                 href="/catalog"
+                onClick={() => setShowMegaMenu(false)}
                 className={`rounded-xl px-4 py-2 text-xs font-bold inline-flex items-center gap-1.5 h-10 transition-colors shrink-0 ${
                   isCatalog || showMegaMenu
                     ? 'bg-white text-[#0B1F3A] shadow-xs'
@@ -737,8 +789,11 @@ export const CustomerHeader: React.FC = () => {
           <nav className="flex items-center gap-2 overflow-x-auto scrollbar-none text-xs font-medium">
             {/* Nút "Tất cả danh mục" dạng pill: Click dẫn sang /catalog, Hover mở Mega menu */}
             <Link
+              ref={subCategoryTriggerRef}
               href="/catalog"
-              onMouseEnter={() => setShowMegaMenu(true)}
+              onMouseEnter={handleOpenMegaMenu}
+              onMouseLeave={() => handleCloseMegaMenu(150)}
+              onClick={() => setShowMegaMenu(false)}
               className="bg-blue-50 hover:bg-blue-100 text-[#0B1F3A] font-bold rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors flex items-center gap-1.5 shrink-0 border border-blue-100"
             >
               <BookOpen className="w-3.5 h-3.5 text-[#0B1F3A]" />
@@ -805,7 +860,8 @@ export const CustomerHeader: React.FC = () => {
         {showMegaMenu && (
           <div 
             ref={megaMenuRef}
-            onMouseLeave={() => setShowMegaMenu(false)}
+            onMouseEnter={handleOpenMegaMenu}
+            onMouseLeave={() => handleCloseMegaMenu(100)}
             className="absolute top-full left-0 w-full bg-white border-b border-slate-200 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200"
           >
             <div className="max-w-7xl mx-auto px-6 py-6">
