@@ -40,7 +40,7 @@ const TICKER_ITEMS = [
   { icon: '🌿', text: 'Kho tri thức hơn 150.000 tựa sách phong phú luôn sẵn sàng phục vụ' },
 ];
 
-// Cây danh mục chuẩn đồng bộ 100% theo Database Supabase / Prisma
+// Cây danh mục chuẩn đồng bộ 100% theo Database Supabase / Prisma (12 ngành hàng, 58 chuyên mục)
 const CATEGORY_TREE = [
   {
     name: 'Văn Học',
@@ -49,35 +49,33 @@ const CATEGORY_TREE = [
     subs: [
       { name: 'Tiểu thuyết Việt Nam', slug: 'tieu-thuyet-vn' },
       { name: 'Tiểu thuyết Nước ngoài', slug: 'tieu-thuyet-nuoc-ngoai' },
+      { name: 'Văn Học Kinh Điển', slug: 'van-hoc-kinh-dien' },
       { name: 'Trinh Thám & Kinh Dị', slug: 'trinh-tham-kinh-di' },
-      { name: 'Trinh thám Nhật Bản (Honkaku)', slug: 'trinh-tham-nhat-ban' },
+      { name: 'Thơ Ca & Tản Văn', slug: 'tho-ca-tan-van' },
     ],
   },
   {
-    name: 'Kinh Tế & Kỹ Năng',
-    slug: 'kinh-te-ky-nang',
+    name: 'Kinh Tế & Khởi Nghiệp',
+    slug: 'kinh-te-khoi-nghiep',
     icon: '📈',
     subs: [
-      { name: 'Tài Chính & Đầu Tư', slug: 'tai-chinh-dau-tu' },
-      { name: 'Quản lý tài chính cá nhân', slug: 'tai-chinh-ca-nhan' },
+      { name: 'Quản Trị & Lãnh Đạo', slug: 'quan-tri-lanh-dao' },
+      { name: 'Khởi Nghiệp Startup', slug: 'khoi-nghiep-startup' },
+      { name: 'Marketing & Bán Hàng', slug: 'marketing-ban-hang' },
+      { name: 'Tài Chính & Chứng Khoán', slug: 'tai-chinh-chung-khoan' },
+      { name: 'Kinh Tế Học Vĩ Mô', slug: 'kinh-te-hoc-vi-mo' },
     ],
   },
   {
-    name: 'Công Nghệ & Lập Trình',
-    slug: 'cong-nghe-lap-trinh',
-    icon: '💻',
+    name: 'Kỹ Năng Sống',
+    slug: 'ky-nang-song',
+    icon: '💡',
     subs: [
-      { name: 'Lập Trình Phần Mềm', slug: 'lap-trinh-phan-mem' },
-      { name: 'Python & Khoa học Dữ liệu', slug: 'python-data-science' },
-      { name: 'Hệ Thống & Bảo Mật', slug: 'he-thong-bao-mat' },
-    ],
-  },
-  {
-    name: 'Lịch Sử & Văn Hóa',
-    slug: 'lich-su-van-hoa',
-    icon: '🏛️',
-    subs: [
-      { name: 'Lịch sử nhân loại', slug: 'lich-su-van-hoa' },
+      { name: 'Phát Triển Tư Duy', slug: 'phat-trien-tu-duy' },
+      { name: 'Kỹ Năng Giao Tiếp', slug: 'giao-tiep-thuyet-phuc' },
+      { name: 'Quản Lý Thời Gian', slug: 'quan-ly-thoi-gian' },
+      { name: 'Tài Chính Cá Nhân', slug: 'tai-chinh-ca-nhan' },
+      { name: 'Xây Dựng Thói Quen', slug: 'xay-dung-thoi-quen' },
     ],
   },
   {
@@ -85,7 +83,46 @@ const CATEGORY_TREE = [
     slug: 'tam-ly-triet-hoc',
     icon: '🧠',
     subs: [
-      { name: 'Tâm lý học ứng dụng', slug: 'tam-ly-triet-hoc' },
+      { name: 'Tâm Lý Học Hành Vi', slug: 'tam-ly-hoc-hanh-vi' },
+      { name: 'Trị Liệu & Chữa Lành', slug: 'tri-lieu-chua-lanh' },
+      { name: 'Triết Học Phương Đông', slug: 'triet-hoc-phuong-dong' },
+      { name: 'Triết Học Khắc Kỷ', slug: 'triet-hoc-khac-ky' },
+      { name: 'Tâm Lý Tích Cực', slug: 'tam-ly-tich-cuc' },
+    ],
+  },
+  {
+    name: 'Công Nghệ & Lập Trình',
+    slug: 'cong-nghe-lap-trinh',
+    icon: '💻',
+    subs: [
+      { name: 'Python & Data Science', slug: 'python-data-science' },
+      { name: 'Trí Tuệ Nhân Tạo (AI)', slug: 'tri-tue-nhan-tao' },
+      { name: 'Lập Trình Web & Mobile', slug: 'web-mobile-dev' },
+      { name: 'Hệ Thống & Bảo Mật', slug: 'he-thong-bao-mat' },
+      { name: 'Kiến Trúc Phần Mềm', slug: 'kien-truc-phan-mem' },
+    ],
+  },
+  {
+    name: 'Khoa Học & Đời Sống',
+    slug: 'khoa-hoc-doi-song',
+    icon: '🔬',
+    subs: [
+      { name: 'Thiên Văn & Vũ Trụ', slug: 'thien-van-vu-tru' },
+      { name: 'Vật Lý & Toán Học', slug: 'vat-ly-toan-hoc' },
+      { name: 'Môi Trường Sinh Thái', slug: 'moi-truong-sinh-thai' },
+      { name: 'Khoa Học Khám Phá', slug: 'khoa-hoc-ky-thu' },
+    ],
+  },
+  {
+    name: 'Lịch Sử & Văn Hóa',
+    slug: 'lich-su-van-hoa',
+    icon: '🏛️',
+    subs: [
+      { name: 'Lịch Sử Việt Nam', slug: 'lich-su-viet-nam' },
+      { name: 'Lịch Sử Thế Giới', slug: 'lich-su-the-gioi' },
+      { name: 'Địa Chính Trị', slug: 'dia-chinh-tri' },
+      { name: 'Văn Hóa & Phong Tục', slug: 'van-hoa-phong-tuc' },
+      { name: 'Danh Nhân & Hồi Ký', slug: 'danh-nhan-hoi-ky' },
     ],
   },
   {
@@ -93,7 +130,53 @@ const CATEGORY_TREE = [
     slug: 'thieu-nhi',
     icon: '✨',
     subs: [
-      { name: 'Văn học thiếu nhi', slug: 'thieu-nhi' },
+      { name: 'Truyện Tranh, Manga', slug: 'truyen-tranh-manga' },
+      { name: 'Cổ Tích & Thần Thoại', slug: 'co-tich-than-thoai' },
+      { name: 'Kỹ Năng Cho Trẻ', slug: 'ky-nang-thieu-nhi' },
+      { name: 'Bách Khoa Cho Bé', slug: 'bach-khoa-cho-be' },
+    ],
+  },
+  {
+    name: 'Y Học & Sức Khỏe',
+    slug: 'y-hoc-suc-khoe',
+    icon: '🏥',
+    subs: [
+      { name: 'Y Học Thường Thức', slug: 'y-hoc-thuong-thuc' },
+      { name: 'Dinh Dưỡng & Ăn Sạch', slug: 'dinh-duong-an-sach' },
+      { name: 'Sức Khỏe Tinh Thần', slug: 'suc-khoe-tinh-than' },
+      { name: 'Đông Y & Thảo Dược', slug: 'dong-y-thao-duoc' },
+    ],
+  },
+  {
+    name: 'Tôn Giáo & Tâm Linh',
+    slug: 'ton-giao-tam-linh',
+    icon: '🪷',
+    subs: [
+      { name: 'Phật Giáo & Thiền', slug: 'phat-giao-thien-dinh' },
+      { name: 'Kitô Giáo Tây Phương', slug: 'kito-giao-than-hoc' },
+      { name: 'Đời Sống Tâm Linh', slug: 'doi-song-tam-linh' },
+    ],
+  },
+  {
+    name: 'Nghệ Thuật & Hội Họa',
+    slug: 'nghe-thuat-hoi-hoa',
+    icon: '🎨',
+    subs: [
+      { name: 'Hội Họa & Mỹ Thuật', slug: 'hoi-hoa-my-thuat' },
+      { name: 'Thiết Kế & Nhiếp Ảnh', slug: 'thiet-ke-nhiep-anh' },
+      { name: 'Kiến Trúc & Nội Thất', slug: 'kien-truc-noi-that' },
+      { name: 'Ẩm Thực & Nấu Ăn', slug: 'am-thuc-nau-an' },
+    ],
+  },
+  {
+    name: 'Ngoại Ngữ & Từ Điển',
+    slug: 'ngoai-ngu-tu-dien',
+    icon: '🌐',
+    subs: [
+      { name: 'Tiếng Anh Giao Tiếp', slug: 'tieng-anh-giao-tiep' },
+      { name: 'Luyện Thi IELTS, TOEIC', slug: 'luyen-thi-ielts-toeic' },
+      { name: 'Tiếng Nhật, Hàn, Trung', slug: 'tieng-nhat-han-trung' },
+      { name: 'Từ Điển & Ngữ Pháp', slug: 'tu-dien-ngu-phap' },
     ],
   },
 ];
@@ -668,14 +751,14 @@ export const CustomerHeader: React.FC = () => {
               href="/catalog?category=van-hoc"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Văn học Việt Nam
+              Văn học
             </Link>
 
             <Link
-              href="/catalog?category=kinh-te-ky-nang"
+              href="/catalog?category=kinh-te-khoi-nghiep"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Kinh tế - Khởi nghiệp
+              Kinh tế & Khởi nghiệp
             </Link>
 
             <Link
@@ -689,18 +772,18 @@ export const CustomerHeader: React.FC = () => {
               href="/catalog?category=tam-ly-triet-hoc"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Tâm lý học
+              Tâm lý & Triết học
             </Link>
 
             <Link
-              href="/catalog?category=manga"
+              href="/catalog?category=thieu-nhi"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Truyện tranh - Manga
+              Thiếu nhi & Truyện tranh
             </Link>
 
             <Link
-              href="/catalog?category=ngoai-van"
+              href="/catalog?category=tieu-thuyet-nuoc-ngoai"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
               Sách Ngoại văn

@@ -87,8 +87,8 @@ export default async function CatalogPage() {
       if (child.children && child.children.length > 0) {
         child.children.forEach((subChild) => {
           allSlugs.add(subChild.slug);
-          // Đếm số sách thật trong DB thuộc subChild
-          const subCount = books.filter((b) => b.categorySlug?.includes(subChild.slug)).length;
+          // Đếm số sách thật trong DB thuộc subChild (khớp chính xác slug theo từ)
+          const subCount = books.filter((b) => (b.categorySlug || '').split(/\s+/).includes(subChild.slug)).length;
           subsList.push({
             name: subChild.name,
             slug: subChild.slug,
@@ -96,7 +96,7 @@ export default async function CatalogPage() {
           });
         });
       } else {
-        const childCount = books.filter((b) => b.categorySlug?.includes(child.slug)).length;
+        const childCount = books.filter((b) => (b.categorySlug || '').split(/\s+/).includes(child.slug)).length;
         subsList.push({
           name: child.name,
           slug: child.slug,
@@ -106,9 +106,10 @@ export default async function CatalogPage() {
     });
 
     // Tổng số sách thực tế thuộc danh mục cha này
-    const totalRootCount = books.filter((b) => 
-      Array.from(allSlugs).some((s) => b.categorySlug?.includes(s))
-    ).length;
+    const totalRootCount = books.filter((b) => {
+      const slugs = (b.categorySlug || '').split(/\s+/);
+      return Array.from(allSlugs).some((s) => slugs.includes(s));
+    }).length;
 
     return {
       name: root.name,
