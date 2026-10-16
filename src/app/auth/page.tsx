@@ -462,35 +462,37 @@ function AuthContent() {
             </form>
           )}
 
-          {/* Quick Demo Switcher Section */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-[#F5A623]" />
-                Tài khoản mẫu đồ án (1-Click điền)
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">Bảo vệ & Chấm thi</span>
-            </div>
+          {/* Quick Demo Switcher Section (Chỉ hiển thị ở Development / Demo Đồ Án, tự động ẩn trên Production) */}
+          {process.env.NODE_ENV !== 'production' && (
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-[#F5A623]" />
+                  Tài khoản mẫu đồ án (1-Click điền)
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">Bảo vệ & Chấm thi</span>
+              </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {DEMO_ACCOUNTS.map((acc) => (
-                <button
-                  key={acc.email}
-                  type="button"
-                  onClick={() => handleQuickFill(acc.email, acc.password)}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${acc.color}`}
-                >
-                  <div className="flex items-center gap-1.5 font-bold">
-                    <span>{acc.icon}</span>
-                    <span>{acc.label}</span>
-                  </div>
-                  <div className="text-[10px] opacity-75 truncate mt-0.5 font-mono">
-                    {acc.email}
-                  </div>
-                </button>
-              ))}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {DEMO_ACCOUNTS.map((acc) => (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    onClick={() => handleQuickFill(acc.email, acc.password)}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${acc.color}`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <span>{acc.icon}</span>
+                      <span>{acc.label}</span>
+                    </div>
+                    <div className="text-[10px] opacity-75 truncate mt-0.5 font-mono">
+                      {acc.email}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Security Pillars Footer */}
