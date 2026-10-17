@@ -45,11 +45,13 @@ export interface AdminOrderItem {
 }
 
 export interface AdminTimelineEvent {
-  status: string;
+  status?: string;
   title: string;
-  description: string;
+  description?: string;
+  desc?: string;
   operator?: string;
-  timestamp: string;
+  timestamp?: string;
+  time?: string;
 }
 
 export interface AdminOrderData {
@@ -121,6 +123,46 @@ export function AdminOrdersClient({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null); // Order ID being updated
   const [actionError, setActionError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isScanningExpired, setIsScanningExpired] = useState(false);
+
+  // Xử lý quét hủy đơn chuyển khoản quá hạn 24h (M10)
+  const handleScanExpiredOrders = async () => {
+    if (
+      !confirm(
+        'Bạn có chắc chắn muốn quét và tự động hủy các đơn hàng chuyển khoản VietQR quá hạn 24 giờ chưa thanh toán? Số sách trong các đơn này sẽ được tự động hoàn trả về kho.'
+      )
+    ) {
+      return;
+    }
+
+    setIsScanningExpired(true);
+    setActionError(null);
+    try {
+      const res = await fetch('/api/admin/orders/cancel-expired', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Lỗi khi quét đơn quá hạn');
+      }
+
+      setToastMessage(data.message);
+      if (data.cancelledCount > 0 && Array.isArray(data.cancelledOrderCodes)) {
+        const cancelledSet = new Set(data.cancelledOrderCodes);
+        setOrders((prev) =>
+          prev.map((o) =>
+            cancelledSet.has(o.orderCode)
+              ? { ...o, status: 'CANCELLED', paymentStatus: 'FAILED' }
+              : o
+          )
+        );
+      }
+    } catch (err: any) {
+      setActionError(err.message || 'Không thể quét đơn quá hạn');
+    } finally {
+      setIsScanningExpired(false);
+    }
+  };
 
   // Tự động mở drawer chi tiết đơn hàng khi có initialOrderCode từ URL
   useEffect(() => {
@@ -415,8 +457,7 @@ export function AdminOrdersClient({
             )}
           </div>
 
-          {/* Lọc phương thức thanh toán */}
-          <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-slate-600">
+          <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-slate-600 flex-wrap">
             <span className="font-semibold">Thanh toán:</span>
             <select
               value={paymentFilter}
@@ -427,6 +468,20 @@ export function AdminOrdersClient({
               <option value="COD">Thu tiền khi giao (COD)</option>
               <option value="BANK_TRANSFER">Chuyển khoản VietQR</option>
             </select>
+
+            {/* Nút quét hủy đơn quá hạn 24h (Quyền canManageOrders) */}
+            {canManageOrders && (
+              <button
+                type="button"
+                disabled={isScanningExpired}
+                onClick={handleScanExpiredOrders}
+                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ml-auto sm:ml-2"
+                title="Quét và tự động hủy các đơn hàng chuyển khoản VietQR quá hạn 24 giờ để hoàn kho sách (M10)"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isScanningExpired ? 'animate-spin' : ''}`} />
+                <span>{isScanningExpired ? 'Đang quét...' : 'Quét hủy đơn quá hạn 24h'}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -892,11 +947,11 @@ export function AdminOrdersClient({
                         <div className="flex items-center justify-between">
                           <strong className="text-slate-800">{evt.title}</strong>
                           <span className="text-[10px] text-slate-400">
-                            {formatDateTimeVN(evt.timestamp)}
+                            {formatDateTimeVN(evt.timestamp || evt.time)}
                           </span>
                         </div>
                         <p className="text-slate-500 text-[11px] mt-0.5">
-                          {evt.description}
+                          {evt.description || evt.desc}
                         </p>
                       </div>
                     </div>

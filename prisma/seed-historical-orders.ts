@@ -108,8 +108,8 @@ async function seedHistoricalOrders() {
         };
       });
 
-      // Phí vận chuyển: Freeship nếu >= 150.000đ
-      const shippingFee = subtotal >= 150000 ? 0 : 30000;
+      // Phí vận chuyển: Freeship nếu >= 150.000đ, phí ship đồng giá 25.000đ
+      const shippingFee = subtotal >= 150000 ? 0 : 25000;
       const totalAmount = subtotal + shippingFee;
 
       // Trạng thái đơn hàng theo thời gian
@@ -146,11 +146,14 @@ async function seedHistoricalOrders() {
         }
       }
 
-      // Timeline chuẩn
+      // Timeline chuẩn đồng bộ với cả frontend lẫn admin (M12)
       const timeline = [
         {
-          time: orderDate.toISOString(),
+          status: 'PENDING',
           title: 'Đặt hàng thành công',
+          description: 'Khách hàng hoàn tất gửi đơn hàng qua cổng mua sắm Tổ Sách.',
+          timestamp: orderDate.toISOString(),
+          time: orderDate.toISOString(),
           desc: 'Khách hàng hoàn tất gửi đơn hàng qua cổng mua sắm Tổ Sách.',
         },
       ];
@@ -158,8 +161,11 @@ async function seedHistoricalOrders() {
       if (status !== OrderStatus.PENDING) {
         const confirmDate = new Date(orderDate.getTime() + 15 * 60 * 1000);
         timeline.push({
-          time: confirmDate.toISOString(),
+          status: status === OrderStatus.CANCELLED ? 'CANCELLED' : 'CONFIRMED',
           title: status === OrderStatus.CANCELLED ? 'Đơn hàng đã bị hủy' : 'Đã xác nhận đơn hàng',
+          description: status === OrderStatus.CANCELLED ? 'Đơn hàng đã được ghi nhận hủy theo yêu cầu.' : 'Nhân viên kho đã kiểm tra tồn kho và phê duyệt đóng gói.',
+          timestamp: confirmDate.toISOString(),
+          time: confirmDate.toISOString(),
           desc: status === OrderStatus.CANCELLED ? 'Đơn hàng đã được ghi nhận hủy theo yêu cầu.' : 'Nhân viên kho đã kiểm tra tồn kho và phê duyệt đóng gói.',
         });
       }
@@ -167,8 +173,11 @@ async function seedHistoricalOrders() {
       if (status === OrderStatus.SHIPPING || status === OrderStatus.DELIVERED) {
         const shipDate = new Date(orderDate.getTime() + 2 * 3600 * 1000);
         timeline.push({
-          time: shipDate.toISOString(),
+          status: 'SHIPPING',
           title: 'Đang vận chuyển',
+          description: 'Đơn hàng đã bàn giao cho đơn vị vận chuyển Viettel Post.',
+          timestamp: shipDate.toISOString(),
+          time: shipDate.toISOString(),
           desc: 'Đơn hàng đã bàn giao cho đơn vị vận chuyển Viettel Post.',
         });
       }
@@ -176,8 +185,11 @@ async function seedHistoricalOrders() {
       if (status === OrderStatus.DELIVERED) {
         const deliverDate = new Date(orderDate.getTime() + 24 * 3600 * 1000);
         timeline.push({
-          time: deliverDate.toISOString(),
+          status: 'DELIVERED',
           title: 'Giao hàng thành công',
+          description: 'Người nhận đã nhận đủ sách và kiểm tra nguyên vẹn bao bì.',
+          timestamp: deliverDate.toISOString(),
+          time: deliverDate.toISOString(),
           desc: 'Người nhận đã nhận đủ sách và kiểm tra nguyên vẹn bao bì.',
         });
       }

@@ -21,10 +21,12 @@ interface OrderItemData {
 }
 
 interface TimelineEvent {
-  status: string;
+  status?: string;
   title: string;
-  description: string;
-  timestamp: string;
+  description?: string;
+  desc?: string;
+  timestamp?: string;
+  time?: string;
 }
 
 interface OrderData {
@@ -625,11 +627,11 @@ export default function OrdersClient({ initialOrders, userName }: OrdersClientPr
                       <div className="flex items-baseline justify-between gap-2">
                         <strong className="text-xs text-[#0B1F3A] font-bold">{event.title}</strong>
                         <span className="text-[10px] text-slate-400 font-medium">
-                          {formatDate(event.timestamp)}
+                          {formatDate(event.timestamp || event.time || '')}
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 leading-relaxed">
-                        {event.description}
+                        {event.description || event.desc || ''}
                       </p>
                     </div>
                   ))}
