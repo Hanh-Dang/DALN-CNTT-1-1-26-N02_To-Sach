@@ -7,6 +7,7 @@ import {
   User, Package, Camera, Check, ShieldCheck, Mail, Phone, 
   MapPin, Calendar, Sparkles, AlertCircle, Save, Loader2 
 } from 'lucide-react';
+import { formatDateVN } from '@/lib/utils';
 
 interface UserProfileData {
   id: string;
@@ -169,7 +170,7 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
               <div className="flex justify-between">
                 <span>Ngày tham gia:</span>
                 <span className="font-semibold text-slate-700">
-                  {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                  {formatDateVN(user.createdAt)}
                 </span>
               </div>
             </div>

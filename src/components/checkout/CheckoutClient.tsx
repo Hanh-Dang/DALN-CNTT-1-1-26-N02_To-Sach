@@ -102,7 +102,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const [ward, setWard] = useState(user.profile?.addressWard || '');
   const [addressDetail, setAddressDetail] = useState(user.profile?.addressDetail || '');
   const [note, setNote] = useState('');
-  const [saveAsDefault, setSaveAsDefault] = useState(true);
+  const [saveAsDefault, setSaveAsDefault] = useState(false); // Mặc định false tránh ghi đè khi tặng quà (M9)
 
   const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
   const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);

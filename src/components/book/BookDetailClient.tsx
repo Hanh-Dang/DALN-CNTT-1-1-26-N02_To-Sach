@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { formatVND, calculateDiscount } from '@/lib/utils';
+import { formatVND, calculateDiscount, formatDateVN } from '@/lib/utils';
 import { BookCard, BookCardData } from './BookCard';
 
 export interface BookDetailData {
@@ -790,7 +790,7 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
                           </div>
                         </div>
                         <span className="text-slate-400 text-[11px] font-mono">
-                          {new Date(rev.createdAt).toLocaleDateString('vi-VN')}
+                          {formatDateVN(rev.createdAt)}
                         </span>
                       </div>
 

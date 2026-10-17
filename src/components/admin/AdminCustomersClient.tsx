@@ -15,7 +15,7 @@ import {
   ShieldAlert,
   ArrowUpDown,
 } from 'lucide-react';
-import { formatVND } from '@/lib/utils';
+import { formatVND, formatDateVN } from '@/lib/utils';
 
 export interface CustomerData {
   id: string;
@@ -226,7 +226,7 @@ export function AdminCustomersClient({ initialCustomers }: AdminCustomersClientP
                     </td>
 
                     <td className="py-4 px-6 text-right text-slate-400 text-[11px]">
-                      {new Date(cust.createdAt).toLocaleDateString('vi-VN')}
+                      {formatDateVN(cust.createdAt)}
                     </td>
                   </tr>
                 ))

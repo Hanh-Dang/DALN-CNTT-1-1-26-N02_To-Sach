@@ -26,7 +26,7 @@ import {
   ShieldCheck,
   Send,
 } from 'lucide-react';
-import { formatVND } from '@/lib/utils';
+import { formatVND, formatDateVN, formatDateTimeVN } from '@/lib/utils';
 
 export interface AdminOrderItem {
   id: string;
@@ -553,12 +553,7 @@ export function AdminOrdersClient({
 
                       {/* Cột 6: Ngày đặt */}
                       <td className="py-3.5 px-3 text-[11px] text-slate-500 whitespace-nowrap">
-                        {new Date(order.createdAt).toLocaleDateString('vi-VN', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {formatDateTimeVN(order.createdAt)}
                       </td>
 
                       {/* Cột 7: Thao tác nhanh (Quyền MANAGE_ORDERS) */}
@@ -733,7 +728,7 @@ export function AdminOrdersClient({
                 </div>
                 <p className="text-xs text-slate-400">
                   Ngày đặt:{' '}
-                  {new Date(selectedOrder.createdAt).toLocaleString('vi-VN')}
+                  {formatDateTimeVN(selectedOrder.createdAt)}
                 </p>
               </div>
 
@@ -897,7 +892,7 @@ export function AdminOrdersClient({
                         <div className="flex items-center justify-between">
                           <strong className="text-slate-800">{evt.title}</strong>
                           <span className="text-[10px] text-slate-400">
-                            {new Date(evt.timestamp).toLocaleString('vi-VN')}
+                            {formatDateTimeVN(evt.timestamp)}
                           </span>
                         </div>
                         <p className="text-slate-500 text-[11px] mt-0.5">

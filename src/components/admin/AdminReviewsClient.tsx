@@ -25,6 +25,7 @@ import {
   Sparkles,
   ChevronLeft,
 } from 'lucide-react';
+import { formatDateVN, formatDateTimeVN } from '@/lib/utils';
 
 export interface AdminReviewData {
   id: string;
@@ -541,7 +542,7 @@ export function AdminReviewsClient({
                           ))}
                         </div>
                         <span className="text-[11px] text-slate-400 mt-1 block">
-                          {new Date(rev.createdAt).toLocaleDateString('vi-VN')}
+                          {formatDateVN(rev.createdAt)}
                         </span>
                       </td>
 
@@ -707,7 +708,7 @@ export function AdminReviewsClient({
                   {renderStatusBadge(selectedReview.status)}
                 </span>
                 <p className="text-xs text-slate-400">
-                  Thời gian: {new Date(selectedReview.createdAt).toLocaleString('vi-VN')}
+                  Thời gian: {formatDateTimeVN(selectedReview.createdAt)}
                 </p>
               </div>
 

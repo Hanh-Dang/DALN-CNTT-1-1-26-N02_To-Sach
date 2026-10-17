@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Cpu,
 } from 'lucide-react';
+import { formatDateTimeVN } from '@/lib/utils';
 
 export interface AuditLogItem {
   id: string;
@@ -149,7 +150,7 @@ export function AdminSettingsClient({ initialAuditLogs, systemInfo }: AdminSetti
                     <tr key={log.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="py-3.5 px-6 whitespace-nowrap text-slate-500 flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{new Date(log.createdAt).toLocaleString('vi-VN')}</span>
+                        <span>{formatDateTimeVN(log.createdAt)}</span>
                       </td>
 
                       <td className="py-3.5 px-6">

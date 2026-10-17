@@ -476,7 +476,7 @@ export const CustomerHeader: React.FC = () => {
           <div className="shrink-0 flex items-center justify-end gap-1.5 sm:gap-3.5">
             {/* Ô tìm kiếm dạng pill bo tròn trắng: Co giãn linh hoạt trên mobile (M7) */}
             <div ref={searchContainerRef} className="relative shrink-0">
-              <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-full h-8 sm:h-9 pl-2.5 sm:pl-3.5 pr-1 w-28 xs:w-36 sm:w-60 md:w-72 lg:w-80 shadow-inner shrink-0 transition-all border border-transparent focus-within:border-[#F5A623]">
+              <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-full h-8 sm:h-9 pl-2.5 sm:pl-3.5 pr-1 w-28 sm:w-60 md:w-72 lg:w-80 shadow-inner shrink-0 transition-all border border-transparent focus-within:border-[#F5A623]">
                 {/* INPUT BÊN TRÁI SẠCH SẼ, KHÔNG CÒN ICON TÌM KIẾM */}
                 <input
                   type="text"
@@ -761,10 +761,10 @@ export const CustomerHeader: React.FC = () => {
                 /* Nút Đăng nhập cho khách vãng lai dạng pill nổi bật */
                 <Link
                   href="/auth"
-                  className="h-7 sm:h-8 px-2 sm:px-4 rounded-full bg-[#F5A623] hover:bg-[#e09419] text-[#0B1F3A] text-xs font-extrabold flex items-center gap-1 sm:gap-1.5 shadow-sm transition-all shrink-0 whitespace-nowrap"
+                  className="h-8 px-2 sm:px-4 rounded-full bg-[#F5A623] hover:bg-[#e09419] text-[#0B1F3A] text-xs font-extrabold flex items-center gap-1.5 shadow-sm transition-all shrink-0 whitespace-nowrap"
                 >
                   <UserIcon className="w-3.5 h-3.5 text-[#0B1F3A]" />
-                  <span className="hidden xs:inline">Đăng nhập</span>
+                  <span className="hidden sm:inline">Đăng nhập</span>
                 </Link>
               )}
             </div>

@@ -8,7 +8,7 @@ import {
   ChevronRight, ArrowRight, ShoppingBag, ExternalLink,
   CreditCard, MapPin, Calendar, AlertCircle, RefreshCw
 } from 'lucide-react';
-import { formatVND } from '@/lib/utils';
+import { formatVND, formatDateTimeVN } from '@/lib/utils';
 
 interface OrderItemData {
   id: string;
@@ -199,18 +199,7 @@ export default function OrdersClient({ initialOrders, userName }: OrdersClientPr
   };
 
   const formatDate = (dateString: string) => {
-    try {
-      const d = new Date(dateString);
-      return d.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return dateString;
-    }
+    return formatDateTimeVN(dateString) || dateString;
   };
 
   return (
