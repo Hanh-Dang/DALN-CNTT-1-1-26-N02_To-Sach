@@ -111,16 +111,20 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
   const handleAddToCart = (e?: React.MouseEvent) => {
     if (book.stockQty <= 0) return;
 
-    addToCart({
-      bookId: book.id,
-      title: book.title,
-      slug: book.slug,
-      price: book.price,
-      originalPrice: book.originalPrice,
-      coverUrl: book.coverUrl,
-      authorName,
-      stockQty: book.stockQty,
-    }, 1, e);
+    addToCart(
+      {
+        bookId: book.id,
+        title: book.title,
+        slug: book.slug,
+        price: book.price,
+        originalPrice: book.originalPrice,
+        coverUrl: book.coverUrl,
+        authorName,
+        stockQty: book.stockQty,
+      },
+      quantity, // Fix H10: Truyền đúng số lượng người dùng đã chọn (state quantity) thay vì số 1
+      e
+    );
 
     setIsAddedToCart(true);
     setTimeout(() => setIsAddedToCart(false), 2200);
@@ -131,16 +135,28 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
     if (book.stockQty <= 0) return;
     setIsBuyingNow(true);
 
-    addToCart({
-      bookId: book.id,
-      title: book.title,
-      slug: book.slug,
-      price: book.price,
-      originalPrice: book.originalPrice,
-      coverUrl: book.coverUrl,
-      authorName,
-      stockQty: book.stockQty,
-    });
+    addToCart(
+      {
+        bookId: book.id,
+        title: book.title,
+        slug: book.slug,
+        price: book.price,
+        originalPrice: book.originalPrice,
+        coverUrl: book.coverUrl,
+        authorName,
+        stockQty: book.stockQty,
+      },
+      quantity // Fix H10: Mua ngay đúng số lượng quantity
+    );
+
+    // Fix H13: Ghi đè chỉ chọn đúng cuốn sách này để checkout, tránh bị dính sách cũ từ session trước
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('tosach_checkout_selected_ids', JSON.stringify([book.id]));
+      } catch {
+        // ignore
+      }
+    }
 
     router.push('/checkout');
   };

@@ -89,6 +89,7 @@ export async function POST(
       [OrderStatus.SHIPPING]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
       [OrderStatus.DELIVERED]: [], // Trạng thái kết thúc: Khóa cứng, không cho phép đổi ngược
       [OrderStatus.CANCELLED]: [OrderStatus.PENDING, OrderStatus.CONFIRMED], // Phục hồi đơn (yêu cầu kiểm tra tồn kho)
+      [OrderStatus.REFUNDED]: [], // Trạng thái kết thúc: Đã hoàn tiền, khóa cứng
     };
 
     const allowedNextStatuses = ALLOWED_TRANSITIONS[oldStatus] || [];
