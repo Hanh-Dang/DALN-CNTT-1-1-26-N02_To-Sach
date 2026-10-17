@@ -50,6 +50,7 @@ export default function OrderSuccessClient({ order }: OrderSuccessClientProps) {
 
   const deliveryEstimate = getEstimatedDeliveryText(order.shippingAddress);
   const vietQrUrl = '/images/qr/vietqr-mb.png';
+  const totalQuantity = (order.items || []).reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(order.orderCode);
@@ -224,7 +225,7 @@ export default function OrderSuccessClient({ order }: OrderSuccessClientProps) {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 className="font-extrabold text-sm text-[#0B1F3A] flex items-center gap-2">
               <Package className="w-4 h-4 text-[#F5A623]" />
-              <span>Kiện Sách Đã Đặt ({order.items.length} cuốn)</span>
+              <span>Kiện Sách Đã Đặt ({totalQuantity} cuốn)</span>
             </h3>
             <span className="text-xs text-slate-400 font-medium">Bản quyền 100%</span>
           </div>

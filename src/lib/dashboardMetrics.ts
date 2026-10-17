@@ -44,6 +44,7 @@ export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics>
     allValidOrders,
     totalOrdersCount,
     pendingOrdersCount,
+    totalLowStockCount,
     lowStockBooks,
     recentOrders,
     allBooks,
@@ -59,6 +60,9 @@ export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics>
     }),
     prisma.order.count(),
     prisma.order.count({ where: { status: 'PENDING' } }),
+    prisma.book.count({
+      where: { stockQty: { lte: 10 }, isActive: true },
+    }),
     prisma.book.findMany({
       where: { stockQty: { lte: 10 }, isActive: true },
       orderBy: { stockQty: 'asc' },
@@ -88,9 +92,10 @@ export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics>
     }),
   ]);
 
-  // 1. Tính doanh thu tháng hiện tại (Tháng 10/2026)
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  // 1. Tính doanh thu tháng hiện tại
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
   const thisMonthOrders = allValidOrders.filter((o) => {
     const d = new Date(o.createdAt);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
@@ -99,51 +104,30 @@ export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics>
   const thisMonthRevenue = thisMonthOrders.reduce((sum, o) => sum + o.totalAmount, 0);
   const totalCirculatedBooks = allBooks.reduce((sum, b) => sum + b.soldCount, 0);
 
-  // 2. Định nghĩa 7 mốc biểu đồ chuẩn lịch sử từ Tháng 7 đến nay
-  const milestones = [
-    {
-      label: 'T.07',
-      start: new Date('2026-07-01T00:00:00Z'),
-      end: new Date('2026-07-31T23:59:59Z'),
-      isToday: false,
-    },
-    {
-      label: 'T.08',
-      start: new Date('2026-08-01T00:00:00Z'),
-      end: new Date('2026-08-31T23:59:59Z'),
-      isToday: false,
-    },
-    {
-      label: 'T.09',
-      start: new Date('2026-09-01T00:00:00Z'),
-      end: new Date('2026-09-30T23:59:59Z'),
-      isToday: false,
-    },
-    {
-      label: '01/10',
-      start: new Date('2026-10-01T00:00:00Z'),
-      end: new Date('2026-10-02T23:59:59Z'),
-      isToday: false,
-    },
-    {
-      label: '04/10',
-      start: new Date('2026-10-03T00:00:00Z'),
-      end: new Date('2026-10-05T23:59:59Z'),
-      isToday: false,
-    },
-    {
-      label: '07/10',
-      start: new Date('2026-10-06T00:00:00Z'),
-      end: new Date('2026-10-07T23:59:59Z'),
-      isToday: false,
-    },
-    {
-      label: 'Hôm nay',
-      start: new Date('2026-10-08T00:00:00Z'),
-      end: new Date('2026-10-08T23:59:59Z'),
-      isToday: true,
-    },
-  ];
+  // 2. Định nghĩa 7 mốc biểu đồ động lùi từ ngày hiện tại (H11: Đơn tạo hôm nay sẽ hiển thị ngay)
+  const milestones = [];
+  for (let i = 6; i >= 0; i--) {
+    const targetDate = new Date(now);
+    targetDate.setDate(now.getDate() - i);
+
+    const start = new Date(targetDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(targetDate);
+    end.setHours(23, 59, 59, 999);
+
+    const isToday = i === 0;
+    const dateFormatted = `${String(targetDate.getDate()).padStart(2, '0')}/${String(
+      targetDate.getMonth() + 1
+    ).padStart(2, '0')}`;
+
+    milestones.push({
+      label: isToday ? 'Hôm nay' : dateFormatted,
+      start,
+      end,
+      isToday,
+    });
+  }
 
   // Tính số liệu thật cho từng cột
   const rawChartData = milestones.map((m) => {
@@ -228,11 +212,11 @@ export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics>
   });
 
   return {
-    revenue: thisMonthRevenue > 0 ? thisMonthRevenue : 7346000,
+    revenue: thisMonthRevenue,
     ordersCount: totalOrdersCount,
     pendingCount: pendingOrdersCount,
-    lowStockCount: lowStockBooks.length,
-    totalCirculatedBooks: totalCirculatedBooks > 0 ? totalCirculatedBooks : 158,
+    lowStockCount: totalLowStockCount,
+    totalCirculatedBooks: totalCirculatedBooks,
     chartData,
     lowStockList,
     recentOrders: formattedRecentOrders,

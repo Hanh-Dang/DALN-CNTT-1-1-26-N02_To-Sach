@@ -420,17 +420,17 @@ export const CustomerHeader: React.FC = () => {
       {/* ========================================================================= */}
       {/* 2. MAIN NAVIGATION BAR (Chuẩn Figma UI: Nền #0B1F3A, Chiều cao h-20 80px) */}
       {/* ========================================================================= */}
-      <div className="bg-[#0B1F3A] text-white px-4 h-20 flex items-center">
-        <div className="max-w-7xl w-full mx-auto flex items-center justify-between gap-4">
+      <div className="bg-[#0B1F3A] text-white px-2 sm:px-4 h-16 sm:h-20 flex items-center">
+        <div className="max-w-7xl w-full mx-auto flex items-center justify-between gap-2 sm:gap-4">
           
           {/* CỘT 1 (BÊN TRÁI): Logo Thương Hiệu Tổ Sách */}
-          <div className="w-[220px] lg:w-[240px] shrink-0 flex items-center">
+          <div className="w-auto sm:w-[200px] lg:w-[240px] shrink-0 flex items-center">
             <Link href="/" className="group shrink-0">
               <ToSachLogo 
-                size={40} 
+                size={34} 
                 withText={true}
-                textClassName="text-xl font-black tracking-tight text-white block leading-none group-hover:text-[#F5A623] transition-colors"
-                sloganClassName="text-[9px] font-bold text-[#F5A623] uppercase tracking-wider block mt-1 leading-none group-hover:text-white transition-colors"
+                textClassName="text-base sm:text-xl font-black tracking-tight text-white block leading-none group-hover:text-[#F5A623] transition-colors"
+                sloganClassName="hidden sm:block text-[9px] font-bold text-[#F5A623] uppercase tracking-wider mt-1 leading-none group-hover:text-white transition-colors"
               />
             </Link>
           </div>
@@ -473,17 +473,17 @@ export const CustomerHeader: React.FC = () => {
           </nav>
 
           {/* CỘT 3 (BÊN PHẢI): Ô tìm kiếm + Wishlist + Giỏ hàng + Cố định Khung Tài khoản */}
-          <div className="shrink-0 flex items-center justify-end gap-2.5 sm:gap-3.5">
-            {/* Ô tìm kiếm dạng pill bo tròn trắng: Bên trái KHÔNG CÒN ICON, icon Search chuyển sang bên phải (thay thế dấu mũi tên) */}
+          <div className="shrink-0 flex items-center justify-end gap-1.5 sm:gap-3.5">
+            {/* Ô tìm kiếm dạng pill bo tròn trắng: Co giãn linh hoạt trên mobile (M7) */}
             <div ref={searchContainerRef} className="relative shrink-0">
-              <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-full h-9 pl-3.5 pr-1.5 w-48 sm:w-60 md:w-72 lg:w-80 shadow-inner shrink-0 transition-all border border-transparent focus-within:border-[#F5A623]">
+              <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-full h-8 sm:h-9 pl-2.5 sm:pl-3.5 pr-1 w-28 xs:w-36 sm:w-60 md:w-72 lg:w-80 shadow-inner shrink-0 transition-all border border-transparent focus-within:border-[#F5A623]">
                 {/* INPUT BÊN TRÁI SẠCH SẼ, KHÔNG CÒN ICON TÌM KIẾM */}
                 <input
                   type="text"
                   value={searchQuery}
                   onFocus={() => setIsSearchFocused(true)}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Tìm sách, tác giả, thể loại..."
+                  placeholder="Tìm sách..."
                   className="w-full min-w-0 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 outline-none"
                 />
 
@@ -683,24 +683,24 @@ export const CustomerHeader: React.FC = () => {
             {/* Vạch kẻ phân cách thanh mảnh */}
             <div className="h-6 w-px bg-slate-700/80 shrink-0 hidden sm:block"></div>
 
-            {/* Khung Tài khoản / Đăng nhập: Cố định chiều rộng w-[130px] hoặc w-[145px] để ZERO layout shift */}
-            <div ref={userMenuRef} className="w-[125px] sm:w-[145px] shrink-0 flex items-center justify-end h-10 relative">
+            {/* Khung Tài khoản / Đăng nhập: Trên mobile co giãn w-auto tránh vỡ trang 375px */}
+            <div ref={userMenuRef} className="w-auto sm:w-[145px] shrink-0 flex items-center justify-end h-8 sm:h-10 relative">
               {isLoadingUser ? (
-                <div className="w-24 h-8 rounded-full bg-white/10 animate-pulse shrink-0" />
+                <div className="w-8 sm:w-24 h-8 rounded-full bg-white/10 animate-pulse shrink-0" />
               ) : user ? (
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-1.5 py-1 px-1.5 rounded-full hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+                    className="flex items-center gap-1.5 py-1 px-1 sm:px-1.5 rounded-full hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
                   >
                     {/* Avatar bo tròn viền vàng #F5A623 */}
-                    <div className="w-8 h-8 rounded-full bg-[#F5A623] text-[#0B1F3A] flex items-center justify-center text-xs font-black ring-2 ring-[#F5A623]/80 shadow-xs shrink-0">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F5A623] text-[#0B1F3A] flex items-center justify-center text-xs font-black ring-2 ring-[#F5A623]/80 shadow-xs shrink-0">
                       {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
                     </div>
                     <span className="hidden sm:inline text-xs font-bold text-white max-w-[70px] truncate leading-none">
                       {user.fullName}
                     </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                    <ChevronDown className="hidden sm:inline w-3.5 h-3.5 text-slate-300 shrink-0" />
                   </button>
 
                   {/* Dropdown Menu tài khoản */}
@@ -761,10 +761,10 @@ export const CustomerHeader: React.FC = () => {
                 /* Nút Đăng nhập cho khách vãng lai dạng pill nổi bật */
                 <Link
                   href="/auth"
-                  className="h-8 px-3.5 sm:px-4 rounded-full bg-[#F5A623] hover:bg-[#e09419] text-[#0B1F3A] text-xs font-extrabold flex items-center gap-1.5 shadow-sm transition-all shrink-0 whitespace-nowrap"
+                  className="h-7 sm:h-8 px-2 sm:px-4 rounded-full bg-[#F5A623] hover:bg-[#e09419] text-[#0B1F3A] text-xs font-extrabold flex items-center gap-1 sm:gap-1.5 shadow-sm transition-all shrink-0 whitespace-nowrap"
                 >
                   <UserIcon className="w-3.5 h-3.5 text-[#0B1F3A]" />
-                  <span>Đăng nhập</span>
+                  <span className="hidden xs:inline">Đăng nhập</span>
                 </Link>
               )}
             </div>

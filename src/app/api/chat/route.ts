@@ -211,14 +211,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         reply:
           '🚚 **Chính sách giao hàng & Cước phí vận chuyển Tổ Sách:**\n\n' +
-          '- **CHÍNH SÁCH FREESHIP:** Miễn phí vận chuyển toàn quốc cho đơn hàng từ **250.000 đ** (hoặc 150k trong các đợt trợ giá).\n' +
-          '- **Đơn hàng dưới 250k:**\n' +
-          '  + Nội thành Hà Nội: **20.000 đ**\n' +
-          '  + Ngoại thành & Các tỉnh thành khác: **30.000 đ**\n' +
+          '- **CHÍNH SÁCH FREESHIP:** Miễn phí vận chuyển toàn quốc cho đơn hàng từ **150.000 đ** trở lên.\n' +
+          '- **Cước phí vận chuyển:** Đơn hàng dưới 150.000 đ áp dụng phí ship đồng giá siêu ưu đãi chỉ **25.000 đ** trên toàn quốc.\n' +
           '- **Thời gian giao hàng ước tính:**\n' +
-          '  + Nội thành Hà Nội: **1 – 2 ngày làm việc**.\n' +
-          '  + Khu vực miền Bắc & miền Trung: **2 – 3 ngày làm việc**.\n' +
-          '  + Khu vực miền Nam & Tây Nguyên: **3 – 4 ngày làm việc**.',
+          '  + Nội thành Hà Nội & TP.HCM: **1 – 2 ngày làm việc**.\n' +
+          '  + Các tỉnh thành khác: **2 – 4 ngày làm việc**.',
         suggestedBooks: [],
         source: 'knowledge-shipping',
       });
@@ -565,7 +562,7 @@ export async function POST(req: NextRequest) {
         const systemPrompt = `Bạn là Trợ lý AI thông minh, hiểu biết sâu rộng của Nhà Sách Trực Tuyến Tổ Sách ("Sách về tổ, tri thức bay xa").
 - Sáng lập viên: Nguyễn Đăng Hanh (Lead System Architect, email khiếu nại: hnhngyndng@gmail.com) và Nguyễn Mạnh Hòa (Head of Design, email: manhhoa02042005@gmail.com).
 - Hotline 24/7: 0988.123.456, CSKH: support@tosach.vn.
-- Chính sách: Freeship toàn quốc từ 250k, 1 đổi 1 trong 7 ngày nếu dập gáy lỗi in ấn, đồng kiểm tra hàng trước khi nhận, bọc màng co 3 lớp chống sốc & tặng kèm bookmark độc quyền trong mọi đơn hàng.
+- Chính sách: Freeship toàn quốc cho đơn hàng từ 150k (đơn dưới 150k phí ship đồng giá 25k), 1 đổi 1 trong 7 ngày nếu dập gáy lỗi in ấn, đồng kiểm tra hàng trước khi nhận, bọc màng co 3 lớp chống sốc & tặng kèm bookmark độc quyền trong mọi đơn hàng.
 - Cam kết 100% sách thật bản quyền (NXB Trẻ, Kim Đồng, Nhã Nam, NXB Tổng Hợp...), nói không với sách lậu.
 - Thanh toán tiện lợi qua COD tiền mặt hoặc quét mã VietQR MBBank 24/7.
 - Khi người dùng buồn bã, cô đơn: Hãy an ủi dịu dàng, đồng cảm, gợi ý sách văn học / tản văn / chữa lành, tuyệt đối không gợi ý sách kỹ thuật hay sách không liên quan.

@@ -137,12 +137,19 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
         if (!matchTitle && !matchAuthor && !matchPublisher) return false;
       }
 
-      // 2. Category
+      // 2. Category (Hỗ trợ cả alias kinh-te-ky-nang, kinh-te, ky-nang - M11)
       if (filters.category) {
         const cat = filters.category.toLowerCase().trim();
         const bookSlugs = (book.categorySlug || '').toLowerCase().split(/\s+/);
-        // Khớp chính xác slug chuyên mục (hoặc cấp cha nếu lọc theo cấp cha đã được tổng hợp)
-        const matchesCategory = bookSlugs.includes(cat);
+        
+        let matchesCategory = bookSlugs.includes(cat);
+        if (!matchesCategory) {
+          if (cat === 'kinh-te-ky-nang' || cat === 'kinh-te') {
+            matchesCategory = bookSlugs.includes('kinh-te-khoi-nghiep') || bookSlugs.includes('ky-nang-song');
+          } else if (cat === 'ky-nang') {
+            matchesCategory = bookSlugs.includes('ky-nang-song');
+          }
+        }
         if (!matchesCategory) return false;
       }
 

@@ -258,6 +258,10 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
     );
   }, [checkoutItems]);
 
+  const totalQuantity = useMemo(() => {
+    return checkoutItems.reduce((acc, item) => acc + item.quantity, 0);
+  }, [checkoutItems]);
+
   const totalSavings = useMemo(() => {
     return Math.max(0, originalTotal - subtotal);
   }, [originalTotal, subtotal]);
@@ -908,7 +912,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
           <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 space-y-5 shadow-xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-black text-base text-[#0B1F3A]">
-                Đơn hàng ({checkoutItems.length} cuốn)
+                Đơn hàng ({totalQuantity} cuốn)
               </h3>
               <Link
                 href="/cart"
