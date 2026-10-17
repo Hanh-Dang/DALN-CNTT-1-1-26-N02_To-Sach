@@ -2,6 +2,7 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { OrderStatus } from '@prisma/client';
 import { AdminOrdersClient, AdminOrderData } from '@/components/admin/AdminOrdersClient';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +29,34 @@ export default async function AdminOrdersPage({
     redirect('/admin');
   }
 
+  // 1. Đếm số lượng theo từng trạng thái trên toàn bộ database (M14)
+  const [
+    totalAll,
+    pendingCount,
+    confirmedCount,
+    shippingCount,
+    deliveredCount,
+    cancelledCount,
+  ] = await prisma.$transaction([
+    prisma.order.count(),
+    prisma.order.count({ where: { status: OrderStatus.PENDING } }),
+    prisma.order.count({ where: { status: OrderStatus.CONFIRMED } }),
+    prisma.order.count({ where: { status: OrderStatus.SHIPPING } }),
+    prisma.order.count({ where: { status: OrderStatus.DELIVERED } }),
+    prisma.order.count({ where: { status: OrderStatus.CANCELLED } }),
+  ]);
+
+  const counts: Record<string, number> = {
+    ALL: totalAll,
+    PENDING: pendingCount,
+    CONFIRMED: confirmedCount,
+    SHIPPING: shippingCount,
+    DELIVERED: deliveredCount,
+    CANCELLED: cancelledCount,
+  };
+
+  // 2. Lấy 10 đơn hàng mới nhất của trang đầu tiên
+  const pageSize = 10;
   const rawOrders = await prisma.order.findMany({
     include: {
       items: {
@@ -54,7 +83,7 @@ export default async function AdminOrdersPage({
     orderBy: {
       createdAt: 'desc',
     },
-    take: 100,
+    take: pageSize,
   });
 
   const formattedOrders: AdminOrderData[] = rawOrders.map((o) => ({
@@ -101,9 +130,18 @@ export default async function AdminOrdersPage({
       : null,
   }));
 
+  const initialPagination = {
+    page: 1,
+    limit: pageSize,
+    totalCount: totalAll,
+    totalPages: Math.ceil(totalAll / pageSize) || 1,
+  };
+
   return (
     <AdminOrdersClient
       initialOrders={formattedOrders}
+      initialPagination={initialPagination}
+      initialCounts={counts}
       canManageOrders={canManageOrders}
       currentUser={user ? { fullName: user.fullName, role: user.role } : null}
       initialOrderCode={initialOrderCode}

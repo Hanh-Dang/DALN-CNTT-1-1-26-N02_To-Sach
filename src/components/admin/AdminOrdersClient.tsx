@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -82,6 +82,13 @@ export interface AdminOrderData {
 
 interface AdminOrdersClientProps {
   initialOrders: AdminOrderData[];
+  initialPagination?: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+  };
+  initialCounts?: Record<string, number>;
   canManageOrders: boolean;
   currentUser: {
     fullName: string;
@@ -104,12 +111,28 @@ const TABS: { id: TabType; label: string; color: string }[] = [
 
 export function AdminOrdersClient({
   initialOrders,
+  initialPagination,
+  initialCounts,
   canManageOrders,
   currentUser,
   initialOrderCode = '',
   initialStatus = '',
 }: AdminOrdersClientProps) {
   const [orders, setOrders] = useState<AdminOrderData[]>(initialOrders);
+  const [pagination, setPagination] = useState(
+    initialPagination || {
+      page: 1,
+      limit: 10,
+      totalCount: initialOrders.length,
+      totalPages: Math.ceil(initialOrders.length / 10) || 1,
+    }
+  );
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>(
+    initialCounts || { ALL: initialOrders.length }
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const isMounted = useRef(false);
+
   const [activeTab, setActiveTab] = useState<TabType>(
     ['PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'CANCELLED'].includes(initialStatus)
       ? (initialStatus as TabType)
@@ -117,6 +140,7 @@ export function AdminOrdersClient({
   );
   const [searchQuery, setSearchQuery] = useState(initialOrderCode);
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'COD' | 'BANK_TRANSFER'>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Modal / Drawer states
   const [selectedOrder, setSelectedOrder] = useState<AdminOrderData | null>(null);
@@ -156,6 +180,12 @@ export function AdminOrdersClient({
               : o
           )
         );
+        // Cập nhật lại đếm
+        setStatusCounts((prev) => ({
+          ...prev,
+          PENDING: Math.max(0, (prev.PENDING || 0) - data.cancelledCount),
+          CANCELLED: (prev.CANCELLED || 0) + data.cancelledCount,
+        }));
       }
     } catch (err: any) {
       setActionError(err.message || 'Không thể quét đơn quá hạn');
@@ -212,51 +242,47 @@ export function AdminOrdersClient({
   const [cancellingModalOrder, setCancellingModalOrder] = useState<AdminOrderData | null>(null);
   const [cancelReasonInput, setCancelReasonInput] = useState('Khách hàng yêu cầu hủy đơn');
 
-  // Đếm số lượng theo từng tab
-  const counts = useMemo(() => {
-    const map: Record<string, number> = { ALL: orders.length };
-    orders.forEach((o) => {
-      map[o.status] = (map[o.status] || 0) + 1;
-    });
-    return map;
-  }, [orders]);
+  // Gọi API lấy dữ liệu động từ CSDL khi chuyển tab, tìm kiếm, đổi phương thức hoặc đổi trang (M14)
+  useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
 
-  // Lọc danh sách theo tab + tìm kiếm + phương thức thanh toán
-  const filteredOrders = useMemo(() => {
-    return orders.filter((o) => {
-      // 1. Lọc tab
-      if (activeTab !== 'ALL' && o.status !== activeTab) return false;
+    const timer = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set('page', String(currentPage));
+        params.set('limit', '10');
+        if (activeTab !== 'ALL') params.set('status', activeTab);
+        if (paymentFilter !== 'ALL') params.set('paymentMethod', paymentFilter);
+        if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
-      // 2. Lọc phương thức thanh toán
-      if (paymentFilter !== 'ALL' && o.paymentMethod !== paymentFilter) return false;
-
-      // 3. Lọc từ khóa tìm kiếm
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const codeMatch = o.orderCode.toLowerCase().includes(query);
-        const nameMatch = (o.customerName || o.user?.fullName || '').toLowerCase().includes(query);
-        const phoneMatch = (o.customerPhone || '').includes(query);
-        const emailMatch = (o.customerEmail || o.user?.email || '').toLowerCase().includes(query);
-        return codeMatch || nameMatch || phoneMatch || emailMatch;
+        const res = await fetch(`/api/admin/orders?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setOrders(data.orders || []);
+          if (data.pagination) setPagination(data.pagination);
+          if (data.counts) setStatusCounts(data.counts);
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải đơn hàng:', err);
+      } finally {
+        setIsLoading(false);
       }
+    }, 300);
 
-      return true;
-    });
-  }, [orders, activeTab, paymentFilter, searchQuery]);
+    return () => clearTimeout(timer);
+  }, [currentPage, activeTab, paymentFilter, searchQuery]);
 
-  // Phân trang 10 đơn hàng / trang
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
-
+  // Tự động reset về trang 1 khi thay đổi điều kiện lọc
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab, paymentFilter, searchQuery]);
 
-  const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
-  const paginatedOrders = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredOrders.slice(start, start + pageSize);
-  }, [filteredOrders, currentPage, pageSize]);
+  const counts = statusCounts;
+  const totalPages = pagination.totalPages;
 
   // Hàm gọi API chuyển trạng thái đơn hàng
   const handleUpdateStatus = async (
@@ -487,8 +513,17 @@ export function AdminOrdersClient({
       </div>
 
       {/* 3. BẢNG DANH SÁCH ĐƠN HÀNG */}
-      <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(11,31,58,0.06)] border border-slate-100 overflow-hidden">
-        {filteredOrders.length === 0 ? (
+      <div className="bg-white rounded-2xl shadow-[0_4px_20px_-2px_rgba(11,31,58,0.06)] border border-slate-100 overflow-hidden relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+            <div className="flex items-center gap-2 bg-[#0B1F3A] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#F5A623]" />
+              <span>Đang tải dữ liệu đơn hàng...</span>
+            </div>
+          </div>
+        )}
+
+        {orders.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
               <Package className="w-7 h-7" />
@@ -515,7 +550,7 @@ export function AdminOrdersClient({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {paginatedOrders.map((order) => {
+                {orders.map((order) => {
                   const customerName = order.customerName || order.user?.fullName || 'Khách vãng lai';
                   const firstItem = order.items[0];
                   const bookTitle = firstItem?.bookTitle || firstItem?.book?.title || 'Tổ Sách Tuyển Chọn';
@@ -694,14 +729,14 @@ export function AdminOrdersClient({
         )}
 
         {/* Table Footer with Pagination (10 đơn hàng / trang) */}
-        {filteredOrders.length > 0 && (
+        {orders.length > 0 && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-100 text-xs bg-slate-50/50">
             <div className="flex items-center gap-2 text-slate-500">
               <span>
                 Hiển thị{' '}
-                {(currentPage - 1) * pageSize + 1}{' '}
-                - {Math.min(currentPage * pageSize, filteredOrders.length)} trên tổng số{' '}
-                <strong className="text-slate-800">{filteredOrders.length}</strong> đơn hàng
+                {(currentPage - 1) * pagination.limit + 1}{' '}
+                - {Math.min(currentPage * pagination.limit, pagination.totalCount)} trên tổng số{' '}
+                <strong className="text-slate-800">{pagination.totalCount}</strong> đơn hàng
               </span>
             </div>
 
