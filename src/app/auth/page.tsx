@@ -45,10 +45,38 @@ const DEMO_ACCOUNTS = [
   },
 ];
 
+/**
+ * Làm sạch đường dẫn chuyển hướng, ngăn chặn triệt để lỗ hổng Open Redirect (H7)
+ * Chỉ chấp nhận các đường dẫn nội bộ (relative path) an toàn
+ */
+function getSafeRedirectPath(rawPath: string | null | undefined): string {
+  if (!rawPath || typeof rawPath !== 'string') return '';
+  const trimmed = rawPath.trim();
+  
+  // Bắt buộc bắt đầu bằng '/', không bắt đầu bằng '//' hoặc '/\' và không chứa '\'
+  if (
+    trimmed.startsWith('/') &&
+    !trimmed.startsWith('//') &&
+    !trimmed.startsWith('/\\') &&
+    !trimmed.includes('\\')
+  ) {
+    try {
+      const parsed = new URL(trimmed, 'https://tosach.vn');
+      if (parsed.origin === 'https://tosach.vn' && parsed.pathname.startsWith('/')) {
+        return parsed.pathname + parsed.search + parsed.hash;
+      }
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
 function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get('redirect') || '';
+  const rawRedirect = searchParams.get('redirect') || '';
+  const redirectPath = getSafeRedirectPath(rawRedirect);
 
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
