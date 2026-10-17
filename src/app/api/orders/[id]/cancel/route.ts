@@ -85,9 +85,26 @@ export async function POST(
 
     const updatedTimeline = [...existingTimeline, newTimelineEvent];
 
-    // 5. Chạy Prisma Transaction: Hoàn kho sách và cập nhật trạng thái đơn
+    // 5. Chạy Prisma Transaction có khóa lạc quan (Optimistic Atomic Lock)
     const result = await prisma.$transaction(async (tx) => {
-      // 5.1. Hoàn trả tồn kho cho từng đầu sách
+      // 5.1. CHỈ cập nhật đơn sang CANCELLED NẾU trạng thái hiện tại vẫn đang là PENDING
+      const updateResult = await tx.order.updateMany({
+        where: {
+          id: order.id,
+          status: OrderStatus.PENDING,
+        },
+        data: {
+          status: OrderStatus.CANCELLED,
+          timeline: updatedTimeline,
+        },
+      });
+
+      // Nếu count === 0 nghĩa là đơn hàng đã bị hủy bởi một request song song khác -> Rollback ngay lập tức!
+      if (updateResult.count === 0) {
+        throw new Error('Đơn hàng không ở trạng thái chờ xác nhận hoặc đã được xử lý trước đó.');
+      }
+
+      // 5.2. Chỉ khi cập nhật trạng thái thành công (duy nhất 1 request chiến thắng) mới hoàn trả tồn kho
       for (const item of order.items) {
         await tx.book.update({
           where: { id: item.bookId },
@@ -98,13 +115,8 @@ export async function POST(
         });
       }
 
-      // 5.2. Cập nhật trạng thái đơn sang CANCELLED
-      const updatedOrder = await tx.order.update({
+      const updatedOrder = await tx.order.findUnique({
         where: { id: order.id },
-        data: {
-          status: OrderStatus.CANCELLED,
-          timeline: updatedTimeline,
-        },
         include: {
           items: true,
         },
@@ -120,9 +132,11 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Cancel order error:', error);
+    const errorMessage = error?.message || '';
+    const isBusinessError = errorMessage.includes('Đơn hàng không ở trạng thái');
     return NextResponse.json(
-      { error: 'Có lỗi xảy ra khi xử lý hủy đơn hàng: ' + (error?.message || '') },
-      { status: 500 }
+      { error: isBusinessError ? errorMessage : 'Có lỗi xảy ra khi xử lý hủy đơn hàng: ' + errorMessage },
+      { status: isBusinessError ? 400 : 500 }
     );
   }
 }
