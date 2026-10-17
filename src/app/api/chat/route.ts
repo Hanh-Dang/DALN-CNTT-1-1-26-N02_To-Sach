@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,17 @@ interface SuggestedBook {
 
 export async function POST(req: NextRequest) {
   try {
+    const clientIp = getClientIp(req);
+
+    // Rate limit: Tối đa 20 tin nhắn / 60 giây từ 1 IP (H4)
+    const chatLimit = await checkRateLimit(`chat_ip:${clientIp}`, 20, 60);
+    if (!chatLimit.success) {
+      return NextResponse.json(
+        { error: 'Bạn đang gửi tin nhắn quá nhanh. Vui lòng chờ 1 phút trước khi tiếp tục trò chuyện!' },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const message: string = (body.message || '').trim();
     const history: ChatMessage[] = Array.isArray(body.history) ? body.history : [];

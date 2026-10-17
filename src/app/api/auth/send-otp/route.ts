@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateOtp, saveOtp, sendOtpEmail } from '@/lib/email';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,24 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    const clientIp = getClientIp(req);
+
+    // Rate limit: Tối đa 3 lần / 5 phút theo Email và 10 lần / 10 phút theo IP (H4)
+    const emailLimit = await checkRateLimit(`send_otp_email:${normalizedEmail}`, 3, 300);
+    if (!emailLimit.success) {
+      return NextResponse.json(
+        { error: 'Bạn đã yêu cầu gửi mã OTP quá nhiều lần cho email này. Vui lòng đợi 5 phút trước khi thử lại.' },
+        { status: 429 }
+      );
+    }
+
+    const ipLimit = await checkRateLimit(`send_otp_ip:${clientIp}`, 10, 600);
+    if (!ipLimit.success) {
+      return NextResponse.json(
+        { error: 'Quá nhiều yêu cầu gửi mã OTP từ thiết bị của bạn. Vui lòng thử lại sau.' },
+        { status: 429 }
+      );
+    }
 
     // Kiểm tra xem email đã có tài khoản ACTIVE chưa
     const existing = await prisma.user.findUnique({
