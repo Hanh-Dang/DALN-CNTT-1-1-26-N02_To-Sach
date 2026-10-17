@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { prisma } from './prisma';
 import { UserRole } from '@prisma/client';
 
+import { redis } from './redis';
+
 export function getJwtSecretKey(): Uint8Array {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.trim().length < 32) {
@@ -56,10 +58,44 @@ export async function signToken(payload: TokenPayload): Promise<string> {
 }
 
 /**
- * Xác thực và giải mã token JWT
+ * Thu hồi và đưa token JWT vào danh sách đen (Blacklist) phía server khi đăng xuất (Lỗi M6)
+ */
+export async function revokeToken(token: string): Promise<void> {
+  if (!token) return;
+  try {
+    const { payload } = await jwtVerify(token, key);
+    const exp = (payload.exp as number) || Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
+    const now = Math.floor(Date.now() / 1000);
+    const ttlSeconds = Math.max(60, exp - now);
+    await redis.set(`jwt_blacklist:${token}`, 'revoked', { ex: ttlSeconds });
+  } catch {
+    // Nếu token lỗi hoặc hết hạn sẵn thì không cần blacklist
+  }
+}
+
+/**
+ * Kiểm tra xem token có nằm trong blacklist phía server hay không
+ */
+export async function isTokenRevoked(token: string): Promise<boolean> {
+  if (!token) return true;
+  try {
+    const status = await redis.get(`jwt_blacklist:${token}`);
+    return status === 'revoked';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Xác thực và giải mã token JWT kèm kiểm tra danh sách thu hồi phía server (Lỗi M6)
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
+    // 1. Kiểm tra Blacklist phía server
+    const revoked = await isTokenRevoked(token);
+    if (revoked) return null;
+
+    // 2. Xác thực chữ ký và thời hạn
     const { payload } = await jwtVerify(token, key);
     return payload as unknown as TokenPayload;
   } catch {

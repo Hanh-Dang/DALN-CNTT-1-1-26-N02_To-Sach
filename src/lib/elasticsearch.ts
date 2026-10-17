@@ -363,6 +363,20 @@ export async function searchBooksSmart(
       LIMIT ${limit}
     `;
 
+    let extensionsInitialized = false;
+    async function ensureExtensions() {
+      if (extensionsInitialized) return;
+      try {
+        await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS unaccent;`);
+        await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+        extensionsInitialized = true;
+      } catch {
+        // Bỏ qua nếu user DB không đủ quyền superuser
+      }
+    }
+
+    await ensureExtensions();
+
     const rawRows: any = await prisma.$queryRawUnsafe(sql);
 
     // Map về cấu trúc Book đầy đủ
@@ -400,14 +414,18 @@ export async function searchBooksSmart(
       results: books,
     };
   } catch (sqlErr) {
-    console.warn('Smart SQL search failed, falling back to basic Prisma search:', sqlErr);
+    console.warn('Smart SQL search failed, falling back to basic Prisma search with slug fallback:', sqlErr);
 
-    // 3. Graceful Final Fallback: Basic Prisma ILIKE Search
+    // 3. Graceful Final Fallback: Basic Prisma ILIKE Search kèm slug matching không dấu (Lỗi M5)
+    const noToneQuery = removeVietnameseTones(trimmed);
+    const slugKeyword = noToneQuery.toLowerCase().replace(/\s+/g, '-');
+
     const pgResults = await prisma.book.findMany({
       where: {
         isActive: true,
         OR: [
           { title: { contains: trimmed, mode: 'insensitive' } },
+          { slug: { contains: slugKeyword, mode: 'insensitive' } },
           { description: { contains: trimmed, mode: 'insensitive' } },
           { publisher: { contains: trimmed, mode: 'insensitive' } },
           {
