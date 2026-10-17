@@ -1,16 +1,30 @@
 import nodemailer from 'nodemailer';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { redis } from './redis';
 
-// Bộ nhớ đệm fallback nếu Redis chưa cấu hình
-const localOtpStore = new Map<string, { otp: string; expiresAt: number }>();
+// Bộ nhớ đệm fallback nếu Redis chưa cấu hình kèm đếm số lần thử sai
+const localOtpStore = new Map<string, { otp: string; expiresAt: number; attempts: number }>();
 
 /**
- * Tạo mã OTP ngẫu nhiên 6 chữ số
+ * Hàm khử mã HTML (Escape HTML) chống HTML/Email Injection
+ */
+export function escapeHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Tạo mã OTP ngẫu nhiên 6 chữ số bằng CSPRNG (Cryptographically Secure Pseudo-Random Number Generator)
  */
 export function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 /**
@@ -31,48 +45,55 @@ export async function saveOtp(email: string, otp: string): Promise<void> {
     console.warn('Redis saveOtp fallback to Memory:', err);
   }
 
-  // Luôn lưu cả bản sao trong local Map để đảm bảo độ tin cậy
+  // Luôn lưu cả bản sao trong local Map để đảm bảo độ tin cậy kèm số lần thử sai ban đầu = 0
   localOtpStore.set(normalizedEmail, {
     otp,
     expiresAt: Date.now() + ttlSeconds * 1000,
+    attempts: 0,
   });
 }
 
 /**
- * Đối soát và xác minh mã OTP
+ * Đối soát và xác minh mã OTP (Giới hạn tối đa 5 lần thử sai)
  */
 export async function verifyOtp(email: string, inputOtp: string): Promise<boolean> {
   const normalizedEmail = email.toLowerCase().trim();
   const key = `otp:${normalizedEmail}`;
-  const cleanInput = inputOtp.trim();
+  const cleanInput = inputOtp ? inputOtp.trim() : '';
 
-  // 1. Kiểm tra từ Redis
-  try {
-    if (typeof (redis as any).get === 'function') {
-      const stored = await (redis as any).get(key);
-      if (stored && String(stored).trim() === cleanInput) {
-        if (typeof (redis as any).del === 'function') {
-          await (redis as any).del(key);
-        }
-        localOtpStore.delete(normalizedEmail);
-        return true;
-      }
-    }
-  } catch (err) {
-    console.warn('Redis verifyOtp fallback to Memory:', err);
+  const record = localOtpStore.get(normalizedEmail);
+  if (!record) {
+    return false;
   }
 
-  // 2. Kiểm tra từ Local Map
-  const record = localOtpStore.get(normalizedEmail);
-  if (record) {
-    if (Date.now() > record.expiresAt) {
-      localOtpStore.delete(normalizedEmail);
-      return false;
-    }
-    if (record.otp === cleanInput) {
-      localOtpStore.delete(normalizedEmail);
-      return true;
-    }
+  // 1. Kiểm tra hết hạn (quá 5 phút)
+  if (Date.now() > record.expiresAt) {
+    localOtpStore.delete(normalizedEmail);
+    return false;
+  }
+
+  // 2. Tăng số lần thử sai, nếu quá 5 lần thì hủy mã ngay lập tức (Chống Brute-force)
+  record.attempts = (record.attempts || 0) + 1;
+  if (record.attempts > 5) {
+    localOtpStore.delete(normalizedEmail);
+    try {
+      if (typeof (redis as any).del === 'function') {
+        await (redis as any).del(key);
+      }
+    } catch {}
+    console.warn(`[OTP SECURITY] Hủy mã OTP của email ${normalizedEmail} do nhập sai quá 5 lần.`);
+    return false;
+  }
+
+  // 3. Khớp mã OTP
+  if (record.otp === cleanInput) {
+    localOtpStore.delete(normalizedEmail);
+    try {
+      if (typeof (redis as any).del === 'function') {
+        await (redis as any).del(key);
+      }
+    } catch {}
+    return true;
   }
 
   return false;
@@ -87,7 +108,7 @@ export async function sendOtpEmail(email: string, otp: string, fullName: string)
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 
   const formattedOtp = otp.split('').join(' ');
-  const recipientName = fullName && fullName.trim() ? fullName.trim() : 'Quý độc giả';
+  const recipientName = escapeHtml(fullName && fullName.trim() ? fullName.trim() : 'Quý độc giả');
 
   const htmlContent = `
     <!DOCTYPE html>

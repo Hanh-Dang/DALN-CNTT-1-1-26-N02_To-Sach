@@ -8,8 +8,9 @@ export async function POST(req: NextRequest) {
   try {
     const { email, fullName } = await req.json();
 
-    if (!email || !email.includes('@')) {
-      return NextResponse.json({ error: 'Email không hợp lệ' }, { status: 400 });
+    const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+      return NextResponse.json({ error: 'Định dạng email không hợp lệ' }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Tạo mã OTP 6 số ngẫu nhiên
+    // Tạo mã OTP 6 số ngẫu nhiên bằng CSPRNG
     const otp = generateOtp();
 
     // Lưu vào Redis / In-Memory với TTL 5 phút
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
         ? 'Mã xác minh đã được gửi tới hòm thư Gmail của bạn. Vui lòng kiểm tra hộp thư đến hoặc thư rác!'
         : 'Mã xác minh đã được tạo thành công!',
       sentRealEmail: result.sentRealEmail,
-      demoOtp: result.demoOtp, // Hỗ trợ nút tự động điền khi demo đồ án
+      demoOtp: process.env.NODE_ENV !== 'production' ? result.demoOtp : undefined, // Chỉ hỗ trợ khi demo/dev đồ án
     });
   } catch (error: any) {
     console.error('Lỗi khi gửi mã OTP:', error);
