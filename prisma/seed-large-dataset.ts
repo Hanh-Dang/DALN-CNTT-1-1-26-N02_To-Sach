@@ -169,7 +169,7 @@ async function main() {
   }
 
   const bookAuthorsToCreate: { bookId: string; authorId: string }[] = [];
-  const bookCategoriesToCreate: { bookId: string; categoryId: string; isPrimary: boolean }[] = [];
+  const bookCategoriesToCreate: { bookId: string; categoryId: string }[] = [];
 
   for (const b of booksData) {
     const bookId = bookByTitle.get(b.title.trim().toLowerCase());
@@ -183,7 +183,7 @@ async function main() {
 
     const catSlug = b.categorySlug || 'van-hoc';
     const categoryId = catMap.get(catSlug) || defaultCatId;
-    bookCategoriesToCreate.push({ bookId, categoryId, isPrimary: true });
+    bookCategoriesToCreate.push({ bookId, categoryId });
   }
 
   // Deduplicate pairs
@@ -196,7 +196,7 @@ async function main() {
   const uniqueBookCategories = Array.from(new Set(bookCategoriesToCreate.map(bc => `${bc.bookId}:::${bc.categoryId}`)))
     .map(key => {
       const [bookId, categoryId] = key.split(':::');
-      return { bookId, categoryId, isPrimary: true };
+      return { bookId, categoryId };
     });
 
   for (let i = 0; i < uniqueBookAuthors.length; i += CHUNK_SIZE) {

@@ -19,6 +19,7 @@ export interface CatalogBookItem {
   rating: number;
   ratingCount: number;
   inStock: boolean;
+  stockQty?: number;
   categorySlug?: string;
   tag?: string;
 }
@@ -36,11 +37,13 @@ export const CatalogBookCard: React.FC<CatalogBookCardProps> = ({ book, viewMode
   const isFavorite = isWishlisted(book.id);
   const discountPercent = calculateDiscount(book.originalPrice, book.price);
 
+  const realStock = typeof book.stockQty === 'number' ? book.stockQty : (book.inStock ? 10 : 0);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!book.inStock) {
+    if (!book.inStock || realStock <= 0) {
       return;
     }
 
@@ -52,7 +55,7 @@ export const CatalogBookCard: React.FC<CatalogBookCardProps> = ({ book, viewMode
       originalPrice: book.originalPrice,
       coverUrl: book.coverUrl,
       authorName: book.author,
-      stockQty: book.inStock ? 50 : 0,
+      stockQty: realStock,
     }, 1, e);
 
     setIsAdded(true);
@@ -71,7 +74,7 @@ export const CatalogBookCard: React.FC<CatalogBookCardProps> = ({ book, viewMode
       coverUrl: book.coverUrl,
       authorName: book.author,
       publisher: book.publisher,
-      stockQty: book.inStock ? 50 : 0,
+      stockQty: realStock,
       avgRating: book.rating,
     });
   };

@@ -13,6 +13,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Chưa đăng nhập.' }, { status: 401 });
     }
 
+    if (user.role !== 'SUPER_ADMIN' && user.role !== 'STAFF') {
+      return NextResponse.json(
+        { error: 'Bạn không có quyền truy cập danh mục quản trị.' },
+        { status: 403 }
+      );
+    }
+
     const categories = await prisma.category.findMany({
       include: {
         parent: {

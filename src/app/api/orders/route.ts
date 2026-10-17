@@ -3,9 +3,11 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { PaymentMethod, PaymentStatus, OrderStatus } from '@prisma/client';
 
+import crypto from 'crypto';
+
 /**
- * Sinh mã đơn hàng chuẩn TMĐT chuyên nghiệp: TS-YYYYMMDD-XXXX
- * Ví dụ: TS-20261001-A79F
+ * Sinh mã đơn hàng chuẩn TMĐT chuyên nghiệp: TS-YYYYMMDD-XXXXXX (CSPRNG 6 ký tự hex - L6)
+ * Ví dụ: TS-20261018-9B2F8A
  */
 function generateOrderCode(): string {
   const now = new Date();
@@ -13,7 +15,7 @@ function generateOrderCode(): string {
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   const dateStr = `${year}${month}${day}`;
-  const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const randomChars = crypto.randomBytes(3).toString('hex').toUpperCase();
   return `TS-${dateStr}-${randomChars}`;
 }
 
@@ -49,19 +51,19 @@ export async function POST(req: NextRequest) {
       items,
     } = body;
 
-    // 1. Validation dữ liệu đầu vào
-    if (!customerName || !customerName.trim()) {
-      return NextResponse.json({ error: 'Vui lòng cung cấp họ và tên người nhận.' }, { status: 400 });
+    // 1. Validation dữ liệu đầu vào (M4)
+    if (!customerName || typeof customerName !== 'string' || !customerName.trim()) {
+      return NextResponse.json({ error: 'Vui lòng cung cấp họ và tên người nhận hợp lệ.' }, { status: 400 });
     }
 
-    if (!customerPhone || !customerPhone.trim()) {
+    if (!customerPhone || typeof customerPhone !== 'string' || !customerPhone.trim()) {
       return NextResponse.json({ error: 'Vui lòng cung cấp số điện thoại nhận hàng.' }, { status: 400 });
     }
 
-    const phoneClean = customerPhone.trim().replace(/\s/g, '');
-    const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
+    const phoneClean = customerPhone.trim().replace(/[\s.-]/g, '');
+    const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
     if (!phoneRegex.test(phoneClean)) {
-      return NextResponse.json({ error: 'Số điện thoại không hợp lệ (chuẩn 10 chữ số Việt Nam).' }, { status: 400 });
+      return NextResponse.json({ error: 'Số điện thoại không hợp lệ (chuẩn 10 chữ số di động Việt Nam).' }, { status: 400 });
     }
 
     if (!shippingAddress || !shippingAddress.trim()) {

@@ -13,6 +13,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Chưa đăng nhập.' }, { status: 401 });
     }
 
+    if (user.role !== 'SUPER_ADMIN' && user.role !== 'STAFF') {
+      return NextResponse.json(
+        { error: 'Bạn không có quyền truy cập danh sách quản trị sách.' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('q') || '';
     const status = searchParams.get('status') || 'ALL'; // ALL | IN_STOCK | LOW_STOCK | OUT_OF_STOCK
@@ -113,6 +120,15 @@ export async function POST(req: NextRequest) {
     if (!title || !price || !coverUrl) {
       return NextResponse.json(
         { error: 'Vui lòng điền đầy đủ tiêu đề, giá bán và ảnh bìa.' },
+        { status: 400 }
+      );
+    }
+
+    const numPrice = Number(price);
+    const numOriginalPrice = originalPrice !== undefined ? Number(originalPrice) : numPrice;
+    if (!Number.isFinite(numPrice) || numPrice <= 0 || !Number.isFinite(numOriginalPrice) || numOriginalPrice <= 0) {
+      return NextResponse.json(
+        { error: 'Giá bán và giá bìa phải là số nguyên dương lớn hơn 0.' },
         { status: 400 }
       );
     }
@@ -334,8 +350,20 @@ export async function PATCH(req: NextRequest) {
 
     const updateData: any = {};
     if (title) updateData.title = title.trim();
-    if (price !== undefined) updateData.price = parseInt(price, 10);
-    if (originalPrice !== undefined) updateData.originalPrice = parseInt(originalPrice, 10);
+    if (price !== undefined) {
+      const p = parseInt(price, 10);
+      if (isNaN(p) || p <= 0) {
+        return NextResponse.json({ error: 'Giá bán phải là số nguyên dương lớn hơn 0.' }, { status: 400 });
+      }
+      updateData.price = p;
+    }
+    if (originalPrice !== undefined) {
+      const op = parseInt(originalPrice, 10);
+      if (isNaN(op) || op <= 0) {
+        return NextResponse.json({ error: 'Giá bìa gốc phải là số nguyên dương lớn hơn 0.' }, { status: 400 });
+      }
+      updateData.originalPrice = op;
+    }
     if (stockQty !== undefined) updateData.stockQty = Math.max(0, parseInt(stockQty, 10));
     if (isbn !== undefined) updateData.isbn = isbn ? isbn.trim() : null;
     if (publisher !== undefined) updateData.publisher = publisher ? publisher.trim() : null;

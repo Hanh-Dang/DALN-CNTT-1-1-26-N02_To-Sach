@@ -19,6 +19,9 @@ import { removeVietnameseTones } from '@/lib/utils';
 
 interface CatalogClientProps {
   initialBooks: CatalogBookItem[];
+  serverTotalResults?: number;
+  serverCurrentPage?: number;
+  serverPageSize?: number;
   categoriesData?: CategoryFilterItem[];
   publishersData?: PublisherFilterItem[];
   authorsData?: string[];
@@ -26,6 +29,9 @@ interface CatalogClientProps {
 
 export const CatalogClient: React.FC<CatalogClientProps> = ({
   initialBooks,
+  serverTotalResults,
+  serverCurrentPage = 1,
+  serverPageSize = 24,
   categoriesData = [],
   publishersData = [],
   authorsData = [],
@@ -42,16 +48,9 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortOption, setSortOption] = useState(initialSort);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(serverCurrentPage);
   const [jumpPageInput, setJumpPageInput] = useState('');
-  const pageSize = 16; // 16 cuốn/trang tối ưu cho layout 4 cột
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 160, behavior: 'smooth' });
-    }
-  };
+  const pageSize = serverPageSize;
 
   const [filters, setFilters] = useState<CatalogFilterState>({
     category: initialCategory,
@@ -65,36 +64,55 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
     preOrder: false,
   });
 
-  // Sync state if searchParams change from outside (e.g. Header navigation)
+  // Sync state if searchParams or server props change
   useEffect(() => {
     const cat = searchParams.get('category') || searchParams.get('cat') || undefined;
     const q = searchParams.get('q') || '';
     const sort = searchParams.get('sort') || 'newest';
+    const pageParam = parseInt(searchParams.get('page') || '1', 10);
 
     setFilters((prev) => ({ ...prev, category: cat }));
     setSearchQuery(q);
     setSortOption(sort);
-    setCurrentPage(1);
-  }, [searchParams]);
+    setCurrentPage(pageParam > 0 ? pageParam : serverCurrentPage);
+  }, [searchParams, serverCurrentPage]);
 
-  // Update URL params when filters or sort change
-  const updateUrl = (newFilters: CatalogFilterState, newSort: string, query: string) => {
+  // Update URL params when filters, sort or page change (Trigger Server-side re-render - H12)
+  const updateUrl = (
+    newFilters: CatalogFilterState,
+    newSort: string,
+    query: string,
+    newPage: number = 1
+  ) => {
     const params = new URLSearchParams();
+    if (newPage > 1) params.set('page', String(newPage));
     if (query.trim()) params.set('q', query.trim());
     if (newFilters.category) params.set('category', newFilters.category);
     if (newSort && newSort !== 'newest') params.set('sort', newSort);
     if (newFilters.priceRange) params.set('priceRange', newFilters.priceRange);
     if (newFilters.minPrice) params.set('minPrice', String(newFilters.minPrice));
     if (newFilters.maxPrice) params.set('maxPrice', String(newFilters.maxPrice));
+    if (newFilters.publishers && newFilters.publishers.length > 0) {
+      params.set('publisher', newFilters.publishers[0]);
+    }
+    if (newFilters.inStockOnly) params.set('inStock', 'true');
 
     const newUrl = params.toString() ? `/catalog?${params.toString()}` : '/catalog';
-    window.history.replaceState(null, '', newUrl);
+    router.push(newUrl, { scroll: false });
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    updateUrl(filters, sortOption, searchQuery, page);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 160, behavior: 'smooth' });
+    }
   };
 
   const handleFilterChange = (newFilters: CatalogFilterState) => {
     setFilters(newFilters);
     setCurrentPage(1);
-    updateUrl(newFilters, sortOption, searchQuery);
+    updateUrl(newFilters, sortOption, searchQuery, 1);
   };
 
   const handleResetFilters = () => {
@@ -112,14 +130,14 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
     setFilters(emptyFilters);
     setSearchQuery('');
     setCurrentPage(1);
-    updateUrl(emptyFilters, sortOption, '');
+    updateUrl(emptyFilters, sortOption, '', 1);
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSort = e.target.value;
     setSortOption(newSort);
     setCurrentPage(1);
-    updateUrl(filters, newSort, searchQuery);
+    updateUrl(filters, newSort, searchQuery, 1);
   };
 
   // Filter and Sort execution
@@ -185,11 +203,12 @@ export const CatalogClient: React.FC<CatalogClientProps> = ({
     });
   }, [initialBooks, searchQuery, filters, sortOption]);
 
-  // Pagination
-  const totalResults = filteredBooks.length;
+  // Pagination (Server-side Pagination H12 hoặc Fallback Client)
+  const isServerPagination = serverTotalResults !== undefined;
+  const totalResults = isServerPagination ? serverTotalResults : filteredBooks.length;
   const totalPages = Math.ceil(totalResults / pageSize) || 1;
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedBooks = filteredBooks.slice(startIndex, startIndex + pageSize);
+  const paginatedBooks = isServerPagination ? initialBooks : filteredBooks.slice(startIndex, startIndex + pageSize);
 
   // Category Title
   const categoryTitle = useMemo(() => {

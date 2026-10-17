@@ -1,4 +1,5 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { AdminOrdersClient, AdminOrderData } from '@/components/admin/AdminOrdersClient';
@@ -15,9 +16,17 @@ export default async function AdminOrdersPage({
   const initialStatus = (resolvedParams.status || '').trim().toUpperCase();
 
   const user = await getCurrentUser();
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const hasOrderPerm = user?.permissions?.includes('MANAGE_ORDERS') ?? false;
+  if (!user) {
+    redirect('/auth');
+  }
+
+  const isSuperAdmin = user.role === 'SUPER_ADMIN';
+  const hasOrderPerm = user.permissions?.includes('MANAGE_ORDERS') ?? false;
   const canManageOrders = isSuperAdmin || hasOrderPerm;
+
+  if (!canManageOrders) {
+    redirect('/admin');
+  }
 
   const rawOrders = await prisma.order.findMany({
     include: {

@@ -38,30 +38,55 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user has purchased this book
+    // Check if user has purchased this book (chỉ tính đơn đã giao thành công DELIVERED - M2)
     const verifiedOrder = await prisma.orderItem.findFirst({
       where: {
         bookId,
         order: {
           userId: user.id,
+          status: 'DELIVERED',
         },
       },
     });
 
-    // Create review
-    const newReview = await prisma.review.create({
-      data: {
+    // Check if user already reviewed this book (chống spam review vô hạn - M2)
+    const existingReview = await prisma.review.findFirst({
+      where: {
         bookId,
         userId: user.id,
-        rating: numRating,
-        title: title || null,
-        body: reviewText,
-        isVerifiedPurchase: !!verifiedOrder,
-        status: ReviewStatus.APPROVED, // Tự động duyệt hoặc kiểm duyệt
       },
     });
 
-    // Recalculate book average rating & count
+    let savedReview;
+    if (existingReview) {
+      // Cập nhật đánh giá hiện tại thay vì spam tạo mới
+      savedReview = await prisma.review.update({
+        where: { id: existingReview.id },
+        data: {
+          rating: numRating,
+          title: title || null,
+          body: reviewText,
+          isVerifiedPurchase: !!verifiedOrder,
+          status: ReviewStatus.APPROVED,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // Tạo review mới lần đầu
+      savedReview = await prisma.review.create({
+        data: {
+          bookId,
+          userId: user.id,
+          rating: numRating,
+          title: title || null,
+          body: reviewText,
+          isVerifiedPurchase: !!verifiedOrder,
+          status: ReviewStatus.APPROVED,
+        },
+      });
+    }
+
+    // Recalculate book average rating & count (sửa L7 & M11: không tự ý fallback 5 sao / 1 đánh giá nếu chưa có)
     const aggregates = await prisma.review.aggregate({
       where: { bookId, status: ReviewStatus.APPROVED },
       _avg: { rating: true },
@@ -71,14 +96,14 @@ export async function POST(req: NextRequest) {
     await prisma.book.update({
       where: { id: bookId },
       data: {
-        avgRating: aggregates._avg.rating ? Number(aggregates._avg.rating.toFixed(1)) : 5,
-        ratingCount: aggregates._count.rating || 1,
+        avgRating: aggregates._avg.rating ? Number(aggregates._avg.rating.toFixed(1)) : 0,
+        ratingCount: aggregates._count.rating || 0,
       },
     });
 
     return NextResponse.json({
       success: true,
-      review: newReview,
+      review: savedReview,
     });
   } catch (error) {
     console.error('Error submitting review:', error);
