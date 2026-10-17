@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { triggerFlyToCart } from '@/lib/flyToCart';
+import { fetchAuthMeShared, fetchUserSyncShared } from '@/lib/clientAuthDedupe';
 
 export interface CartItem {
   bookId: string;
@@ -116,9 +117,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const syncWithAuth = useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/me');
-      const data = res.ok ? await res.json() : null;
-      const newUserId: string | null = data?.user?.id || null;
+      const user = await fetchAuthMeShared();
+      const newUserId: string | null = user?.id || null;
       const prevUserId = activeUserIdRef.current;
 
       // Di chuyển key cũ nếu có từ phiên bản trước
@@ -139,12 +139,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch giỏ hàng từ Database
         let serverCart: CartItem[] = [];
         try {
-          const syncRes = await fetch('/api/user/sync');
-          if (syncRes.ok) {
-            const syncData = await syncRes.json();
-            if (Array.isArray(syncData?.data?.cart)) {
-              serverCart = syncData.data.cart;
-            }
+          const syncData = await fetchUserSyncShared();
+          if (syncData && Array.isArray(syncData?.data?.cart)) {
+            serverCart = syncData.data.cart;
           }
         } catch (e) {
           console.warn('Không thể kéo giỏ hàng từ DB:', e);

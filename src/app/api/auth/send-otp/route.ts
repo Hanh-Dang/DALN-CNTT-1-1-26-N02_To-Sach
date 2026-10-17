@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
 
     if (existing && existing.status === 'ACTIVE') {
       return NextResponse.json(
-        { error: 'Email này đã được đăng ký và kích hoạt trên hệ thống' },
-        { status: 409 }
+        { error: 'Email đã tồn tại hoặc không đủ điều kiện nhận mã đăng ký mới. Vui lòng đăng nhập hoặc sử dụng email khác.' },
+        { status: 400 }
       );
     }
 

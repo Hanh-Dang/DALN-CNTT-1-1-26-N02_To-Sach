@@ -127,6 +127,7 @@ model Category {
   children    Category[]     @relation("CategoryHierarchy")
   books       BookCategory[]
 
+  @@index([parentId])
   @@map("categories")
 }
 
@@ -239,6 +240,9 @@ model Order {
   user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   items           OrderItem[]
 
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
   @@map("orders")
 }
 
@@ -255,6 +259,8 @@ model OrderItem {
   order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   book       Book   @relation(fields: [bookId], references: [id], onDelete: Restrict)
 
+  @@index([orderId])
+  @@index([bookId])
   @@map("order_items")
 }
 
@@ -283,6 +289,9 @@ model Review {
   book               Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
   user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([bookId])
+  @@index([userId])
+  @@index([status])
   @@map("reviews")
 }
 
@@ -298,6 +307,9 @@ model AuditLog {
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
   @@map("admin_audit_logs")
 }
 
@@ -315,5 +327,8 @@ model BehaviorEvent {
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   book        Book?    @relation(fields: [bookId], references: [id], onDelete: SetNull)
 
+  @@index([userId])
+  @@index([bookId])
+  @@index([sessionId])
   @@map("user_behavior_events")
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import { fetchAuthMeShared, fetchUserSyncShared } from '@/lib/clientAuthDedupe';
 
 export interface WishlistItem {
   bookId: string;
@@ -76,9 +77,8 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const syncWithAuth = useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/me');
-      const data = res.ok ? await res.json() : null;
-      const newUserId: string | null = data?.user?.id || null;
+      const user = await fetchAuthMeShared();
+      const newUserId: string | null = user?.id || null;
       const prevUserId = activeUserIdRef.current;
 
       // 1. Khách vãng lai
@@ -99,12 +99,9 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Kéo từ server Database
       let serverWishlist: WishlistItem[] = [];
       try {
-        const syncRes = await fetch('/api/user/sync');
-        if (syncRes.ok) {
-          const syncData = await syncRes.json();
-          if (Array.isArray(syncData?.data?.wishlist)) {
-            serverWishlist = syncData.data.wishlist;
-          }
+        const syncData = await fetchUserSyncShared();
+        if (syncData && Array.isArray(syncData?.data?.wishlist)) {
+          serverWishlist = syncData.data.wishlist;
         }
       } catch (e) {
         console.warn('Không thể kéo wishlist từ server:', e);

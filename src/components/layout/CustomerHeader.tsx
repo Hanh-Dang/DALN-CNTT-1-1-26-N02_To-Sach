@@ -14,6 +14,7 @@ import { ToSachLogo } from '@/components/brand/ToSachLogo';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { formatVND } from '@/lib/utils';
+import { fetchAuthMeShared } from '@/lib/clientAuthDedupe';
 
 interface CurrentUser {
   id: string;
@@ -295,13 +296,8 @@ export const CustomerHeader: React.FC = () => {
       setIsLoadingUser(true);
     }
     try {
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-      } else {
-        setUser(null);
-      }
+      const userData = await fetchAuthMeShared();
+      setUser(userData);
     } catch {
       setUser(null);
     } finally {

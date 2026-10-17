@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       return NextResponse.json(
-        { error: 'Email này đã được đăng ký trên hệ thống' },
-        { status: 409 }
+        { error: 'Thông tin đăng ký không hợp lệ hoặc tài khoản đã tồn tại. Vui lòng đăng nhập hoặc sử dụng email khác.' },
+        { status: 400 }
       );
     }
 
