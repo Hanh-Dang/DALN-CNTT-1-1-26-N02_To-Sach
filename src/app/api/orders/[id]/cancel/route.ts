@@ -115,6 +115,19 @@ export async function POST(
         });
       }
 
+      // 5.3. Hoàn trả lượt sử dụng Voucher (nếu đơn hàng có áp dụng Voucher - Quy tắc 7)
+      if (order.voucherId) {
+        await tx.voucherUsage.deleteMany({
+          where: { orderId: order.id },
+        });
+        await tx.voucher.update({
+          where: { id: order.voucherId },
+          data: {
+            usedCount: { decrement: 1 },
+          },
+        });
+      }
+
       const updatedOrder = await tx.order.findUnique({
         where: { id: order.id },
         include: {

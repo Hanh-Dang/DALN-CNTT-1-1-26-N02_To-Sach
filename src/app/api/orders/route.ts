@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { PaymentMethod, PaymentStatus, OrderStatus } from '@prisma/client';
+import { validateVoucher } from '@/lib/voucher';
 
 import crypto from 'crypto';
 
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
       saveAsDefault,
       paymentMethod = 'COD',
       items,
+      voucherCode,
     } = body;
 
     // 1. Validation dữ liệu đầu vào (M4)
@@ -135,10 +137,40 @@ export async function POST(req: NextRequest) {
         throw new Error('Giá trị đơn hàng không hợp lệ (tổng tiền sách phải lớn hơn 0).');
       }
 
-      const calculatedShippingFee = calculatedSubtotal >= 150000 ? 0 : 25000;
-      const calculatedTotalAmount = calculatedSubtotal + calculatedShippingFee;
+      // D. Thẩm định và Áp dụng Voucher (nếu có - Quy tắc 6 & 7)
+      let appliedVoucherId: string | null = null;
+      let calculatedDiscountAmount = 0;
 
-      // D. Sinh mã đơn hàng TS-YYYYMMDD-XXXX không trùng lặp
+      if (voucherCode && typeof voucherCode === 'string' && voucherCode.trim()) {
+        const vValidation = await validateVoucher(voucherCode, user.id, calculatedSubtotal, tx);
+        if (!vValidation.isValid || !vValidation.voucher) {
+          throw new Error(vValidation.error || 'Mã giảm giá không hợp lệ.');
+        }
+
+        appliedVoucherId = vValidation.voucher.id;
+        calculatedDiscountAmount = vValidation.discountAmount || 0;
+
+        // Chống Race Condition: Trừ lượt dùng nguyên tử bằng điều kiện atomic update
+        const voucherUpdate = await tx.voucher.updateMany({
+          where: {
+            id: vValidation.voucher.id,
+            isActive: true,
+            usedCount: { lt: vValidation.voucher.usageLimit },
+          },
+          data: {
+            usedCount: { increment: 1 },
+          },
+        });
+
+        if (voucherUpdate.count === 0) {
+          throw new Error(`Mã giảm giá "${voucherCode}" vừa hết lượt sử dụng bởi người mua khác. Vui lòng thử lại!`);
+        }
+      }
+
+      const calculatedShippingFee = calculatedSubtotal >= 150000 ? 0 : 25000;
+      const calculatedTotalAmount = Math.max(0, calculatedSubtotal - calculatedDiscountAmount) + calculatedShippingFee;
+
+      // E. Sinh mã đơn hàng TS-YYYYMMDD-XXXX không trùng lặp
       let orderCode = generateOrderCode();
       let attempts = 0;
       while (attempts < 5) {
@@ -148,7 +180,7 @@ export async function POST(req: NextRequest) {
         attempts++;
       }
 
-      // E. Khởi tạo mốc lịch sử Timeline đầu tiên của đơn hàng
+      // F. Khởi tạo mốc lịch sử Timeline đầu tiên của đơn hàng
       const initialTimeline = [
         {
           status: 'PENDING',
@@ -161,7 +193,7 @@ export async function POST(req: NextRequest) {
         },
       ];
 
-      // F. Tạo bản ghi Đơn hàng (Order) và Chi tiết mặt hàng (OrderItem)
+      // G. Tạo bản ghi Đơn hàng (Order) và Chi tiết mặt hàng (OrderItem)
       const newOrder = await tx.order.create({
         data: {
           orderCode,
@@ -173,6 +205,8 @@ export async function POST(req: NextRequest) {
           subtotal: calculatedSubtotal,
           shippingFee: calculatedShippingFee,
           totalAmount: calculatedTotalAmount,
+          voucherId: appliedVoucherId,
+          discountAmount: calculatedDiscountAmount,
           paymentMethod: validPaymentMethod,
           paymentStatus: PaymentStatus.PENDING,
           status: OrderStatus.PENDING,
@@ -186,6 +220,17 @@ export async function POST(req: NextRequest) {
           items: true,
         },
       });
+
+      // H. Ghi nhận lịch sử sử dụng Voucher (VoucherUsage)
+      if (appliedVoucherId) {
+        await tx.voucherUsage.create({
+          data: {
+            voucherId: appliedVoucherId,
+            userId: user.id,
+            orderId: newOrder.id,
+          },
+        });
+      }
 
       // G. Trừ tồn kho nguyên tử (Atomic Conditional Decrement) và tăng số lượng bán (soldCount)
       for (const item of items) {

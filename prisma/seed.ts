@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, UserStatus, OrderStatus, PaymentMethod, PaymentStatus, ReviewStatus } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, OrderStatus, PaymentMethod, PaymentStatus, ReviewStatus, VoucherType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -10,8 +10,11 @@ async function main() {
   await prisma.behaviorEvent.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.review.deleteMany();
+  await prisma.voucherUsage.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.voucher.deleteMany();
+  await prisma.promotionEvent.deleteMany();
   await prisma.bookAuthor.deleteMany();
   await prisma.bookCategory.deleteMany();
   await prisma.book.deleteMany();
@@ -591,6 +594,203 @@ async function main() {
     },
   });
   console.log('✅ Created initial audit log entry.');
+
+  // ==========================================
+  // 9. SEED PROMOTION EVENTS & VOUCHERS (FULL TEST CASES)
+  // ==========================================
+  // Sự kiện 1: Đang diễn ra
+  const eventActive = await prisma.promotionEvent.create({
+    data: {
+      name: 'Hội Sách Khai Trường 2026',
+      slug: 'hoi-sach-khai-truong-2026',
+      description: 'Đại tiệc tri thức mùa tựu trường, giảm giá sâu cho toàn bộ tựa sách giáo khoa, kỹ năng và văn học.',
+      bannerUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=1200',
+      startsAt: new Date(Date.now() - 7 * 24 * 3600 * 1000), // 7 ngày trước
+      endsAt: new Date(Date.now() + 30 * 24 * 3600 * 1000),  // 30 ngày tới
+      isActive: true,
+    },
+  });
+
+  // Sự kiện 2: Đã bị tắt
+  const eventInactive = await prisma.promotionEvent.create({
+    data: {
+      name: 'Lễ Hội Đọc Sách Mùa Hè 2026',
+      slug: 'le-hoi-doc-sach-mua-he-2026',
+      description: 'Sự kiện ưu đãi hè đã tạm ngưng theo chính sách vận hành.',
+      bannerUrl: null,
+      startsAt: new Date(Date.now() - 60 * 24 * 3600 * 1000),
+      endsAt: new Date(Date.now() + 60 * 24 * 3600 * 1000),
+      isActive: false,
+    },
+  });
+  console.log('✅ Created 2 sample promotion events (Active & Inactive).');
+
+  // Seed các ca Voucher kiểm thử
+  // Ca 1: Hợp lệ theo sự kiện (PERCENT)
+  await prisma.voucher.create({
+    data: {
+      code: 'KHAITRUONG10',
+      name: 'Giảm 10% Chào Khai Trường',
+      description: 'Giảm 10% tối đa 30.000đ cho đơn hàng từ 100.000đ',
+      type: VoucherType.PERCENT,
+      value: 10,
+      maxDiscount: 30000,
+      minOrderValue: 100000,
+      eventId: eventActive.id,
+      startsAt: null, // Kế thừa từ eventActive
+      endsAt: null,   // Kế thừa từ eventActive
+      usageLimit: 200,
+      usedCount: 0,
+      perUserLimit: 2,
+      isActive: true,
+    },
+  });
+
+  // Ca 2: Hợp lệ độc lập (FIXED - 25.000đ)
+  await prisma.voucher.create({
+    data: {
+      code: 'GIAM25K',
+      name: 'Mã Tri Ân Giảm 25.000đ',
+      description: 'Giảm ngay 25.000đ tiền mặt cho đơn hàng từ 150.000đ',
+      type: VoucherType.FIXED,
+      value: 25000,
+      maxDiscount: null,
+      minOrderValue: 150000,
+      eventId: null,
+      startsAt: null, // Không giới hạn thời gian
+      endsAt: null,
+      usageLimit: 500,
+      usedCount: 0,
+      perUserLimit: 1,
+      isActive: true,
+    },
+  });
+
+  // Ca 3: Hết hạn sử dụng
+  await prisma.voucher.create({
+    data: {
+      code: 'HETHAN2025',
+      name: 'Mã Ưu Đãi Đã Hết Hạn',
+      description: 'Mã dùng kiểm thử ca lỗi hết hạn sử dụng',
+      type: VoucherType.FIXED,
+      value: 20000,
+      minOrderValue: 50000,
+      eventId: null,
+      startsAt: new Date('2025-01-01T00:00:00Z'),
+      endsAt: new Date('2025-02-01T00:00:00Z'),
+      usageLimit: 100,
+      usedCount: 0,
+      perUserLimit: 1,
+      isActive: true,
+    },
+  });
+
+  // Ca 4: Chưa tới hạn
+  await prisma.voucher.create({
+    data: {
+      code: 'TUONGLAI2027',
+      name: 'Mã Tương Lai Chưa Tới Hạn',
+      description: 'Mã dùng kiểm thử ca lỗi chưa tới thời gian áp dụng',
+      type: VoucherType.PERCENT,
+      value: 15,
+      maxDiscount: 50000,
+      minOrderValue: 100000,
+      eventId: null,
+      startsAt: new Date('2027-01-01T00:00:00Z'),
+      endsAt: new Date('2027-12-31T23:59:59Z'),
+      usageLimit: 100,
+      usedCount: 0,
+      perUserLimit: 1,
+      isActive: true,
+    },
+  });
+
+  // Ca 5: Thuộc sự kiện đã bị tắt
+  await prisma.voucher.create({
+    data: {
+      code: 'MUAHETAT',
+      name: 'Mã Gắn Sự Kiện Hè Đã Tắt',
+      description: 'Mã dùng kiểm thử ca lỗi sự kiện cha bị vô hiệu hóa',
+      type: VoucherType.PERCENT,
+      value: 20,
+      maxDiscount: 40000,
+      minOrderValue: 80000,
+      eventId: eventInactive.id,
+      startsAt: null,
+      endsAt: null,
+      usageLimit: 100,
+      usedCount: 0,
+      perUserLimit: 1,
+      isActive: true,
+    },
+  });
+
+  // Ca 6: Voucher đã bị tắt thủ công
+  await prisma.voucher.create({
+    data: {
+      code: 'VOUCHEROFF',
+      name: 'Ưu Đãi Đặc Biệt 50K',
+      description: 'Mã dùng kiểm thử ca lỗi admin chủ động tắt mã',
+      type: VoucherType.FIXED,
+      value: 50000,
+      minOrderValue: 200000,
+      eventId: null,
+      startsAt: null,
+      endsAt: null,
+      usageLimit: 50,
+      usedCount: 0,
+      perUserLimit: 1,
+      isActive: false, // Bị tắt
+    },
+  });
+
+  // Ca 7: Hết lượt sử dụng toàn sàn (usageLimit = usedCount)
+  await prisma.voucher.create({
+    data: {
+      code: 'HETLUOT100',
+      name: 'Mã Đã Hết Lượt Sử Dụng',
+      description: 'Mã dùng kiểm thử ca lỗi voucher đã cháy sạch lượt dùng',
+      type: VoucherType.FIXED,
+      value: 30000,
+      minOrderValue: 100000,
+      eventId: null,
+      startsAt: null,
+      endsAt: null,
+      usageLimit: 10,
+      usedCount: 10, // Đã hết lượt
+      perUserLimit: 1,
+      isActive: true,
+    },
+  });
+
+  // Ca 8: Người dùng hết lượt (perUserLimit = 1 và user này đã dùng trong sampleOrder)
+  const userLimitVoucher = await prisma.voucher.create({
+    data: {
+      code: 'USERLIMIT1',
+      name: 'Mã Giới Hạn 1 Lần / Khách',
+      description: 'Mã dùng kiểm thử ca lỗi khách hàng đã đạt giới hạn dùng',
+      type: VoucherType.FIXED,
+      value: 15000,
+      minOrderValue: 50000,
+      eventId: null,
+      startsAt: null,
+      endsAt: null,
+      usageLimit: 1000,
+      usedCount: 1,
+      perUserLimit: 1,
+      isActive: true,
+    },
+  });
+
+  // Ghi nhận lịch sử dùng cho customerUser vào sampleOrder
+  await prisma.voucherUsage.create({
+    data: {
+      voucherId: userLimitVoucher.id,
+      userId: customerUser.id,
+      orderId: sampleOrder.id,
+    },
+  });
+  console.log('✅ Created 8 sample vouchers covering all valid & invalid test cases.');
 
   console.log('\n🎉 SEED COMPLETED SUCCESSFULLY!');
   console.log('----------------------------------------------------');

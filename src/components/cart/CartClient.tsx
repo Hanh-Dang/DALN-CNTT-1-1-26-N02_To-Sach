@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { 
   ShoppingBag, Trash2, Plus, Minus, ArrowRight, ArrowLeft, 
   ShieldCheck, Truck, PackageCheck, RefreshCw, CheckCircle2, 
-  Sparkles, AlertCircle, Bookmark, Check, ArrowUpDown
+  Sparkles, AlertCircle, Bookmark, Check, ArrowUpDown, Ticket, Tag, X
 } from 'lucide-react';
 import { useCart, CartItem } from '@/context/CartContext';
 import { formatVND, calculateDiscount } from '@/lib/utils';
@@ -98,6 +98,41 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
     return inStockItems.filter((item) => selectedIds[item.bookId] === true);
   }, [inStockItems, selectedIds]);
 
+  // VOUCHER & KHUYẾN MÃI STATE
+  const [voucherInput, setVoucherInput] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<{
+    code: string;
+    name: string;
+    discountAmount: number;
+  } | null>(null);
+  const [voucherError, setVoucherError] = useState('');
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
+  const [availableVouchers, setAvailableVouchers] = useState<any[]>([]);
+  const [showVoucherList, setShowVoucherList] = useState(false);
+
+  // Tải danh sách voucher đang khả dụng
+  useEffect(() => {
+    fetch('/api/vouchers/available')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.vouchers)) {
+          setAvailableVouchers(data.vouchers);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Khôi phục voucher từ sessionStorage nếu đã chọn trước đó
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('tosach_checkout_voucher');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.code) setAppliedVoucher(parsed);
+      }
+    } catch {}
+  }, []);
+
   // Tính toán tiền hàng và chiết khấu
   const selectedSubtotal = useMemo(() => {
     return selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -111,11 +146,54 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
     return Math.max(0, selectedOriginalTotal - selectedSubtotal);
   }, [selectedOriginalTotal, selectedSubtotal]);
 
+  const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
+
   // Điều kiện Freeship >= 150.000đ & Phí vận chuyển (CHỈ TÍNH KHI CÓ SẢN PHẨM HỢP LỆ VÀ TIỀN SÁCH > 0)
   const isFreeShip = selectedSubtotal >= FREESHIP_THRESHOLD;
   const needMoreForFreeShip = Math.max(0, FREESHIP_THRESHOLD - selectedSubtotal);
   const shippingFee = (selectedItems.length === 0 || selectedSubtotal === 0) ? 0 : isFreeShip ? 0 : STANDARD_SHIPPING_FEE;
-  const finalTotal = selectedSubtotal === 0 ? 0 : selectedSubtotal + shippingFee;
+  const finalTotal = selectedSubtotal === 0 ? 0 : Math.max(0, selectedSubtotal - voucherDiscount) + shippingFee;
+
+  // Thẩm định và áp dụng Voucher
+  const handleApplyVoucher = async (codeToUse?: string) => {
+    const targetCode = (codeToUse || voucherInput).trim().toUpperCase();
+    if (!targetCode) {
+      setVoucherError('Vui lòng nhập mã giảm giá.');
+      return;
+    }
+    setVoucherError('');
+    setIsApplyingVoucher(true);
+
+    try {
+      const res = await fetch('/api/vouchers/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: targetCode, subtotal: selectedSubtotal }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Mã giảm giá không hợp lệ.');
+      }
+
+      setAppliedVoucher({
+        code: data.voucher.code,
+        name: data.voucher.name,
+        discountAmount: data.discountAmount,
+      });
+      setVoucherInput('');
+      setShowVoucherList(false);
+    } catch (err: any) {
+      setVoucherError(err.message || 'Không thể áp dụng voucher.');
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherError('');
+    sessionStorage.removeItem('tosach_checkout_voucher');
+  };
 
   // Trạng thái chọn tất cả (chỉ dựa trên danh sách sách còn hàng)
   const allSelected = inStockItems.length > 0 && selectedItems.length === inStockItems.length;
@@ -143,6 +221,11 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
       if (typeof window !== 'undefined') {
         const bookIds = selectedItems.map((i) => i.bookId);
         sessionStorage.setItem('tosach_checkout_selected_ids', JSON.stringify(bookIds));
+        if (appliedVoucher) {
+          sessionStorage.setItem('tosach_checkout_voucher', JSON.stringify(appliedVoucher));
+        } else {
+          sessionStorage.removeItem('tosach_checkout_voucher');
+        }
       }
     } catch {
       // ignore
@@ -557,7 +640,7 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
               </div>
 
               <p className="text-[11px] text-slate-500">
-                Chính sách B2C: Miễn phí vận chuyển toàn quốc cho đơn sách từ 150.000đ.
+                Chính sách ưu đãi: Miễn phí vận chuyển toàn quốc cho đơn sách từ 150.000đ.
               </p>
             </div>
 
@@ -582,6 +665,132 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
                   <div className="flex justify-between items-center text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg font-medium">
                     <span>Tiết kiệm giá bìa NXB:</span>
                     <span className="font-extrabold">-{formatVND(selectedSavings)}</span>
+                  </div>
+                )}
+
+                {/* VOUCHER INPUT BOX IN CART */}
+                <div className="pt-2 pb-1 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-xs text-[#0B1F3A] flex items-center gap-1.5">
+                      <Ticket className="w-3.5 h-3.5 text-[#F5A623]" />
+                      <span>Mã giảm giá Voucher</span>
+                    </span>
+                    {availableVouchers.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowVoucherList(!showVoucherList)}
+                        className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                      >
+                        {showVoucherList ? 'Ẩn' : `Xem mã (${availableVouchers.length})`}
+                      </button>
+                    )}
+                  </div>
+
+                  {appliedVoucher ? (
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-mono font-black text-emerald-900">{appliedVoucher.code}</span>
+                        <div className="text-[10px] text-emerald-700 font-semibold">
+                          Giảm: -{formatVND(appliedVoucher.discountAmount)}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveVoucher}
+                        className="p-1 text-emerald-700 hover:bg-emerald-100 rounded cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Nhập mã voucher..."
+                          value={voucherInput}
+                          onChange={(e) => {
+                            setVoucherInput(e.target.value.toUpperCase());
+                            if (voucherError) setVoucherError('');
+                          }}
+                          className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-mono uppercase focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          disabled={isApplyingVoucher || !voucherInput.trim()}
+                          onClick={() => handleApplyVoucher()}
+                          className="px-3 py-1.5 rounded-lg bg-[#0B1F3A] text-white font-bold text-xs disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer"
+                        >
+                          {isApplyingVoucher ? '...' : 'Áp dụng'}
+                        </button>
+                      </div>
+
+                      {voucherError && (
+                        <p className="text-[10px] text-rose-600 font-medium">{voucherError}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {showVoucherList && !appliedVoucher && availableVouchers.length > 0 && (
+                    <div className="p-2 bg-slate-50 rounded-xl border border-slate-200 space-y-2 max-h-52 overflow-y-auto">
+                      {availableVouchers.map((av) => {
+                        const isEligible = selectedSubtotal >= (av.minOrderValue || 0);
+                        const diff = (av.minOrderValue || 0) - selectedSubtotal;
+
+                        return (
+                          <div
+                            key={av.id}
+                            onClick={() => {
+                              if (isEligible) handleApplyVoucher(av.code);
+                            }}
+                            className={`p-2 rounded-xl border transition-all flex items-center justify-between text-[11px] ${
+                              isEligible
+                                ? 'bg-white border-slate-200 hover:border-[#F5A623] cursor-pointer shadow-2xs'
+                                : 'bg-slate-100/70 border-dashed border-slate-300 opacity-60 cursor-not-allowed select-none'
+                            }`}
+                          >
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono font-black text-xs text-[#0B1F3A] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                  {av.code}
+                                </span>
+                                <span className="font-bold text-slate-800">{av.name}</span>
+                              </div>
+                              <div className="text-[10px] text-slate-500">
+                                {av.minOrderValue > 0
+                                  ? `Đơn tối thiểu ${formatVND(av.minOrderValue)}`
+                                  : 'Mọi giá trị đơn hàng'}
+                              </div>
+                              {!isEligible && (
+                                <div className="text-[10px] font-bold text-amber-700">
+                                  Mua thêm {formatVND(diff)} để dùng
+                                </div>
+                              )}
+                            </div>
+
+                            {isEligible && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleApplyVoucher(av.code);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white font-bold text-[10px] transition-colors cursor-pointer shrink-0 ml-2"
+                              >
+                                Dùng
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {voucherDiscount > 0 && (
+                  <div className="flex justify-between items-center text-emerald-800 bg-emerald-100/70 border border-emerald-200 px-2 py-1 rounded-lg font-semibold">
+                    <span>Voucher ({appliedVoucher?.code}):</span>
+                    <span className="font-extrabold text-emerald-700">-{formatVND(voucherDiscount)}</span>
                   </div>
                 )}
 

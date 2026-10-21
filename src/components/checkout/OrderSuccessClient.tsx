@@ -31,6 +31,8 @@ interface OrderData {
   subtotal: number;
   shippingFee: number;
   totalAmount: number;
+  voucherId?: string | null;
+  discountAmount?: number;
   paymentMethod: 'COD' | 'BANK_TRANSFER';
   paymentStatus: string;
   status: string;
@@ -266,6 +268,12 @@ export default function OrderSuccessClient({ order }: OrderSuccessClientProps) {
               <span>Tạm tính tiền sách:</span>
               <span className="font-bold">{formatVND(order.subtotal)}</span>
             </div>
+            {order.discountAmount && order.discountAmount > 0 ? (
+              <div className="flex justify-between items-center text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg">
+                <span>Giảm giá Voucher:</span>
+                <span className="font-black text-emerald-700">-{formatVND(order.discountAmount)}</span>
+              </div>
+            ) : null}
             <div className="flex justify-between text-slate-600">
               <span>Phí vận chuyển:</span>
               <span className="font-bold">
