@@ -210,7 +210,7 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
       if (res.ok) {
         setReviewMessage({
           type: 'success',
-          text: 'Cảm ơn bạn! Đánh giá đã được ghi nhận và xuất bản thành công.',
+          text: data.message || 'Cảm ơn bạn! Đánh giá đã được ghi nhận và đang chờ ban biên tập duyệt trước khi xuất bản.',
         });
         setNewComment('');
         setNewTitle('');
@@ -304,9 +304,12 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
 
               {/* Main Image */}
               <img
-                src={allImages[selectedImageIndex] || book.coverUrl}
+                src={allImages[selectedImageIndex] || book.coverUrl || '/placeholder-book.svg'}
                 alt={book.title}
                 className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder-book.svg';
+                }}
               />
 
               {/* Seal Guarantee strip */}

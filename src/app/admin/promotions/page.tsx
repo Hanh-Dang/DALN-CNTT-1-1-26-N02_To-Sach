@@ -10,6 +10,23 @@ export const dynamic = 'force-dynamic';
 export default async function AdminPromotionsPage() {
   const user = await getCurrentUser();
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  const hasPromoPerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+  const canAccessPromotions = isSuperAdmin || hasPromoPerm;
+
+  // N18: Siết quyền truy cập trang khuyến mãi & voucher
+  if (!canAccessPromotions) {
+    return (
+      <div className="p-8 max-w-xl mx-auto text-center space-y-4 my-12 bg-white rounded-3xl border border-rose-100 shadow-sm">
+        <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+          ⚠️
+        </div>
+        <h2 className="text-xl font-black text-slate-800 tracking-tight">Không có quyền truy cập</h2>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          Trang Khuyến mãi & Voucher chỉ dành cho Quản trị viên hoặc nhân sự được cấp quyền MANAGE_PROMOTIONS.
+        </p>
+      </div>
+    );
+  }
 
   const [rawVouchers, rawEvents] = await Promise.all([
     prisma.voucher.findMany({

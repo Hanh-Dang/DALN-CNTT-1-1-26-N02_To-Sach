@@ -14,6 +14,21 @@ export default async function AdminReviewsPage() {
   const hasReviewPerm = user?.permissions?.includes('MANAGE_REVIEWS') ?? false;
   const canManageReviews = isSuperAdmin || hasReviewPerm;
 
+  // N18: Siết quyền truy cập trang quản lý đánh giá
+  if (!canManageReviews) {
+    return (
+      <div className="p-8 max-w-xl mx-auto text-center space-y-4 my-12 bg-white rounded-3xl border border-rose-100 shadow-sm">
+        <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+          ⚠️
+        </div>
+        <h2 className="text-xl font-black text-slate-800 tracking-tight">Không có quyền truy cập</h2>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          Bạn không có quyền quản lý đánh giá sách. Vui lòng liên hệ Quản trị viên để được cấp quyền MANAGE_REVIEWS.
+        </p>
+      </div>
+    );
+  }
+
   // Truy vấn toàn bộ danh sách reviews từ Supabase DB
   const rawReviews = await prisma.review.findMany({
     include: {

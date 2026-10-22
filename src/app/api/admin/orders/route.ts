@@ -27,8 +27,21 @@ export async function GET(request: Request) {
     const search = (searchParams.get('search') || searchParams.get('q') || '').trim();
     const statusParam = (searchParams.get('status') || 'ALL').trim().toUpperCase();
     const paymentParam = (searchParams.get('paymentMethod') || 'ALL').trim().toUpperCase();
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const limit = Math.min(50, Math.max(5, parseInt(searchParams.get('limit') || '10', 10)));
+
+    // L-h: Validate tham số phân trang page và limit tránh crash 500 do NaN
+    const rawPageParam = searchParams.get('page');
+    const rawLimitParam = searchParams.get('limit');
+
+    if (rawPageParam && (isNaN(Number(rawPageParam)) || Number(rawPageParam) < 1)) {
+      return NextResponse.json({ error: 'Tham số trang (page) phải là số nguyên dương hợp lệ.' }, { status: 400 });
+    }
+
+    if (rawLimitParam && (isNaN(Number(rawLimitParam)) || Number(rawLimitParam) < 1)) {
+      return NextResponse.json({ error: 'Tham số giới hạn (limit) phải là số nguyên dương hợp lệ.' }, { status: 400 });
+    }
+
+    const page = Math.max(1, parseInt(rawPageParam || '1', 10) || 1);
+    const limit = Math.min(50, Math.max(5, parseInt(rawLimitParam || '10', 10) || 10));
     const skip = (page - 1) * limit;
 
     // Xây dựng điều kiện lọc (where clause)

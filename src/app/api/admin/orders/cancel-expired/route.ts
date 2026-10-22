@@ -19,8 +19,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
       }
 
-      if (user.role !== 'SUPER_ADMIN' && user.role !== 'STAFF') {
-        return NextResponse.json({ error: 'Không có quyền thực hiện thao tác này' }, { status: 403 });
+      const canManageOrders = user.role === 'SUPER_ADMIN' || (user.role === 'STAFF' && user.permissions?.includes('MANAGE_ORDERS'));
+      if (!canManageOrders) {
+        return NextResponse.json({ error: 'Bạn không có quyền MANAGE_ORDERS để thực hiện thao tác này' }, { status: 403 });
       }
     }
 

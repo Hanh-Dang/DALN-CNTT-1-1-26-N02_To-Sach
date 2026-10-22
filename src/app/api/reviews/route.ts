@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user has purchased this book (chỉ tính đơn đã giao thành công DELIVERED - M2)
+    // Check if user has purchased this book (chỉ tính đơn đã giao thành công DELIVERED - N20)
     const verifiedOrder = await prisma.orderItem.findFirst({
       where: {
         bookId,
@@ -48,6 +48,14 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    // N20: Bắt buộc đã mua và đơn đã giao thành công mới được đánh giá
+    if (!verifiedOrder) {
+      return NextResponse.json(
+        { error: 'Bạn chỉ có thể đánh giá cuốn sách này sau khi đã mua và đơn hàng được giao thành công (DELIVERED).' },
+        { status: 403 }
+      );
+    }
 
     // Check if user already reviewed this book (chống spam review vô hạn - M2)
     const existingReview = await prisma.review.findFirst({
@@ -59,20 +67,20 @@ export async function POST(req: NextRequest) {
 
     let savedReview;
     if (existingReview) {
-      // Cập nhật đánh giá hiện tại thay vì spam tạo mới
+      // N20: Khi khách sửa đánh giá, chuyển trạng thái về PENDING để admin kiểm duyệt lại
       savedReview = await prisma.review.update({
         where: { id: existingReview.id },
         data: {
           rating: numRating,
           title: title || null,
           body: reviewText,
-          isVerifiedPurchase: !!verifiedOrder,
-          status: ReviewStatus.APPROVED,
+          isVerifiedPurchase: true,
+          status: ReviewStatus.PENDING,
           updatedAt: new Date(),
         },
       });
     } else {
-      // Tạo review mới lần đầu
+      // Tạo review mới lần đầu: Đặt PENDING chờ duyệt
       savedReview = await prisma.review.create({
         data: {
           bookId,
@@ -80,8 +88,8 @@ export async function POST(req: NextRequest) {
           rating: numRating,
           title: title || null,
           body: reviewText,
-          isVerifiedPurchase: !!verifiedOrder,
-          status: ReviewStatus.APPROVED,
+          isVerifiedPurchase: true,
+          status: ReviewStatus.PENDING,
         },
       });
     }
@@ -103,6 +111,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      message: 'Cảm ơn bạn! Đánh giá của bạn đã được ghi nhận và đang chờ ban biên tập duyệt trước khi xuất bản.',
       review: savedReview,
     });
   } catch (error) {

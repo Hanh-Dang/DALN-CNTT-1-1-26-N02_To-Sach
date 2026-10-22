@@ -16,6 +16,19 @@ export async function GET() {
     }
 
     const metrics = await getDashboardMetrics();
+
+    // N18: Ẩn số điện thoại khách hàng (masking PII) đối với nhân viên không phải SUPER_ADMIN hoặc không có quyền MANAGE_CUSTOMERS
+    const isSuperAdmin = user.role === 'SUPER_ADMIN';
+    const canViewCustomerDetails = isSuperAdmin || user.permissions?.includes('MANAGE_CUSTOMERS');
+    if (!canViewCustomerDetails && metrics.recentOrders) {
+      metrics.recentOrders = metrics.recentOrders.map((o) => ({
+        ...o,
+        customerPhone: o.customerPhone
+          ? o.customerPhone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2')
+          : '***',
+      }));
+    }
+
     return NextResponse.json({
       success: true,
       timestamp: Date.now(),
