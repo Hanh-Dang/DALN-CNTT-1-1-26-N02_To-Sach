@@ -259,19 +259,23 @@ export async function sendOtpEmail(email: string, otp: string, fullName: string)
         attachments,
       });
 
-      console.log(`✅ [GMAIL SMTP] Đã gửi mã OTP ${otp} tới ${email} thành công!`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`✅ [GMAIL SMTP] Đã gửi mã xác minh tới ${email} thành công!`);
+      }
       return { sentRealEmail: true };
     } catch (error) {
       console.error('⚠️ [GMAIL SMTP ERROR] Lỗi gửi mail thật, kích hoạt chế độ Demo:', error);
     }
   }
 
-  // 2. Chế độ Demo / Local Simulator
-  console.log('====================================================');
-  console.log(`📧 [TỔ SÁCH OTP SIMULATOR] Gửi mã tới: ${email}`);
-  console.log(`🔑 MÃ XÁC MINH OTP: ${otp}`);
-  console.log('⏱️ Thời gian sống: 5 phút');
-  console.log('====================================================');
+  // 2. Chế độ Demo / Local Simulator (Chỉ in OTP trên môi trường phát triển)
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('====================================================');
+    console.log(`📧 [TỔ SÁCH OTP SIMULATOR] Gửi mã tới: ${email}`);
+    console.log(`🔑 MÃ XÁC MINH OTP: ${otp}`);
+    console.log('⏱️ Thời gian sống: 5 phút');
+    console.log('====================================================');
+  }
 
-  return { sentRealEmail: false, demoOtp: otp };
+  return { sentRealEmail: false, demoOtp: process.env.NODE_ENV !== 'production' ? otp : undefined };
 }

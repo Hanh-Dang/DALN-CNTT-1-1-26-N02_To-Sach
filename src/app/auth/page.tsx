@@ -46,30 +46,55 @@ const DEMO_ACCOUNTS = [
 ];
 
 /**
- * Làm sạch đường dẫn chuyển hướng, ngăn chặn triệt để lỗ hổng Open Redirect (H7)
+ * Làm sạch đường dẫn chuyển hướng, ngăn chặn triệt để mọi biến thể Open Redirect (N3 / H7)
  * Chỉ chấp nhận các đường dẫn nội bộ (relative path) an toàn
  */
 function getSafeRedirectPath(rawPath: string | null | undefined): string {
   if (!rawPath || typeof rawPath !== 'string') return '';
-  const trimmed = rawPath.trim();
+  let path = rawPath.trim();
   
-  // Bắt buộc bắt đầu bằng '/', không bắt đầu bằng '//' hoặc '/\' và không chứa '\'
-  if (
-    trimmed.startsWith('/') &&
-    !trimmed.startsWith('//') &&
-    !trimmed.startsWith('/\\') &&
-    !trimmed.includes('\\')
-  ) {
-    try {
-      const parsed = new URL(trimmed, 'https://tosach.vn');
-      if (parsed.origin === 'https://tosach.vn' && parsed.pathname.startsWith('/')) {
-        return parsed.pathname + parsed.search + parsed.hash;
-      }
-    } catch {
+  // 1. Giải mã URL nhiều lần để phát hiện URL encoding lách luật (%2e, %2f, %5c...)
+  try {
+    let prev = '';
+    while (path !== prev && prev.length < 500) {
+      prev = path;
+      path = decodeURIComponent(path);
+    }
+  } catch {
+    return '';
+  }
+
+  path = path.trim();
+
+  // 2. Chặn ngay nếu chứa backslash, hai slash liên tiếp hoặc ký tự điều hướng
+  if (path.includes('\\') || path.includes('//')) {
+    return '';
+  }
+
+  // 3. Phân tích qua đối tượng URL với dummy origin chuẩn
+  try {
+    const dummyOrigin = 'http://localhost';
+    const parsed = new URL(path, dummyOrigin);
+
+    // Bắt buộc origin phải trùng khớp tuyệt đối
+    if (parsed.origin !== dummyOrigin) return '';
+
+    const cleanPathname = parsed.pathname;
+
+    // Bắt buộc bắt đầu bằng đúng 1 dấu '/' và không chứa '//' sau khi resolve
+    if (!cleanPathname.startsWith('/') || cleanPathname.startsWith('//') || cleanPathname.includes('//')) {
       return '';
     }
+
+    // Không cho phép pathname có dạng domain nguy hiểm
+    if (/^\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(cleanPathname)) {
+      return '';
+    }
+
+    return cleanPathname + parsed.search + parsed.hash;
+  } catch {
+    return '';
   }
-  return '';
 }
 
 function AuthContent() {

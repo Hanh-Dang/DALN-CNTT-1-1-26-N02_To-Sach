@@ -16,14 +16,16 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
     const clientIp = getClientIp(req);
+    // N19: Khóa đăng nhập theo cặp (IP, Email) chống kẻ xấu lợi dụng DoS khóa tài khoản admin
+    const loginIdentifier = `${clientIp}:${normalizedEmail}`;
 
-    // 1. Kiểm tra tài khoản hoặc IP có đang bị khóa do nhập sai mật khẩu quá 5 lần không (H4)
-    const lockCheck = await isLoginBlocked(normalizedEmail);
+    // 1. Kiểm tra tài khoản từ IP này có đang bị khóa do nhập sai mật khẩu quá 5 lần không (N19)
+    const lockCheck = await isLoginBlocked(loginIdentifier);
     if (lockCheck.blocked) {
       const waitMinutes = Math.max(1, Math.ceil(lockCheck.retryAfterSeconds / 60));
       return NextResponse.json(
         {
-          error: `Tài khoản tạm thời bị khóa do nhập sai mật khẩu quá 5 lần liên tiếp. Vui lòng thử lại sau ${waitMinutes} phút hoặc đặt lại mật khẩu.`,
+          error: `Bạn đã nhập sai mật khẩu quá 5 lần liên tiếp trên thiết bị này. Vui lòng thử lại sau ${waitMinutes} phút hoặc đặt lại mật khẩu.`,
           retryAfter: lockCheck.retryAfterSeconds,
         },
         { status: 429 }
@@ -42,18 +44,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      const fail = await recordLoginFailure(normalizedEmail);
+      const fail = await recordLoginFailure(loginIdentifier);
       if (fail.isNowBlocked) {
         return NextResponse.json(
           {
-            error: 'Tài khoản tạm thời bị khóa 15 phút do nhập sai mật khẩu quá 5 lần liên tiếp.',
+            error: 'Bạn đã nhập sai thông tin quá 5 lần liên tiếp. Tạm thời khóa đăng nhập 15 phút từ thiết bị này.',
             retryAfter: 900,
           },
           { status: 429 }
         );
       }
       return NextResponse.json(
-        { error: `Email hoặc mật khẩu không chính xác. Bạn còn ${fail.remainingAttempts} lần thử trước khi tài khoản bị khóa tạm thời.` },
+        { error: `Email hoặc mật khẩu không chính xác. Bạn còn ${fail.remainingAttempts} lần thử trước khi bị tạm khóa.` },
         { status: 401 }
       );
     }
@@ -67,24 +69,24 @@ export async function POST(req: NextRequest) {
 
     const isMatch = await comparePassword(password, user.passwordHash);
     if (!isMatch) {
-      const fail = await recordLoginFailure(normalizedEmail);
+      const fail = await recordLoginFailure(loginIdentifier);
       if (fail.isNowBlocked) {
         return NextResponse.json(
           {
-            error: 'Tài khoản tạm thời bị khóa 15 phút do nhập sai mật khẩu quá 5 lần liên tiếp.',
+            error: 'Bạn đã nhập sai mật khẩu quá 5 lần liên tiếp. Tạm thời khóa đăng nhập 15 phút từ thiết bị này.',
             retryAfter: 900,
           },
           { status: 429 }
         );
       }
       return NextResponse.json(
-        { error: `Email hoặc mật khẩu không chính xác. Bạn còn ${fail.remainingAttempts} lần thử trước khi tài khoản bị khóa tạm thời.` },
+        { error: `Email hoặc mật khẩu không chính xác. Bạn còn ${fail.remainingAttempts} lần thử trước khi bị tạm khóa.` },
         { status: 401 }
       );
     }
 
     // Đăng nhập thành công -> Xóa bộ đếm thử sai
-    await clearLoginFailures(normalizedEmail);
+    await clearLoginFailures(loginIdentifier);
 
     // Update lastLoginAt
     await prisma.user.update({

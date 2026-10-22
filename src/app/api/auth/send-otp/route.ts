@@ -40,10 +40,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (existing && existing.status === 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Email đã tồn tại hoặc không đủ điều kiện nhận mã đăng ký mới. Vui lòng đăng nhập hoặc sử dụng email khác.' },
-        { status: 400 }
-      );
+      // L-j: Chống dò quét tài khoản (User Enumeration): Trả về thông báo thành công chung
+      return NextResponse.json({
+        success: true,
+        message: 'Nếu địa chỉ email hợp lệ và đủ điều kiện, mã xác minh OTP sẽ được gửi tới hòm thư của bạn trong vài phút.',
+        sentRealEmail: false,
+      });
     }
 
     // Tạo mã OTP 6 số ngẫu nhiên bằng CSPRNG
