@@ -147,54 +147,14 @@ export async function POST(
 
     // Chạy Transaction cập nhật trạng thái đơn (và hoàn kho nếu bị hủy)
     const updatedOrder = await prisma.$transaction(async (tx) => {
-      // 1. Nếu chuyển sang CANCELLED mà trước đó chưa hủy -> Hoàn kho
-      if (newStatus === OrderStatus.CANCELLED && oldStatus !== OrderStatus.CANCELLED) {
-        for (const item of order.items) {
-          await tx.book.update({
-            where: { id: item.bookId },
-            data: {
-              stockQty: { increment: item.quantity },
-              soldCount: { decrement: item.quantity },
-            },
-          });
-        }
+      // N7: Nếu đơn hàng từng có voucher mà đã hủy, chặn không cho khôi phục để tránh gian lận / lệch số liệu voucher_usages
+      if (oldStatus === OrderStatus.CANCELLED && newStatus !== OrderStatus.CANCELLED && order.voucherId) {
+        throw new Error(
+          'Không thể khôi phục đơn hàng có áp dụng Voucher đã bị hủy do lượt voucher đã được hoàn trả. Vui lòng tạo đơn mới.'
+        );
       }
 
-      // 2. Nếu chuyển từ CANCELLED sang trạng thái khác (phục hồi đơn) -> Kiểm tra tồn kho & Trừ lại kho
-      if (oldStatus === OrderStatus.CANCELLED && newStatus !== OrderStatus.CANCELLED) {
-        for (const item of order.items) {
-          const currentBook = await tx.book.findUnique({
-            where: { id: item.bookId },
-            select: { id: true, title: true, stockQty: true },
-          });
-
-          if (!currentBook || currentBook.stockQty < item.quantity) {
-            throw new Error(
-              `Không thể khôi phục đơn hàng: Cuốn sách "${item.bookTitle}" trong kho hiện chỉ còn ${currentBook?.stockQty ?? 0} cuốn (cần ${item.quantity} cuốn). Vui lòng nhập bổ sung kho sách trước.`
-            );
-          }
-
-          // Trừ kho có điều kiện gte để đảm bảo atomic và không bao giờ bị âm
-          const updateResult = await tx.book.updateMany({
-            where: {
-              id: item.bookId,
-              stockQty: { gte: item.quantity },
-            },
-            data: {
-              stockQty: { decrement: item.quantity },
-              soldCount: { increment: item.quantity },
-            },
-          });
-
-          if (updateResult.count === 0) {
-            throw new Error(
-              `Không thể khôi phục đơn hàng: Xung đột số lượng tồn kho cuốn sách "${item.bookTitle}".`
-            );
-          }
-        }
-      }
-
-      // Cập nhật đơn hàng
+      // N2: Cập nhật đơn hàng NGUYÊN TỬ với điều kiện status hiện tại phải đúng là oldStatus để chống Race Condition
       const updateData: any = {
         status: newStatus,
         timeline: updatedTimeline,
@@ -209,9 +169,70 @@ export async function POST(
         updateData.paymentStatus = PaymentStatus.PAID;
       }
 
-      return await tx.order.update({
-        where: { id: order.id },
+      const updateOrderResult = await tx.order.updateMany({
+        where: {
+          id: order.id,
+          status: oldStatus,
+        },
         data: updateData,
+      });
+
+      // Nếu count === 0 nghĩa là trạng thái đơn vừa bị thay đổi bởi request song song khác -> Rollback ngay!
+      if (updateOrderResult.count === 0) {
+        throw new Error('Trạng thái đơn hàng vừa được cập nhật bởi một thao tác khác. Vui lòng tải lại trang!');
+      }
+
+      // 1. Nếu chuyển sang CANCELLED mà trước đó chưa hủy -> Hoàn kho + Hoàn voucher (N2, N6)
+      if (newStatus === OrderStatus.CANCELLED && oldStatus !== OrderStatus.CANCELLED) {
+        for (const item of order.items) {
+          await tx.book.update({
+            where: { id: item.bookId },
+            data: {
+              stockQty: { increment: item.quantity },
+              soldCount: { decrement: item.quantity },
+            },
+          });
+        }
+
+        // N6: Hoàn trả lượt dùng voucher nếu đơn có voucher
+        if (order.voucherId) {
+          await tx.voucherUsage.deleteMany({
+            where: { orderId: order.id },
+          });
+          await tx.voucher.updateMany({
+            where: { id: order.voucherId },
+            data: {
+              usedCount: { decrement: 1 },
+            },
+          });
+        }
+      }
+
+      // 2. Nếu chuyển từ CANCELLED sang trạng thái khác (phục hồi đơn) -> Kiểm tra tồn kho & Trừ lại kho
+      if (oldStatus === OrderStatus.CANCELLED && newStatus !== OrderStatus.CANCELLED) {
+        for (const item of order.items) {
+          // Trừ kho có điều kiện gte để đảm bảo atomic và không bao giờ bị âm
+          const updateResult = await tx.book.updateMany({
+            where: {
+              id: item.bookId,
+              stockQty: { gte: item.quantity },
+            },
+            data: {
+              stockQty: { decrement: item.quantity },
+              soldCount: { increment: item.quantity },
+            },
+          });
+
+          if (updateResult.count === 0) {
+            throw new Error(
+              `Không thể khôi phục đơn hàng: Cuốn sách "${item.bookTitle}" trong kho không đủ số lượng (${item.quantity} cuốn).`
+            );
+          }
+        }
+      }
+
+      return await tx.order.findUnique({
+        where: { id: order.id },
         include: {
           items: {
             include: {

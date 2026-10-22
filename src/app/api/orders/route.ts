@@ -62,18 +62,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Vui lòng cung cấp số điện thoại nhận hàng.' }, { status: 400 });
     }
 
-    const phoneClean = customerPhone.trim().replace(/[\s.-]/g, '');
+    // Chuẩn hóa và validate số điện thoại (chấp nhận +84, 84 hoặc 0...) (L-d)
+    const phoneClean = customerPhone.trim().replace(/^\+/, '').replace(/[\s.\-()]/g, '');
     const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
     if (!phoneRegex.test(phoneClean)) {
-      return NextResponse.json({ error: 'Số điện thoại không hợp lệ (chuẩn 10 chữ số di động Việt Nam).' }, { status: 400 });
+      return NextResponse.json({ error: 'Số điện thoại không hợp lệ (chuẩn 10 chữ số di động Việt Nam hoặc +84).' }, { status: 400 });
     }
 
-    if (!shippingAddress || !shippingAddress.trim()) {
-      return NextResponse.json({ error: 'Vui lòng cung cấp địa chỉ nhận hàng chi tiết.' }, { status: 400 });
+    if (!shippingAddress || typeof shippingAddress !== 'string' || !shippingAddress.trim() || shippingAddress.trim().length < 5) {
+      return NextResponse.json({ error: 'Vui lòng cung cấp địa chỉ nhận hàng chi tiết hợp lệ (tối thiểu 5 ký tự).' }, { status: 400 });
     }
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Đơn hàng không có sản phẩm nào để thanh toán.' }, { status: 400 });
+    }
+
+    // Validate chi tiết từng item trong đơn hàng (L-d)
+    for (const item of items) {
+      if (!item || !item.bookId || typeof item.bookId !== 'string' || !Number.isInteger(item.quantity) || item.quantity <= 0) {
+        return NextResponse.json(
+          { error: 'Dữ liệu sản phẩm trong đơn hàng không hợp lệ (mã sách hoặc số lượng phải là số nguyên dương).' },
+          { status: 400 }
+        );
+      }
     }
 
     const validPaymentMethod =
@@ -149,6 +160,25 @@ export async function POST(req: NextRequest) {
 
         appliedVoucherId = vValidation.voucher.id;
         calculatedDiscountAmount = vValidation.discountAmount || 0;
+
+        // N1: Khóa dòng Voucher (Row-Level Lock) tuần tự hóa các giao dịch song song của cùng mã
+        try {
+          await tx.$queryRaw`SELECT id FROM vouchers WHERE id = ${vValidation.voucher.id} FOR UPDATE`;
+        } catch {
+          // Dự phòng nếu DB engine không yêu cầu FOR UPDATE
+        }
+
+        // N1: Kiểm tra lại perUserLimit ngay trong Transaction sau khi đã giữ khóa dòng
+        const currentUsedByUser = await tx.voucherUsage.count({
+          where: {
+            voucherId: vValidation.voucher.id,
+            userId: user.id,
+          },
+        });
+
+        if (currentUsedByUser >= vValidation.voucher.perUserLimit) {
+          throw new Error(`Bạn đã sử dụng hết số lần cho phép (${vValidation.voucher.perUserLimit} lần) của mã "${voucherCode}".`);
+        }
 
         // Chống Race Condition: Trừ lượt dùng nguyên tử bằng điều kiện atomic update
         const voucherUpdate = await tx.voucher.updateMany({

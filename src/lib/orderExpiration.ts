@@ -72,6 +72,19 @@ export async function cancelExpiredBankTransferOrders(operatorName = 'Hệ thố
           totalRestockedBooks += item.quantity;
         }
 
+        // Hoàn trả lượt sử dụng Voucher (nếu có - N6)
+        if (order.voucherId) {
+          await tx.voucherUsage.deleteMany({
+            where: { orderId: order.id },
+          });
+          await tx.voucher.updateMany({
+            where: { id: order.voucherId },
+            data: {
+              usedCount: { decrement: 1 },
+            },
+          });
+        }
+
         // Bổ sung sự kiện vào timeline
         const existingTimeline = Array.isArray(order.timeline) ? (order.timeline as any[]) : [];
         const newEvent = {
