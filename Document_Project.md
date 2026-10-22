@@ -334,7 +334,7 @@ graph TB
 
     SPA -->|Gọi Server Actions & API Routes| API
     API -->|Truy vấn dữ liệu qua Prisma ORM / SQL| Database
-    API -->|Gửi Tool Calling Loop (ReAct Agent)| External_Gemini
+    API -->|"Gửi Tool Calling Loop (ReAct Agent)"| External_Gemini
     API -->|Sinh chuỗi mã QR thanh toán| External_VietQR
     API -->|Gửi email OTP xác thực| External_Gmail
 ```
@@ -1029,10 +1029,10 @@ graph TD
     Admin -->|Phân quyền nhân viên, Cấu hình sự kiện & Voucher khuyến mãi| System
     System -->|Báo cáo doanh thu, Hiệu quả voucher, Nhật ký Audit Logs| Admin
 
-    System -->|Yêu cầu sinh mã QR thanh toán (đã trừ voucher)| Bank
+    System -->|"Yêu cầu sinh mã QR thanh toán (đã trừ voucher)"| Bank
     Bank -->|Xác nhận thanh toán tiền về tài khoản| System
 
-    System -->|Gửi mã OTP, Hóa đơn đơn hàng (kèm mã giảm giá)| EmailGateway
+    System -->|"Gửi mã OTP, Hóa đơn đơn hàng (kèm mã giảm giá)"| EmailGateway
     EmailGateway -->|Chuyển tiếp thư vào hộp thư Inbox| Customer
 ```
 
@@ -1086,7 +1086,7 @@ graph TD
     P5 -->|Ghi nhận Audit Log| D5
 
     ActorUser -->|Câu hỏi tư vấn sách, tìm voucher, mua ngay| P6
-    P6 -->|Tool calling tra cứu CSDL thực tế (unaccent ILIKE)| D2
+    P6 -->|"Tool calling tra cứu CSDL thực tế (unaccent ILIKE)"| D2
     P6 -->|Tool calling tính toán voucher tối ưu & up-sell| D6
     P6 -->|Trả về câu thoại + Khối thẻ sách tuần tự| ActorUser
 
@@ -1130,7 +1130,7 @@ graph TD
     P34 -->|Mở Prisma $transaction| DB_Books
     P34 -->|Trừ tồn kho stockQty, Tăng soldCount| DB_Books
     P34 -->|Tăng usedCount voucher & Tạo bản ghi voucher_usages| DB_Vouchers
-    P34 -->|Tạo bản ghi Order (lưu voucherId, discountAmount) & OrderItems| DB_Orders
+    P34 -->|"Tạo bản ghi Order (lưu voucherId, discountAmount) & OrderItems"| DB_Orders
     
     P34 -->|Chuyển tiếp thông tin đơn| P35
     P35 -->|Trả về QR MBBank hoặc Hướng dẫn COD| Customer

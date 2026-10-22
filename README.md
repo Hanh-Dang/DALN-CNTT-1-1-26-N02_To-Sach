@@ -16,7 +16,7 @@ Chi tiết phân tích kiến trúc, thiết kế cơ sở dữ liệu và bí k
 ---
 
 ## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
-* **Frontend & Backend Framework:** Next.js 15 (App Router, Server Components, Turbopack)
+* **Frontend & Backend Framework:** Next.js 16 (App Router, Server Components, Turbopack, React 19)
 * **Ngôn ngữ:** TypeScript
 * **Giao diện (CSS):** Tailwind CSS v4
 * **Typography & Kiểu chữ:** **Plus Jakarta Sans** (Chuẩn mực font hình học hiện đại, hỗ trợ tiếng Việt trọn vẹn, tối ưu độ đọc cho sách và giao diện xuất bản)
@@ -85,8 +85,8 @@ Dự án sử dụng file `.env` để bảo mật chuỗi kết nối cơ sở 
    # 2. Chuỗi kết nối PostgreSQL trực tiếp Direct (cổng 5432 - dùng cho Prisma Migration)
    DIRECT_URL="postgresql://postgres.[project-ref]:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
 
-   # 3. Mã khóa bí mật JWT dùng để ký và xác thực phiên đăng nhập (tùy ý đặt chuỗi ngẫu nhiên dài)
-   JWT_SECRET="tosach_super_secret_jwt_key_2026_proposals"
+   # 3. Mã khóa bí mật JWT dùng để ký phiên đăng nhập (tối thiểu 32 ký tự, sinh bằng: openssl rand -base64 48)
+   JWT_SECRET="your_random_secure_jwt_secret_key_at_least_32_chars"
 
    # 4. API Key của Google Gemini dùng cho Trợ lý Bán hàng Agentic AI (Gemini 3.1 Flash-Lite)
    GEMINI_API_KEY="your-gemini-api-key"
@@ -98,19 +98,31 @@ Dự án sử dụng file `.env` để bảo mật chuỗi kết nối cơ sở 
 Sử dụng công cụ **Prisma ORM** để tự động tạo **17 bảng quan hệ** và nạp dữ liệu mẫu:
 
 ```bash
-# Bước 5.1: Sinh bộ mã nguồn Prisma Client phù hợp với hệ thống
+# Bước 5.1: Kích hoạt các Extension PostgreSQL cần thiết cho tìm kiếm tiếng Việt không dấu & fuzzy search
+# Chạy trong SQL Editor của Supabase hoặc qua psql:
+# CREATE EXTENSION IF NOT EXISTS unaccent;
+# CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+# Bước 5.2: Sinh bộ mã nguồn Prisma Client phù hợp với hệ thống
 npx prisma generate
 
-# Bước 5.2: Đẩy toàn bộ cấu trúc bảng (schema) lên PostgreSQL
+# Bước 5.3: Đẩy toàn bộ cấu trúc bảng (schema) lên PostgreSQL
 npx prisma db push
 
-# Bước 5.3: Nạp dữ liệu hạt giống (Seed Data: tài khoản mẫu, danh mục, sách, sự kiện và voucher ban đầu)
+# Bước 5.4: Nạp dữ liệu hạt giống (Seed Data ban đầu: tài khoản mẫu, danh mục, sách cơ bản, sự kiện và voucher)
 npx prisma db seed
 ```
 
-> **Mẹo hữu ích:** Nếu bạn muốn nạp đầy đủ kho sách thực tế 5.000+ cuốn và 50.000+ reviews theo chuẩn Proposal:
+> **Mẹo hữu ích:** Nếu bạn muốn nạp đầy đủ kho sách thực tế 5.000+ cuốn, 2.000+ tác giả, 50.000+ reviews và 10.000+ đơn hàng theo chuẩn Proposal:
 > ```bash
-> npx tsx scripts/seed_5000_books_catalog.ts
+> # 1. Nạp toàn bộ danh mục, tác giả và 5.000+ sách:
+> npx tsx prisma/seed-large-dataset.ts
+> 
+> # 2. Nạp dữ liệu đánh giá sách:
+> npx tsx prisma/seed-reviews.ts
+> 
+> # 3. Nạp dữ liệu đơn hàng lịch sử & hành vi:
+> npx tsx prisma/seed-historical-orders.ts
 > ```
 
 ---
