@@ -188,7 +188,7 @@ to-sach-studio/
 │   │   ├── auth.ts          # Mã hóa JWT HS256 (jose) & Bcrypt password hash
 │   │   ├── promotions.ts    # Động cơ kiểm tra & tính chiết khấu Voucher
 │   │   └── flyToCart.ts     # Hiệu ứng ném sách vào giỏ hàng (Parabolic GPU 60fps)
-│   └── middleware.ts        # Next.js Middleware kiểm tra quyền RBAC & chốt chặn checkout
+│   └── proxy.ts             # Next.js 16 Edge Proxy kiểm tra quyền RBAC & chốt chặn checkout
 ├── Document_Project.md      # Quyển báo cáo học thuật toàn diện A-Z 12 chương (Tài liệu chính)
 ├── DOCS_KIEN_TRUC_SO_DO_BAO_CAO.md # Bản thiết kế kiến trúc N-tier, ERD, UML & Tiến độ 8 tuần
 └── README.md
