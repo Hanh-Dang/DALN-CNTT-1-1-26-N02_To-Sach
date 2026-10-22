@@ -373,6 +373,17 @@ export const CustomerHeader: React.FC = () => {
     try {
       setShowUserMenu(false);
       setUser(null);
+      // L-l: Xóa sạch lịch sử chat và voucher trong sessionStorage khi đăng xuất
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem('tosach_chatbot_history_v2');
+          sessionStorage.removeItem('tosach_chatbot_open_state');
+          sessionStorage.removeItem('tosach_checkout_voucher');
+          sessionStorage.removeItem('tosach_checkout_selected_ids');
+        } catch (e) {
+          console.warn('Lỗi xóa sessionStorage khi đăng xuất:', e);
+        }
+      }
       await fetch('/api/auth/logout', { method: 'POST' });
       window.dispatchEvent(new Event('auth-change'));
       window.location.href = '/';
@@ -385,7 +396,7 @@ export const CustomerHeader: React.FC = () => {
   const isStaffOrAdmin = user && (user.role === 'STAFF' || user.role === 'SUPER_ADMIN');
 
   return (
-    <header className="w-full sticky top-0 z-50 shadow-md select-none">
+    <header className="w-full sticky top-0 z-50 shadow-md select-none overflow-x-clip">
       {/* ========================================================================= */}
       {/* 1. TOP ANNOUNCEMENT BAR (Chạy liên tục từ TRÁI SANG PHẢI, không ngắt quãng) */}
       {/* ========================================================================= */}
@@ -414,13 +425,13 @@ export const CustomerHeader: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. MAIN NAVIGATION BAR (Chuẩn Figma UI: Nền #0B1F3A, Chiều cao h-20 80px) */}
+      {/* 2. MAIN NAVIGATION BAR (Chuẩn Figma UI: Nền #0B1F3A, Chiều cao h-16 sm:h-20) */}
       {/* ========================================================================= */}
       <div className="bg-[#0B1F3A] text-white px-2 sm:px-4 h-16 sm:h-20 flex items-center">
-        <div className="max-w-7xl w-full mx-auto flex items-center justify-between gap-2 sm:gap-4">
+        <div className="max-w-7xl w-full mx-auto flex items-center justify-between gap-2 sm:gap-4 min-w-0">
           
           {/* CỘT 1 (BÊN TRÁI): Logo Thương Hiệu Tổ Sách */}
-          <div className="w-auto sm:w-[200px] lg:w-[240px] shrink-0 flex items-center">
+          <div className="w-auto sm:w-[170px] lg:w-[220px] shrink-0 flex items-center">
             <Link href="/" className="group shrink-0">
               <ToSachLogo 
                 size={34} 
@@ -431,8 +442,8 @@ export const CustomerHeader: React.FC = () => {
             </Link>
           </div>
 
-          {/* CỘT 2 (Ở GIỮA): Menu Trang chủ & Danh mục (Đã bỏ Tất cả sách theo yêu cầu) */}
-          <nav className="hidden md:flex items-center justify-center gap-3 lg:gap-5 shrink-0">
+          {/* CỘT 2 (Ở GIỮA): Menu Trang chủ & Danh mục (Hiện ở màn hình lớn từ lg: 1024px trở lên) */}
+          <nav className="hidden lg:flex items-center justify-center gap-3 lg:gap-4 shrink-0">
             {/* Nút Trang Chủ: Pill trắng khi ở trang chủ, link mờ khi ở trang khác */}
             <Link
               href="/"
@@ -468,11 +479,11 @@ export const CustomerHeader: React.FC = () => {
             </div>
           </nav>
 
-          {/* CỘT 3 (BÊN PHẢI): Ô tìm kiếm + Wishlist + Giỏ hàng + Cố định Khung Tài khoản */}
-          <div className="shrink-0 flex items-center justify-end gap-1.5 sm:gap-3.5">
-            {/* Ô tìm kiếm dạng pill bo tròn trắng: Co giãn linh hoạt trên mobile (M7) */}
-            <div ref={searchContainerRef} className="relative shrink-0">
-              <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-full h-8 sm:h-9 pl-2.5 sm:pl-3.5 pr-1 w-28 sm:w-60 md:w-72 lg:w-80 shadow-inner shrink-0 transition-all border border-transparent focus-within:border-[#F5A623]">
+          {/* CỘT 3 (BÊN PHẢI): Ô tìm kiếm co giãn linh hoạt + Giỏ hàng + Khung Tài khoản */}
+          <div className="flex-1 min-w-0 flex items-center justify-end gap-1.5 sm:gap-3">
+            {/* Ô tìm kiếm dạng pill bo tròn trắng: Co giãn linh hoạt (N16) */}
+            <div ref={searchContainerRef} className="relative min-w-0 flex-1 max-w-[260px] sm:max-w-[320px]">
+              <form onSubmit={handleSearch} className="relative flex items-center bg-white rounded-full h-8 sm:h-9 pl-2.5 sm:pl-3.5 pr-1 w-full min-w-0 shadow-inner transition-all border border-transparent focus-within:border-[#F5A623]">
                 {/* INPUT BÊN TRÁI SẠCH SẼ, KHÔNG CÒN ICON TÌM KIẾM */}
                 <input
                   type="text"
@@ -679,8 +690,8 @@ export const CustomerHeader: React.FC = () => {
             {/* Vạch kẻ phân cách thanh mảnh */}
             <div className="h-6 w-px bg-slate-700/80 shrink-0 hidden sm:block"></div>
 
-            {/* Khung Tài khoản / Đăng nhập: Trên mobile co giãn w-auto tránh vỡ trang 375px */}
-            <div ref={userMenuRef} className="w-auto sm:w-[145px] shrink-0 flex items-center justify-end h-8 sm:h-10 relative">
+            {/* Khung Tài khoản / Đăng nhập: Trên mobile co giãn w-auto tránh vỡ trang 375px (N16) */}
+            <div ref={userMenuRef} className="w-auto max-w-[120px] shrink-0 flex items-center justify-end h-8 sm:h-10 relative">
               {isLoadingUser ? (
                 <div className="w-8 sm:w-24 h-8 rounded-full bg-white/10 animate-pulse shrink-0" />
               ) : user ? (
@@ -797,7 +808,7 @@ export const CustomerHeader: React.FC = () => {
               <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform ${showMegaMenu ? 'rotate-180' : ''}`} />
             </Link>
 
-            {/* Các ngành hàng chính chuyển tiếp trực tiếp sang Catalog kèm bộ lọc */}
+            {/* Các ngành hàng chính chuyển tiếp trực tiếp sang Catalog kèm bộ lọc (N17) */}
             <Link
               href="/catalog?category=van-hoc"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
@@ -806,38 +817,38 @@ export const CustomerHeader: React.FC = () => {
             </Link>
 
             <Link
-              href="/catalog?category=kinh-te-khoi-nghiep"
-              className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
-            >
-              Kinh tế & Khởi nghiệp
-            </Link>
-
-            <Link
               href="/catalog?category=ky-nang-song"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Phát triển bản thân
+              Kỹ năng sống
             </Link>
 
             <Link
-              href="/catalog?category=tam-ly-triet-hoc"
+              href="/catalog?category=cong-nghe-thong-tin"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Tâm lý & Triết học
+              Công nghệ & Lập trình
             </Link>
 
             <Link
-              href="/catalog?category=thieu-nhi"
+              href="/catalog?category=tieu-thuyet"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Thiếu nhi & Truyện tranh
+              Tiểu thuyết
             </Link>
 
             <Link
-              href="/catalog?category=tieu-thuyet-nuoc-ngoai"
+              href="/catalog?category=truyen-ngan"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Sách Ngoại văn
+              Truyện ngắn
+            </Link>
+
+            <Link
+              href="/catalog?category=giao-tiep"
+              className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
+            >
+              Kỹ năng giao tiếp
             </Link>
 
             <Link

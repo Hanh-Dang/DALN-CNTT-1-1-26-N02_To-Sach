@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="300" height="400">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F3A"/>
+      <stop offset="100%" stop-color="#163156"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5A623"/>
+      <stop offset="100%" stop-color="#FFD166"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="400" fill="url(#bgGrad)"/>
+  <rect x="15" y="15" width="270" height="370" rx="12" fill="none" stroke="rgba(245, 166, 35, 0.25)" stroke-width="2"/>
+  <rect x="25" y="25" width="250" height="350" rx="8" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1"/>
+  
+  <!-- Book Icon -->
+  <g transform="translate(110, 130)">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="scale(3.5) translate(-10, -5)"/>
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="scale(3.5) translate(-10, -5)"/>
+  </g>
+
+  <!-- Brand Typography -->
+  <text x="150" y="260" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">TỔ SÁCH</text>
+  <text x="150" y="285" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" fill="#F5A623" text-anchor="middle" letter-spacing="2">TIỆM SÁCH THÔNG MINH</text>
+  <text x="150" y="325" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="rgba(255, 255, 255, 0.45)" text-anchor="middle">Đang cập nhật ảnh bìa</text>
+</svg>

@@ -150,7 +150,7 @@ export default async function HomePage() {
               </div>
               <div>
                 <span className="block text-xl font-black text-[#F5A623]">Freeship</span>
-                <span className="text-slate-400">Đơn từ 250.000đ</span>
+                <span className="text-slate-400">Đơn từ 150.000đ</span>
               </div>
               <div>
                 <span className="block text-xl font-black text-[#F5A623]">7 Ngày</span>

@@ -273,7 +273,8 @@ export async function searchBooksSmart(
 
   // 2. Intelligent Vietnamese Smart Search (Unaccent + pg_trgm Fuzzy + Multi-field Boost)
   try {
-    const cleanQ = removeVietnameseTones(trimmed).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    // L-k: Giữ lại các ký tự lập trình phổ biến (+, #, .) để tìm kiếm C++, C#, .NET chính xác
+    const cleanQ = removeVietnameseTones(trimmed).replace(/[^a-z0-9\s+#.]/g, ' ').replace(/\s+/g, ' ').trim();
     if (!cleanQ) {
       return { source: 'POSTGRESQL_FALLBACK', results: [] };
     }

@@ -6,6 +6,7 @@ import { Star, ShoppingBag, Check, Heart } from 'lucide-react';
 import { formatVND, calculateDiscount } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { BookCoverImage } from './BookCoverImage';
 
 export interface BookCardData {
   id: string;
@@ -98,15 +99,10 @@ export const BookCard: React.FC<BookCardProps> = ({ book }) => {
     <div className="group bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col relative h-full">
       {/* 1. Cover Image Container */}
       <Link href={`/book/${book.slug}`} className="relative aspect-[3/4] bg-slate-50 overflow-hidden block">
-        <img
-          src={book.coverUrl || '/placeholder-book.jpg'}
+        <BookCoverImage
+          src={book.coverUrl}
           alt={book.title}
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-          loading="lazy"
-          onError={(e) => {
-            // Fallback image nếu link ảnh lỗi
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600';
-          }}
         />
 
         {/* Badges */}

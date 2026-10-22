@@ -73,16 +73,37 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           categoryId: { in: categoryIds },
         },
       };
+    } else {
+      // N17: Nếu slug danh mục không tồn tại trong CSDL, không nạp toàn bộ sách mà trả về rỗng!
+      where.id = 'NO_MATCHING_CATEGORY';
     }
   }
 
-  // B. Tìm kiếm từ khóa (Tiêu đề, Tác giả, Nhà xuất bản)
+  // B. Tìm kiếm từ khóa không dấu / có dấu thông minh qua PostgreSQL unaccent (N4)
   if (queryText) {
-    where.OR = [
-      { title: { contains: queryText, mode: 'insensitive' } },
-      { publisher: { contains: queryText, mode: 'insensitive' } },
-      { authors: { some: { author: { name: { contains: queryText, mode: 'insensitive' } } } } },
-    ];
+    try {
+      const searchParam = `%${queryText}%`;
+      const matchedIdsRaw: { id: string }[] = await prisma.$queryRaw`
+        SELECT b.id FROM books b
+        LEFT JOIN book_authors ba ON ba.book_id = b.id
+        LEFT JOIN authors a ON ba.author_id = a.id
+        WHERE b.is_active = true AND (
+          unaccent(b.title) ILIKE unaccent(${searchParam})
+          OR unaccent(COALESCE(b.publisher, '')) ILIKE unaccent(${searchParam})
+          OR unaccent(COALESCE(a.name, '')) ILIKE unaccent(${searchParam})
+        )
+        LIMIT 500;
+      `;
+      const matchedIds = matchedIdsRaw.map((r) => r.id);
+      where.id = { in: matchedIds };
+    } catch {
+      // Fallback an toàn nếu môi trường chưa bật extension unaccent
+      where.OR = [
+        { title: { contains: queryText, mode: 'insensitive' } },
+        { publisher: { contains: queryText, mode: 'insensitive' } },
+        { authors: { some: { author: { name: { contains: queryText, mode: 'insensitive' } } } } },
+      ];
+    }
   }
 
   // C. Lọc khoảng giá
