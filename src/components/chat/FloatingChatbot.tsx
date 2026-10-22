@@ -832,9 +832,6 @@ export function FloatingChatbot() {
                     Tổ Sách
                   </span>
                 </h3>
-                <p className="text-[11px] text-slate-300">
-                  Tư vấn chính xác, áp voucher & Mua ngay 1 chạm
-                </p>
               </div>
             </div>
 
