@@ -110,7 +110,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   else if (sortOption === 'bestseller') orderBy = { soldCount: 'desc' };
 
   // 4. Thực thi truy vấn Server-side phân trang (24 cuốn/trang)
-  const [rawBooks, totalResults] = await prisma.$transaction([
+  const [rawBooks, totalResults] = await Promise.all([
     prisma.book.findMany({
       where,
       skip: (page - 1) * pageSize,
