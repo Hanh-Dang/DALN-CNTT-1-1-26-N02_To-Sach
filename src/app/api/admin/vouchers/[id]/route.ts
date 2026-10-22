@@ -38,9 +38,47 @@ export async function PATCH(
     if (typeof body.name === 'string') updateData.name = body.name.trim();
     if (typeof body.description !== 'undefined') updateData.description = body.description?.trim() || null;
     if (typeof body.isActive === 'boolean') updateData.isActive = body.isActive;
-    if (typeof body.usageLimit === 'number') updateData.usageLimit = body.usageLimit;
-    if (typeof body.perUserLimit === 'number') updateData.perUserLimit = body.perUserLimit;
-    if (typeof body.minOrderValue === 'number') updateData.minOrderValue = body.minOrderValue;
+
+    // N10: Validate chặt chẽ dữ liệu số nguyên dương
+    if (typeof body.usageLimit !== 'undefined') {
+      const numUsage = Number(body.usageLimit);
+      if (!Number.isInteger(numUsage) || numUsage <= 0 || numUsage > 10000000) {
+        return NextResponse.json(
+          { error: 'Tổng lượt sử dụng phải là số nguyên dương từ 1 đến 10.000.000.' },
+          { status: 400 }
+        );
+      }
+      updateData.usageLimit = numUsage;
+    }
+
+    if (typeof body.perUserLimit !== 'undefined') {
+      const numPerUser = Number(body.perUserLimit);
+      if (!Number.isInteger(numPerUser) || numPerUser <= 0) {
+        return NextResponse.json(
+          { error: 'Lượt dùng mỗi khách phải là số nguyên dương lớn hơn 0.' },
+          { status: 400 }
+        );
+      }
+      const targetUsageLimit = updateData.usageLimit ?? existing.usageLimit;
+      if (numPerUser > targetUsageLimit) {
+        return NextResponse.json(
+          { error: `Lượt dùng mỗi khách (${numPerUser}) không được vượt quá Tổng lượt (${targetUsageLimit}).` },
+          { status: 400 }
+        );
+      }
+      updateData.perUserLimit = numPerUser;
+    }
+
+    if (typeof body.minOrderValue !== 'undefined') {
+      const numMinOrder = Number(body.minOrderValue);
+      if (!Number.isFinite(numMinOrder) || numMinOrder < 0) {
+        return NextResponse.json(
+          { error: 'Đơn hàng tối thiểu phải là số tiền không âm (>= 0).' },
+          { status: 400 }
+        );
+      }
+      updateData.minOrderValue = Math.floor(numMinOrder);
+    }
 
     const updated = await prisma.voucher.update({
       where: { id },

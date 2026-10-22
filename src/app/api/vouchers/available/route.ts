@@ -40,7 +40,7 @@ export async function GET() {
           : false,
       },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 100, // L-m: Lấy tập ứng viên đủ rộng để sau khi lọc vẫn đảm bảo đủ 10 voucher khả dụng
     });
 
     // Lọc các voucher còn hiệu lực thực tế
@@ -59,6 +59,7 @@ export async function GET() {
 
         return true;
       })
+      .slice(0, 10) // L-m: Giới hạn tối đa 10 voucher khả dụng tốt nhất sau khi đã lọc hợp lệ
       .map((v: any) => ({
         id: v.id,
         code: v.code,

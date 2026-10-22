@@ -14,15 +14,23 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { code, subtotal } = body;
 
-    const parsedSubtotal = Number(subtotal);
-    if (!Number.isFinite(parsedSubtotal) || parsedSubtotal < 0) {
+    // Validate kiểu dữ liệu mã voucher (L-e, L-f)
+    if (!code || typeof code !== 'string' || !code.trim() || code.trim().length > 30) {
       return NextResponse.json(
-        { error: 'Giá trị tạm tính của đơn hàng không hợp lệ.' },
+        { error: 'Vui lòng cung cấp mã giảm giá hợp lệ dạng chuỗi ký tự.' },
         { status: 400 }
       );
     }
 
-    const result = await validateVoucher(code, user?.id, parsedSubtotal);
+    const parsedSubtotal = Number(subtotal);
+    if (!Number.isFinite(parsedSubtotal) || parsedSubtotal < 0) {
+      return NextResponse.json(
+        { error: 'Giá trị tạm tính của đơn hàng không hợp lệ (phải là số không âm).' },
+        { status: 400 }
+      );
+    }
+
+    const result = await validateVoucher(code.trim(), user?.id, parsedSubtotal);
 
     if (!result.isValid) {
       return NextResponse.json(

@@ -343,7 +343,47 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const handleRemoveVoucher = () => {
     setAppliedVoucher(null);
     setVoucherError('');
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('tosach_checkout_voucher');
+      } catch (e) {
+        console.warn('Lỗi xóa voucher session:', e);
+      }
+    }
   };
+
+  // N8: Tự động thẩm định và tính lại voucher khi tạm tính (subtotal) thay đổi
+  useEffect(() => {
+    if (!appliedVoucher || subtotal === 0) return;
+    let isMounted = true;
+    const revalidate = async () => {
+      try {
+        const res = await fetch('/api/vouchers/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: appliedVoucher.code, subtotal }),
+        });
+        const data = await res.json();
+        if (!isMounted) return;
+        if (res.ok && data.voucher) {
+          setAppliedVoucher((prev) => (prev ? { ...prev, discountAmount: data.discountAmount } : null));
+          setVoucherError('');
+        } else {
+          setAppliedVoucher(null);
+          setVoucherError(data.error || 'Đơn hàng không còn đủ giá trị tối thiểu của mã giảm giá đã chọn.');
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.removeItem('tosach_checkout_voucher');
+            } catch {}
+          }
+        }
+      } catch {
+        // Bỏ qua nếu lỗi mạng tạm thời
+      }
+    };
+    revalidate();
+    return () => { isMounted = false; };
+  }, [subtotal, appliedVoucher?.code]);
 
   // 10. TÍNH TOÁN DỰ KIẾN GIAO HÀNG ĐỘNG THEO TỈNH THÀNH (GIẢI PHÁP 2)
   const deliveryEstimate = useMemo(() => {
@@ -473,6 +513,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
       }
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('tosach_checkout_selected_ids');
+        sessionStorage.removeItem('tosach_checkout_voucher');
       }
 
       setShowConfirmModal(false);
@@ -1307,7 +1348,9 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
               <div className="flex justify-between items-center text-slate-600">
                 <span>Số lượng sách đặt mua:</span>
-                <span className="font-bold text-[#0B1F3A]">{checkoutItems.length} cuốn</span>
+                <span className="font-bold text-[#0B1F3A]">
+                  {checkoutItems.reduce((acc, item) => acc + item.quantity, 0)} cuốn
+                </span>
               </div>
 
               <div className="flex justify-between items-center text-slate-600">

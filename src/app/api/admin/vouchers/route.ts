@@ -142,6 +142,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (type === VoucherType.FIXED && !Number.isInteger(numValue)) {
+      return NextResponse.json(
+        { error: 'Mức giảm giá cố định (VNĐ) phải là số nguyên (không chứa số thập phân).' },
+        { status: 400 }
+      );
+    }
+
     if (type === VoucherType.PERCENT) {
       if (numValue < 1 || numValue > 100) {
         return NextResponse.json(
@@ -151,29 +158,29 @@ export async function POST(req: NextRequest) {
       }
       if (maxDiscount !== null && maxDiscount !== undefined && maxDiscount !== '') {
         const numMax = Number(maxDiscount);
-        if (!Number.isFinite(numMax) || numMax <= 0) {
+        if (!Number.isFinite(numMax) || numMax <= 0 || !Number.isInteger(numMax)) {
           return NextResponse.json(
-            { error: 'Mức giảm tối đa (VNĐ) phải là số tiền lớn hơn 0.' },
+            { error: 'Mức giảm tối đa (VNĐ) phải là số tiền nguyên lớn hơn 0.' },
             { status: 400 }
           );
         }
       }
     }
 
-    // 3. Validate Giới hạn lượt sử dụng
+    // 3. Validate Giới hạn lượt sử dụng và Đơn hàng tối thiểu
     const numUsageLimit = Number(usageLimit);
     const numPerUserLimit = Number(perUserLimit);
 
-    if (!Number.isFinite(numUsageLimit) || numUsageLimit <= 0) {
+    if (!Number.isInteger(numUsageLimit) || numUsageLimit <= 0 || numUsageLimit > 10000000) {
       return NextResponse.json(
-        { error: 'Tổng lượt sử dụng phải là số nguyên lớn hơn 0.' },
+        { error: 'Tổng lượt sử dụng phải là số nguyên dương từ 1 đến 10.000.000.' },
         { status: 400 }
       );
     }
 
-    if (!Number.isFinite(numPerUserLimit) || numPerUserLimit <= 0) {
+    if (!Number.isInteger(numPerUserLimit) || numPerUserLimit <= 0) {
       return NextResponse.json(
-        { error: 'Lượt dùng tối đa mỗi khách phải là số nguyên lớn hơn 0.' },
+        { error: 'Lượt dùng tối đa mỗi khách phải là số nguyên dương lớn hơn 0.' },
         { status: 400 }
       );
     }
@@ -183,6 +190,14 @@ export async function POST(req: NextRequest) {
         {
           error: `Lượt dùng tối đa mỗi khách (${numPerUserLimit}) không được vượt quá Tổng lượt sử dụng (${numUsageLimit}).`,
         },
+        { status: 400 }
+      );
+    }
+
+    const numMinOrder = Number(minOrderValue);
+    if (!Number.isFinite(numMinOrder) || numMinOrder < 0) {
+      return NextResponse.json(
+        { error: 'Giá trị đơn hàng tối thiểu phải là số tiền không âm (>= 0).' },
         { status: 400 }
       );
     }

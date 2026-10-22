@@ -167,6 +167,14 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
     });
   }, [vouchers, searchQuery, selectedEventFilter, selectedStatusFilter]);
 
+  // Helper chuyển đổi datetime-local sang ISO 8601 có múi giờ chuẩn xác (N11)
+  const toISOWithTimezone = (localDatetimeStr?: string | null) => {
+    if (!localDatetimeStr) return null;
+    const d = new Date(localDatetimeStr);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  };
+
   // Xử lý bật/tắt voucher
   const handleToggleVoucher = async (id: string, currentActive: boolean) => {
     if (!isSuperAdmin) {
@@ -183,21 +191,18 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setVouchers((prev) =>
-        prev.map((v) =>
-          v.id === id
-            ? {
-                ...v,
-                isActive: !currentActive,
-                computedStatus: !currentActive ? 'ACTIVE' : 'DISABLED',
-                statusLabel: !currentActive ? 'Đang chạy' : 'Đã tắt',
-                statusColorClass: !currentActive
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-slate-100 text-slate-600 border-slate-200',
-              }
-            : v
-        )
-      );
+      // Re-fetch danh sách voucher từ server để cập nhật trạng thái hiển thị chuẩn xác (L-n)
+      const listRes = await fetch('/api/admin/vouchers');
+      const listData = await listRes.json();
+      if (listData.vouchers) {
+        setVouchers(listData.vouchers);
+      } else {
+        setVouchers((prev) =>
+          prev.map((v) =>
+            v.id === id ? { ...v, isActive: !currentActive } : v
+          )
+        );
+      }
       showToast(`Đã ${!currentActive ? 'kích hoạt' : 'tắt'} mã Voucher thành công.`);
     } catch (err: any) {
       showToast(err.message || 'Lỗi khi cập nhật trạng thái voucher.', 'error');
@@ -316,8 +321,8 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
         perUserLimit: numPerUser,
         eventId: vEventId || null,
         isUnlimitedTime: !vEventId && vIsUnlimited,
-        startsAt: (vEventId && vUseCustomDate) || (!vEventId && !vIsUnlimited) ? vStartsAt : null,
-        endsAt: (vEventId && vUseCustomDate) || (!vEventId && !vIsUnlimited) ? vEndsAt : null,
+        startsAt: (vEventId && vUseCustomDate) || (!vEventId && !vIsUnlimited) ? toISOWithTimezone(vStartsAt) : null,
+        endsAt: (vEventId && vUseCustomDate) || (!vEventId && !vIsUnlimited) ? toISOWithTimezone(vEndsAt) : null,
         isActive: vIsActive,
       };
 
@@ -355,8 +360,8 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
         name: eName.trim(),
         slug: eSlug.trim() || undefined,
         description: eDesc.trim() || undefined,
-        startsAt: eStartsAt,
-        endsAt: eEndsAt,
+        startsAt: toISOWithTimezone(eStartsAt),
+        endsAt: toISOWithTimezone(eEndsAt),
       };
 
       const res = await fetch('/api/admin/events', {

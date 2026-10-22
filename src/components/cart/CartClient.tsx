@@ -195,6 +195,35 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
     sessionStorage.removeItem('tosach_checkout_voucher');
   };
 
+  // N8: Tự động thẩm định và tính lại voucher khi tạm tính thay đổi
+  useEffect(() => {
+    if (!appliedVoucher || selectedSubtotal === 0) return;
+    let isMounted = true;
+    const revalidate = async () => {
+      try {
+        const res = await fetch('/api/vouchers/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: appliedVoucher.code, subtotal: selectedSubtotal }),
+        });
+        const data = await res.json();
+        if (!isMounted) return;
+        if (res.ok && data.voucher) {
+          setAppliedVoucher((prev) => (prev ? { ...prev, discountAmount: data.discountAmount } : null));
+          setVoucherError('');
+        } else {
+          setAppliedVoucher(null);
+          setVoucherError(data.error || 'Giỏ hàng không còn đủ giá trị tối thiểu của mã giảm giá đã chọn.');
+          sessionStorage.removeItem('tosach_checkout_voucher');
+        }
+      } catch {
+        // Bỏ qua nếu lỗi mạng tạm thời
+      }
+    };
+    revalidate();
+    return () => { isMounted = false; };
+  }, [selectedSubtotal, appliedVoucher?.code]);
+
   // Trạng thái chọn tất cả (chỉ dựa trên danh sách sách còn hàng)
   const allSelected = inStockItems.length > 0 && selectedItems.length === inStockItems.length;
 
