@@ -581,7 +581,6 @@ function AuthContent() {
                 </div>
                 <div>
                   <h3 className="font-bold text-base leading-snug">Xác minh hòm thư Gmail</h3>
-                  <p className="text-[11px] text-slate-300">Bảo mật tài khoản 2 lớp (OTP)</p>
                 </div>
               </div>
               <button
