@@ -155,6 +155,7 @@ to-sach-studio/
 ├── prisma/
 │   ├── schema.prisma        # Thiết kế 17 bảng quan hệ DB & Enum chuẩn 3NF
 │   └── seed.ts              # Script nạp dữ liệu mẫu tự động (kèm sự kiện & voucher)
+├── data/                    # Chứa các tệp dữ liệu CSV/JSON mẫu cho script seed
 ├── src/
 │   ├── app/                 # Next.js App Router (Pages, Layouts, API Routes)
 │   │   ├── api/
@@ -190,6 +191,5 @@ to-sach-studio/
 │   └── middleware.ts        # Next.js Middleware kiểm tra quyền RBAC & chốt chặn checkout
 ├── Document_Project.md      # Quyển báo cáo học thuật toàn diện A-Z 12 chương (Tài liệu chính)
 ├── DOCS_KIEN_TRUC_SO_DO_BAO_CAO.md # Bản thiết kế kiến trúc N-tier, ERD, UML & Tiến độ 8 tuần
-├── DOCS_TONG_HOP_BAO_CAO_DO_AN.md  # Bản tổng hợp tinh gọn dành cho bảo vệ đồ án
 └── README.md
 ```
