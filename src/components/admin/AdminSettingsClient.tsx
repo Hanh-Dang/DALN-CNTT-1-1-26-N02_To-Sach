@@ -228,7 +228,7 @@ export function AdminSettingsClient({ initialAuditLogs, systemInfo }: AdminSetti
               </div>
               <div className="flex justify-between py-1.5 border-b border-slate-50">
                 <span className="text-slate-500 font-medium">Chuẩn Dữ Liệu</span>
-                <span className="font-bold text-[#0B1F3A]">14 Bảng Quan Hệ 3NF</span>
+                <span className="font-bold text-[#0B1F3A]">17 Bảng Quan Hệ 3NF</span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-slate-50">
                 <span className="text-slate-500 font-medium">ORM Framework</span>

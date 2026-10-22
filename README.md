@@ -22,7 +22,9 @@ Chi tiết phân tích kiến trúc, thiết kế cơ sở dữ liệu và bí k
 * **Typography & Kiểu chữ:** **Plus Jakarta Sans** (Chuẩn mực font hình học hiện đại, hỗ trợ tiếng Việt trọn vẹn, tối ưu độ đọc cho sách và giao diện xuất bản)
 * **Bộ nhận diện thương hiệu:** Logo Tổ Sách chính thức (`UI/logo - icon/Group.svg` — Tổ chim che chở & Đôi cánh tri thức mở ra trên nền squircle `#0B1F3A` và điểm nhấn vàng hổ phách `#F5A623`)
 * **ORM:** Prisma 6
-* **Cơ sở dữ liệu:** PostgreSQL (Hosted trên Supabase Cloud)
+* **Cơ sở dữ liệu:** PostgreSQL (Hosted trên Supabase Cloud / Neon) với **17 bảng quan hệ chuẩn 3NF**
+* **Hệ thống Khuyến mại & Voucher:** Voucher Engine (Fixed/Percent trần, kiểm soát hạn mức lượt dùng ACID)
+* **Trí tuệ nhân tạo (Agentic AI):** Google Gemini 3.1 Flash-Lite ReAct Tool Calling Loop (5 tools) + Block-Sequential UI
 * **Xác thực & Bảo mật:** Custom JWT, HttpOnly Cookies, Bcrypt Password Hashing
 * **Phân quyền người dùng (RBAC):** Next.js Middleware / Proxy
 
@@ -86,14 +88,14 @@ Dự án sử dụng file `.env` để bảo mật chuỗi kết nối cơ sở 
    # 3. Mã khóa bí mật JWT dùng để ký và xác thực phiên đăng nhập (tùy ý đặt chuỗi ngẫu nhiên dài)
    JWT_SECRET="tosach_super_secret_jwt_key_2026_proposals"
 
-   # 4. (Tùy chọn) API Key của Google Gemini Flash dùng cho tính năng Trợ lý AI tư vấn sách
+   # 4. API Key của Google Gemini dùng cho Trợ lý Bán hàng Agentic AI (Gemini 3.1 Flash-Lite)
    GEMINI_API_KEY="your-gemini-api-key"
    ```
 
 ---
 
 ### 5. Khởi tạo Cơ sở dữ liệu & Nạp dữ liệu mẫu (Database Setup)
-Sử dụng công cụ **Prisma ORM** để tự động tạo 14 bảng quan hệ và nạp dữ liệu mẫu:
+Sử dụng công cụ **Prisma ORM** để tự động tạo **17 bảng quan hệ** và nạp dữ liệu mẫu:
 
 ```bash
 # Bước 5.1: Sinh bộ mã nguồn Prisma Client phù hợp với hệ thống
@@ -102,7 +104,7 @@ npx prisma generate
 # Bước 5.2: Đẩy toàn bộ cấu trúc bảng (schema) lên PostgreSQL
 npx prisma db push
 
-# Bước 5.3: Nạp dữ liệu hạt giống (Seed Data: tài khoản mẫu, danh mục, sách ban đầu)
+# Bước 5.3: Nạp dữ liệu hạt giống (Seed Data: tài khoản mẫu, danh mục, sách, sự kiện và voucher ban đầu)
 npx prisma db seed
 ```
 
@@ -140,10 +142,10 @@ Mở trình duyệt web và truy cập vào địa chỉ:
 
 | Vai trò | Email | Mật khẩu | Quyền hạn |
 |---|---|---|---|
-| **Super Admin** | `admin@tosach.vn` | `Admin@123` | Toàn quyền quản trị hệ thống |
-| **Nhân viên Kho** | `staff.kho@tosach.vn` | `Staff@123` | Quản lý kho sách & Cây danh mục |
-| **Nhân viên Đơn** | `staff.order@tosach.vn` | `Staff@123` | Tiếp nhận & Xử lý trạng thái đơn hàng |
-| **Khách hàng mẫu** | `customer@gmail.com` | `User@123` | Mua sắm, đánh giá, xem đơn hàng |
+| **Super Admin** | `admin@tosach.vn` | `Admin@123` | Toàn quyền quản trị hệ sinh thái |
+| **Nhân viên Kho** | `staff.kho@tosach.vn` | `Staff@123` | Quản lý kho sách & Cây danh mục (`MANAGE_BOOKS`) |
+| **Nhân viên Đơn** | `staff.order@tosach.vn` | `Staff@123` | Tiếp nhận & Xử lý trạng thái đơn hàng (`MANAGE_ORDERS`) |
+| **Khách hàng mẫu** | `customer@gmail.com` | `User@123` | Mua sắm, áp voucher, đánh giá, xem đơn hàng |
 
 ---
 
@@ -151,46 +153,43 @@ Mở trình duyệt web và truy cập vào địa chỉ:
 ```text
 to-sach-studio/
 ├── prisma/
-│   ├── schema.prisma        # Thiết kế 14 bảng quan hệ DB & Enum
-│   └── seed.ts              # Script nạp dữ liệu mẫu tự động
+│   ├── schema.prisma        # Thiết kế 17 bảng quan hệ DB & Enum chuẩn 3NF
+│   └── seed.ts              # Script nạp dữ liệu mẫu tự động (kèm sự kiện & voucher)
 ├── src/
 │   ├── app/                 # Next.js App Router (Pages, Layouts, API Routes)
 │   │   ├── api/
 │   │   │   ├── auth/        # Các API đăng nhập, đăng ký, đăng xuất, phiên làm việc
-│   │   │   ├── locations/   # API nạp dữ liệu hành chính 3 cấp (Tỉnh - Huyện - Xã) chuẩn GSO
+│   │   │   ├── chat/        # API Trợ lý Agentic AI (ReAct 5 tools loop)
 │   │   │   ├── orders/      # API Đặt hàng Prisma Transaction (ACID) & Tra cứu đơn
+│   │   │   ├── promotions/  # API Kiểm tra, áp mã và quản trị Voucher
 │   │   │   └── reviews/     # API tiếp nhận và duyệt đánh giá bạn đọc
+│   │   ├── admin/
+│   │   │   ├── books/       # Quản lý kho sách, import/export CSV
+│   │   │   ├── orders/      # Quản lý đơn hàng, State Machine
+│   │   │   └── promotions/  # Quản trị sự kiện khuyến mại & Voucher
 │   │   ├── account/orders/  # Trang Lịch sử đơn mua & Timeline vận chuyển thời gian thực
 │   │   ├── book/[slug]/     # Trang Chi tiết sách chuẩn SEO (Dynamic Route Server Component)
 │   │   ├── catalog/         # Trang Danh mục sách & Bộ lọc đa chiều (3 cấp, giá, sao, NXB)
-│   │   ├── cart/            # Trang Giỏ hàng tương tác & Thanh tiến trình Freeship 150k
-│   │   ├── checkout/        # Trang Thanh toán (Sổ địa chỉ linh hoạt, COD & VietQR)
+│   │   ├── cart/            # Trang Giỏ hàng tương tác, áp mã voucher & Freeship bar
+│   │   ├── checkout/        # Trang Thanh toán (Áp voucher, Sổ địa chỉ 3 cấp, COD & VietQR)
 │   │   ├── order/success/   # Trang Đặt hàng thành công (kèm VietQR động & sao chép STK)
 │   │   ├── wishlist/        # Trang Quản lý Tủ sách yêu thích (1-Click sang giỏ hàng)
 │   │   ├── auth/            # Trang Đăng nhập & Đăng ký (kèm nút test 4 vai trò)
 │   │   ├── layout.tsx       # Root Layout & Typography Plus Jakarta Sans
 │   │   └── page.tsx         # Trang chủ kết nối 100% dữ liệu thực tế Supabase DB
 │   ├── components/          # UI Components chuẩn Design System Figma
-│   │   ├── account/         # OrdersClient (Tabs trạng thái, Card đơn, Timeline drawer)
-│   │   ├── book/            # BookCard, BookDetailClient (Gallery, Tabs, Reviews)
-│   │   ├── brand/           # ToSachLogo độc quyền
-│   │   ├── cart/            # CartClient (Stepper số lượng, Freeship bar, Empty state, Gợi ý, Sắp xếp)
-│   │   ├── checkout/        # CheckoutClient (Form địa chỉ 3 cấp, COD & VietQR), OrderSuccessClient
-│   │   ├── catalog/         # CatalogFilterSidebar, CatalogBookCard, CatalogClient
+│   │   ├── chat/            # FloatingChatbot.tsx (Block-Sequential UI, Mua ngay 1-Click)
+│   │   ├── cart/            # CartClient (Áp voucher, Stepper số lượng, Freeship bar)
+│   │   ├── checkout/        # CheckoutClient (Form địa chỉ 3 cấp, Voucher, COD & VietQR)
 │   │   └── layout/          # CustomerHeader (Zero CLS, Mega Menu), CustomerFooter
-│   ├── context/             # Quản lý State phân vùng cục bộ
-│   │   ├── CartContext.tsx      # Giỏ hàng độc lập (Guest & User Smart Merge)
-│   │   └── WishlistContext.tsx  # Tủ sách yêu thích độc lập
 │   ├── lib/
+│   │   ├── ai-tools.ts      # 5 Công cụ nội bộ của Agentic AI Chatbot
 │   │   ├── auth.ts          # Mã hóa JWT HS256 (jose) & Bcrypt password hash
-│   │   ├── flyToCart.ts     # Hiệu ứng ném sách vào giỏ hàng (Parabolic Fly-to-Cart GPU 60fps)
-│   │   ├── prisma.ts        # Prisma Client singleton
-│   │   ├── provinces.ts     # Danh mục 63 Tỉnh/Thành & Ước tính thời gian giao hàng
-│   │   └── utils.ts         # Tiện ích định dạng tiền VND, tính chiết khấu
+│   │   ├── promotions.ts    # Động cơ kiểm tra & tính chiết khấu Voucher
+│   │   └── flyToCart.ts     # Hiệu ứng ném sách vào giỏ hàng (Parabolic GPU 60fps)
 │   └── middleware.ts        # Next.js Middleware kiểm tra quyền RBAC & chốt chặn checkout
-├── legacy/                  # Thư mục lưu trữ code Express/Vite cũ làm tư liệu
-├── Proposal/                # Tài liệu Proposal gốc của đồ án
-├── UI/                      # Bản vẽ và xuất HTML/Figma tham khảo
-├── DOCS_KIEN_TRUC_SO_DO_BAO_CAO.md # Sơ đồ kiến trúc N-tier, ERD, UML & Tiến độ 8 tuần
+├── Document_Project.md      # Quyển báo cáo học thuật toàn diện A-Z 12 chương (Tài liệu chính)
+├── DOCS_KIEN_TRUC_SO_DO_BAO_CAO.md # Bản thiết kế kiến trúc N-tier, ERD, UML & Tiến độ 8 tuần
+├── DOCS_TONG_HOP_BAO_CAO_DO_AN.md  # Bản tổng hợp tinh gọn dành cho bảo vệ đồ án
 └── README.md
 ```

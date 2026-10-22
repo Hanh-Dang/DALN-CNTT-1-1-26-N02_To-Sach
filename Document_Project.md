@@ -33,34 +33,36 @@
   - [3.3 Sơ đồ Triển khai Vật lý & Điện toán Đám mây (Deployment & Cloud Infrastructure)](#33-sơ-đồ-triển-khai-vật-lý--điện-toán-đám-mây-deployment--cloud-infrastructure)
 - [CHƯƠNG 4: THIẾT KẾ CƠ SỞ DỮ LIỆU & TỪ ĐIỂN DỮ LIỆU CHI TIẾT (DATABASE & ERD)](#chương-4-thiết-kế-cơ-sở-dữ-liệu--từ-điển-dữ-liệu-chi-tiết-database--erd)
   - [4.1 Quy trình chuẩn hóa quan hệ bậc 3 (3NF)](#41-quy-trình-chuẩn-hóa-quan-hệ-bậc-3-3nf)
-  - [4.2 Sơ đồ Thực thể Quan hệ Toàn diện (ERD 14 Thực thể)](#42-sơ-đồ-thực-thể-quan-hệ-toàn-diện-erd-14-thực-thể)
-  - [4.3 Phân Tích Chuyên Sâu Chỉ Số ISBN & Từ Điển Dữ Liệu Chi Tiết 14 Bảng (Data Dictionary)](#43-phân-tích-chuyên-sâu-chỉ-số-isbn--từ-điển-dữ-liệu-chi-tiết-14-bảng-data-dictionary)
+  - [4.2 Sơ đồ Thực thể Quan hệ Toàn diện (ERD 17 Thực thể)](#42-sơ-đồ-thực-thể-quan-hệ-toàn-diện-erd-17-thực-thể)
+  - [4.3 Phân Tích Chuyên Sâu Chỉ Số ISBN & Từ Điển Dữ Liệu Chi Tiết 17 Bảng (Data Dictionary)](#43-phân-tích-chuyên-sâu-chỉ-số-isbn--từ-điển-dữ-liệu-chi-tiết-17-bảng-data-dictionary)
     - [4.3.1 Chỉ số ISBN trong Cơ sở dữ liệu là gì?](#431-chỉ-số-isbn-trong-cơ-sở-dữ-liệu-là-gì)
-    - [4.3.2 Từ Điển Dữ Liệu Chi Tiết Từng Cột Của 14 Bảng CSDL (Field-by-Field Data Dictionary)](#432-từ-điển-dữ-liệu-chi-tiết-từng-cột-của-14-bảng-csdl-field-by-field-data-dictionary)
+    - [4.3.2 Từ Điển Dữ Liệu Chi Tiết Từng Cột Của 17 Bảng CSDL (Field-by-Field Data Dictionary)](#432-từ-điển-dữ-liệu-chi-tiết-từng-cột-của-17-bảng-csdl-field-by-field-data-dictionary)
   - [4.4 Chiến lược Lập chỉ mục (Index Optimization Strategy)](#44-chiến-lược-lập-chỉ-mục-index-optimization-strategy)
   - [4.5 Cơ chế Giao dịch Nguyên tử (ACID Transactions) & Khóa chống Bán vượt tồn kho](#45-cơ-chế-giao-dịch-nguyên-tử-acid-transactions--khóa-chống-bán-vượt-tồn-kho)
 - [CHƯƠNG 5: HỆ THỐNG SƠ ĐỒ LUỒNG DỮ LIỆU (DATA FLOW DIAGRAMS - DFD)](#chương-5-hệ-thống-sơ-đồ-luồng-dữ-liệu-data-flow-diagrams---dfd)
   - [5.1 DFD Mức 0 — Sơ đồ Ngữ cảnh Toàn hệ thống (Context Diagram)](#51-dfd-mức-0--sơ-đồ-ngữ-cảnh-toàn-hệ-thống-context-diagram)
   - [5.2 DFD Mức 1 — Phân rã Chức năng Nghiệp vụ Cốt lõi](#52-dfd-mức-1--phân-rã-chức-năng-nghiệp-vụ-cốt-lõi)
-  - [5.3 DFD Mức 2 — Phân rã Quy trình Đặt hàng & Xử lý Giao dịch](#53-dfd-mức-2--phân-rã-quy-trình-đặt-hàng--xử-lý-giao-dịch)
+  - [5.3 DFD Mức 2 — Phân rã Quy trình Đặt hàng, Áp Voucher & Xử lý Giao dịch](#53-dfd-mức-2--phân-rã-quy-trình-đặt-hàng-áp-voucher--xử-lý-giao-dịch)
 - [CHƯƠNG 6: HỆ THỐNG SƠ ĐỒ CA SỬ DỤNG (USE CASE DIAGRAMS)](#chương-6-hệ-thống-sơ-đồ-ca-sử-dụng-use-case-diagrams)
   - [6.1 Sơ đồ Ca sử dụng Tổng quan Hệ thống (System Use Case)](#61-sơ-đồ-ca-sử-dụng-tổng-quan-hệ-thống-system-use-case)
   - [6.2 Phân rã Use Case Phân hệ Khách hàng (Customer Storefront)](#62-phân-rã-use-case-phân-hệ-khách-hàng-customer-storefront)
   - [6.3 Phân rã Use Case Phân hệ Quản trị & Vận hành (Staff & Admin Portal)](#63-phân-rã-use-case-phân-hệ-quản-trị--vận-hành-staff--admin-portal)
 - [CHƯƠNG 7: HỆ THỐNG SƠ ĐỒ HOẠT ĐỘNG NGHIỆP VỤ (ACTIVITY DIAGRAMS)](#chương-7-hệ-thống-sơ-đồ-hoạt-động-nghiệp-vụ-activity-diagrams)
-  - [7.1 Sơ đồ Hoạt động 1: Quy trình Đặt hàng & Thanh toán (Checkout Flow)](#71-sơ-đồ-hoạt-động-1-quy-trình-đặt-hàng--thanh-toán-checkout-flow)
+  - [7.1 Sơ đồ Hoạt động 1: Quy trình Đặt hàng & Áp dụng Voucher (Checkout Flow)](#71-sơ-đồ-hoạt-động-1-quy-trình-đặt-hàng--áp-dụng-voucher-checkout-flow)
   - [7.2 Sơ đồ Hoạt động 2: Quy trình Xác thực & Kiểm soát Biên giới (Edge Guard Middleware & RBAC)](#72-sơ-đồ-hoạt-động-2-quy-trình-xác-thực--kiểm-soát-biên-giới-edge-guard-middleware--rbac)
   - [7.3 Sơ đồ Hoạt động 3: Quy trình Quản lý Kho sách & Nhập xuất tồn](#73-sơ-đồ-hoạt-động-3-quy-trình-quản-lý-kho-sách--nhập-xuất-tồn)
 - [CHƯƠNG 8: HỆ THỐNG SƠ ĐỒ TUẦN TỰ CHI TIẾT (SEQUENCE DIAGRAMS)](#chương-8-hệ-thống-sơ-đồ-tuần-tự-chi-tiết-sequence-diagrams)
   - [8.1 Sơ đồ Tuần tự 1: Đăng nhập Hệ thống & Cấp phát HttpOnly Cookie JWT](#81-sơ-đồ-tuần-tự-1-đăng-nhập-hệ-thống--cấp-phát-httponly-cookie-jwt)
   - [8.2 Sơ đồ Tuần tự 2: Khách hàng Đặt hàng & Xử lý Transaction ACID Trừ Tồn Kho](#82-sơ-đồ-tuần-tự-2-khách-hàng-đặt-hàng--xử-lý-transaction-acid-trừ-tồn-kho)
   - [8.3 Sơ đồ Tuần tự 3: Thanh toán Tự động VietQR MBBank](#83-sơ-đồ-tuần-tự-3-thanh-toán-tự-động-vietqr-mbbank)
-  - [8.4 Sơ đồ Tuần tự 4: Trợ lý AI Chatbot RAG Pipeline](#84-sơ-đồ-tuần-tự-4-trợ-lý-ai-chatbot-rag-pipeline)
+  - [8.4 Sơ đồ Tuần tự 4: Trợ lý Bán Hàng Agentic AI Chatbot (Tool Calling Loop)](#84-sơ-đồ-tuần-tự-4-trợ-lý-bán-hàng-agentic-ai-chatbot-tool-calling-loop)
   - [8.5 Sơ đồ Tuần tự 5: Cơ chế Phân quyền RBAC & Lọc Thông báo Quả chuông Động](#85-sơ-đồ-tuần-tự-5-cơ-chế-phân-quyền-rbac--lọc-thông-báo-quả-chuông-động)
   - [8.6 Sơ đồ Tuần tự 6: Cảnh báo Tồn kho Thấp (Low Stock Alert)](#86-sơ-đồ-tuần-tự-6-cảnh-báo-tồn-kho-thấp-low-stock-alert)
+  - [8.7 Sơ đồ Tuần tự 7: Quy trình Áp dụng Mã Voucher & Khóa Lượt Dùng Trong Transaction Đặt Hàng](#87-sơ-đồ-tuần-tự-7-quy-trình-áp-dụng-mã-voucher--khóa-lượt-dùng-trong-transaction-đặt-hàng)
 - [CHƯƠNG 9: HỆ THỐNG SƠ ĐỒ CHUYỂN TRẠNG THÁI (STATE MACHINE DIAGRAMS)](#chương-9-hệ-thống-sơ-đồ-chuyển-trạng-thái-state-machine-diagrams)
   - [9.1 Sơ đồ Trạng thái Đơn hàng (OrderStatus State Machine)](#91-sơ-đồ-trạng-thái-đơn-hàng-orderstatus-state-machine)
   - [9.2 Sơ đồ Trạng thái Đánh giá Độc giả (ReviewStatus State Machine)](#92-sơ-đồ-trạng-thái-đánh-giá-độc-giả-reviewstatus-state-machine)
+  - [9.3 Sơ đồ Trạng thái Hiệu lực & Khả dụng của Voucher (VoucherDisplayStatus State Machine)](#93-sơ-đồ-trạng-thái-hiệu-lực--khả-dụng-của-voucher-voucherdisplaystatus-state-machine)
 - [CHƯƠNG 10: CẤU TRÚC THÔNG TIN, MA TRẬN PHÂN QUYỀN & BỘ CHỈ SỐ DỮ LIỆU LỚN](#chương-10-cấu-trúc-thông-tin-ma-trận-phân-quyền--bộ-chỉ-số-dữ-liệu-lớn)
   - [10.1 Sơ đồ Cấu trúc Thông tin & Điều hướng (Site Map / Information Architecture)](#101-sơ-đồ-cấu-trúc-thông-tin--điều-hướng-site-map--information-architecture)
   - [10.2 Ma trận Phân quyền Vai trò RBAC (Role-Based Access Control Matrix)](#102-ma-trận-phân-quyền-vai-trò-rbac-role-based-access-control-matrix)
@@ -89,10 +91,11 @@ Trong xu hướng chuyển đổi số mạnh mẽ của ngành xuất bản và
 
 ## 1.2 Mục tiêu đề tài & Sản phẩm bàn giao (Deliverables)
 Bám sát mục tiêu đã cam kết trong Đề cương Đồ án (Proposal), hệ thống hoàn thành trọn vẹn các sản phẩm bàn giao:
-- **Hệ thống Web Storefront Khách hàng:** Giao diện mua sắm thẩm mỹ cao, tốc độ render 60fps, chuẩn SEO với Server-Side Rendering (SSR), hỗ trợ tìm kiếm toàn văn, lọc đa chiều, tủ sách yêu thích, giỏ hàng và thanh toán VietQR tự động.
-- **Hệ thống Web Admin Portal Vận hành:** Trang quản trị nghiệp vụ toàn diện: Dashboard doanh thu thời gian thực, CRUD đầu sách & nhập kho hàng loạt, quản lý vòng đời đơn hàng theo State Machine, kiểm duyệt đánh giá, và phân quyền động RBAC độc lập cho nhân viên.
-- **Hệ thống Trợ lý Ảo AI Chatbot (RAG Engine):** Tích hợp Google Gemini (dòng Flash-Lite) kết hợp truy xuất CSDL PostgreSQL, giải đáp 14 miền nghiệp vụ thương hiệu, CSKH, chính sách đổi trả và gợi ý sách theo cảm xúc người đọc.
-- **Bộ Cơ sở Dữ liệu Quy mô Lớn (Big Data Benchmark):** Nạp và vận hành ổn định trên 5.100 đầu sách thật, 2.700 tác giả, 160 danh mục phân cấp DDC, sẵn sàng xử lý hàng chục nghìn đơn hàng và lượt đánh giá.
+- **Hệ thống Web Storefront Khách hàng:** Giao diện mua sắm thẩm mỹ cao, tốc độ render 60fps, chuẩn SEO với Server-Side Rendering (SSR), hỗ trợ tìm kiếm toàn văn, lọc đa chiều, tủ sách yêu thích, giỏ hàng thông minh và thanh toán VietQR tự động.
+- **Hệ thống Khuyến Mãi & Voucher Đa Tầng:** Cơ chế tạo và quản lý Sự kiện Khuyến mại (`promotion_events`) cùng Mã Giảm Giá (`vouchers`). Kiểm soát điều kiện giảm theo số tiền cố định (`FIXED`) hoặc phần trăm (`PERCENT`) kèm giới hạn giảm tối đa (`maxDiscount`), đơn hàng tối thiểu (`minOrderValue`), giới hạn lượt dùng toàn hệ thống (`usageLimit`) và giới hạn theo từng khách hàng (`perUserLimit`). Hỗ trợ áp mã trực tiếp tại Giỏ hàng (`/cart`) và Thanh toán (`/checkout`).
+- **Hệ thống Web Admin Portal Vận hành:** Trang quản trị nghiệp vụ toàn diện: Dashboard doanh thu thời gian thực, CRUD đầu sách & nhập kho hàng loạt, quản lý vòng đời đơn hàng theo State Machine, kiểm duyệt đánh giá, quản trị Khuyến mại & Voucher (`/admin/promotions`), và phân quyền động RBAC độc lập cho nhân viên.
+- **Hệ thống Trợ lý Bán Hàng AI Thông Minh (Agentic Tool Calling):** Sử dụng mô hình Google Gemini 3.1 Flash-Lite với vòng lặp ReAct Tool Calling (5 công cụ chuyên biệt: `search_books`, `recommend_best_voucher`, `apply_voucher`, `get_book`, `list_active_events`). Tự động tra cứu CSDL PostgreSQL bằng thuật toán unaccent ILIKE scoring, giải đáp 14 miền nghiệp vụ thương hiệu, và kết xuất giao diện thẻ sách trực quan tuần tự theo khối (Thông điệp $\to$ Chi tiết sách $\to$ Ảnh bìa, nút Thêm giỏ hàng và Mua ngay).
+- **Bộ Cơ sở Dữ liệu Quy mô Lớn (Big Data Benchmark):** Nạp và vận hành ổn định trên 5.125 đầu sách thật, 2.790 tác giả, 169 danh mục phân cấp DDC, 17 bảng quan hệ chuẩn 3NF, sẵn sàng xử lý hàng chục nghìn đơn hàng và lượt đánh giá.
 
 ## 1.3 Đối tượng người dùng & Định vị mô hình B2C thuần túy
 Hệ sinh thái **Tổ Sách** phục vụ 3 nhóm đối tượng người dùng chính:
@@ -100,11 +103,11 @@ Hệ sinh thái **Tổ Sách** phục vụ 3 nhóm đối tượng người dùn
 2. **Nhân viên vận hành (Staff):**
    - *Nhân viên kho (Warehouse Staff):* Quản lý nhập/xuất kho, cập nhật số lượng tồn, theo dõi cảnh báo sách sắp hết hàng (`stockQty < 10`).
    - *Nhân viên xử lý đơn (Order Staff):* Kiểm tra đơn hàng mới, duyệt đóng gói, bàn giao vận chuyển, xử lý đánh giá của khách hàng.
-3. **Quản trị viên cấp cao (Super Admin):** Ban giám đốc, chủ doanh nghiệp: Toàn quyền hệ thống, theo dõi báo cáo doanh thu tài chính, cấp tài khoản nhân viên, phân quyền động RBAC và kiểm tra nhật ký kiểm toán (Audit Logs).
+3. **Quản trị viên cấp cao (Super Admin):** Ban giám đốc, chủ doanh nghiệp: Toàn quyền hệ thống, theo dõi báo cáo doanh thu tài chính, cấp tài khoản nhân viên, phân quyền động RBAC, quản lý chiến dịch Voucher Khuyến mãi và kiểm tra nhật ký kiểm toán (Audit Logs).
 
 **Lý do lựa chọn mô hình B2C (Business-to-Consumer) thay vì C2C:**
 - **Kiểm soát chất lượng 100%:** Tổ Sách là đơn vị nhập trực tiếp từ NXB và lưu kho, bảo đảm tuyệt đối nguồn gốc chính hãng và chính sách đóng gói 3 lớp chống sốc, tặng bookmark độc quyền.
-- **Tập trung chiều sâu kỹ thuật:** Tránh phân tán nguồn lực vào các bài toán ví điện tử trung gian đa người bán (escrow multi-vendor) để tập trung giải quyết các bài toán công nghệ chuyên sâu: Transaction ACID kiểm soát kho, Phân quyền RBAC động, và RAG AI Chatbot.
+- **Tập trung chiều sâu kỹ thuật:** Tránh phân tán nguồn lực vào các bài toán ví điện tử trung gian đa người bán (escrow multi-vendor) để tập trung giải quyết các bài toán công nghệ chuyên sâu: Transaction ACID kiểm soát kho và khóa lượt voucher, Phân quyền RBAC động, Hệ thống Khuyến mãi linh hoạt và Agentic AI Chatbot.
 
 ## 1.4 So sánh đối sánh với các sàn TMĐT hiện hành (Tiki, Fahasa, Shopee)
 
@@ -112,7 +115,8 @@ Hệ sinh thái **Tổ Sách** phục vụ 3 nhóm đối tượng người dùn
 | :--- | :--- | :--- | :--- | :--- |
 | **Mô hình vận hành** | Đa người bán (C2C/B2C) | B2C Chuỗi nhà sách | B2C & Marketplace | **B2C Thuần túy chuyên biệt** |
 | **Cam kết bản quyền** | Khó kiểm soát, nhiều sách lậu | 100% Sách thật | Tương đối tốt | **100% Bản quyền NXB chính quy** |
-| **Hệ thống tư vấn AI** | Chatbot rule-based cứng nhắc | Chatbot kịch bản cơ bản | Gợi ý thuật toán matrix | **Google Gemini RAG + 14 Miền CSKH** |
+| **Hệ thống tư vấn AI** | Chatbot rule-based cứng nhắc | Chatbot kịch bản cơ bản | Gợi ý thuật toán matrix | **Gemini 3.1 Agentic Tool Calling (5 Tools)** |
+| **Hệ thống Voucher** | Phức tạp, nhiều tầng áp mã khó hiểu | Mã nhập tay cơ bản | Mã lưu ví | **Voucher % có trần + Cố định + Tự đề xuất tối ưu** |
 | **Phân quyền nội bộ** | Phức tạp, cồng kềnh | Đóng kín nội bộ ERP | Đóng kín nội bộ ERP | **RBAC Động đa cấp bậc + Quả chuông ngữ cảnh** |
 | **Tốc độ & Công nghệ** | PHP / React cũ | Magento cũ, tải chậm | Next.js kết hợp Microservices | **Next.js 16 App Router + RSC + Tailwind v4** |
 | **Chính sách đổi trả** | 3 - 7 ngày, quy trình phức tạp | Đổi tại cửa hàng | Đổi qua bưu cục | **1 đổi 1 trong 7 ngày, hỗ trợ đồng kiểm 100%** |
@@ -128,12 +132,13 @@ Hệ sinh thái **Tổ Sách** phục vụ 3 nhóm đối tượng người dùn
 |      - Email: hnhngyndng@gmail.com                                              |
 |      - Vai trò: Kiến trúc Hệ thống, Cơ sở Dữ liệu & Bảo mật                     |
 |      - Nhiệm vụ cụ thể:                                                         |
-|        * Thiết kế chuẩn hóa CSDL quan hệ 3NF (14 bảng PostgreSQL Supabase/Neon) |
+|        * Thiết kế chuẩn hóa CSDL quan hệ 3NF (17 bảng PostgreSQL Supabase/Neon) |
 |        * Xây dựng kiến trúc Backend API Route Handlers, Server Actions          |
-|        * Hiện thực hóa Giao dịch ACID chống Over-selling (Prisma $transaction)  |
+|        * Hiện thực hóa Giao dịch ACID chống Over-selling & Khóa lượt Voucher    |
+|        * Xây dựng Động cơ Khuyến mãi (Voucher Engine & Rules Validator)         |
 |        * Xây dựng hệ thống bảo mật Stateless JWT, HttpOnly Cookies, Edge Proxy  |
 |        * Triển khai ma trận phân quyền RBAC và Bộ lọc quả chuông thông báo      |
-|        * Tích hợp AI Chatbot RAG Pipeline kết hợp Google Gemini Flash-Lite      |
+|        * Tích hợp Trợ lý Bán Hàng Agentic AI (Google Gemini 3.1 + Tool Calling) |
 |                                                                                 |
 |  [2] NGUYỄN MẠNH HÒA (Co-Developer)                                             |
 |      - Email: manhhoa02042005@gmail.com                                         |
@@ -204,22 +209,36 @@ gantt
 
 ## 2.3 Phân tích tầng Ứng dụng & Nghiệp vụ (Backend Layer)
 - **API Route Handlers hiện đại:** Toàn bộ các API được tổ chức theo cấu trúc App Router chuẩn RESTful tại `src/app/api/...`:
-  - `/api/auth/register`, `/api/auth/login`, `/api/auth/verify-otp`, `/api/auth/logout`: Xử lý xác thực.
-  - `/api/orders`: Tiếp nhận đơn hàng, mở Transaction kiểm tra kho.
-  - `/api/chat`: Điểm chạm AI Chatbot phân tích ý định, truy vấn DB và gọi mô hình Gemini.
-  - `/api/admin/...`: Các API quản trị được bảo vệ bởi middleware phân quyền.
+  - `/api/auth/register`, `/api/auth/login`, `/api/auth/verify-otp`, `/api/auth/logout`: Xử lý xác thực người dùng.
+  - `/api/orders`: Tiếp nhận đơn hàng, mở Transaction ACID kiểm tra kho và khóa lượt dùng voucher.
+  - `/api/promotions`, `/api/promotions/apply`: Động cơ kiểm tra tính hợp lệ và chiết khấu voucher tại Client.
+  - `/api/admin/promotions/...`: Bộ API CRUD sự kiện khuyến mãi và quản lý kho mã giảm giá.
+  - `/api/chat`: Điểm chạm Trợ lý Bán Hàng Agentic AI thực thi vòng lặp Tool Calling với Gemini và CSDL.
+  - `/api/admin/...`: Các API quản trị đơn hàng, sách, đánh giá, nhân sự được bảo vệ bởi middleware phân quyền.
 - **Server Actions:** Thực hiện các tác vụ mutation biểu mẫu nhanh chóng, tự động tái xác thực cache trang (`revalidatePath`).
+- **Promotion & Voucher Engine (`src/lib/voucher.ts`):** Module chuyên trách tính toán chiết khấu tiền mặt hoặc % có trần giảm tối đa (`maxDiscount`), xác thực hạn sử dụng, điều kiện đơn tối thiểu, và kiểm tra giới hạn lượt dùng toàn sàn / trên từng tài khoản độc giả.
 
 ## 2.4 Phân tích tầng Cơ sở dữ liệu & Quản lý kết nối (Data Tier)
 - **Cơ chế Dual Connection Strings:**
   - `DATABASE_URL`: Kết nối qua PgBouncer tại cổng `6543` với tham số `pgbouncer=true`. Được sử dụng cho toàn bộ các truy vấn runtime hàng ngày của ứng dụng để tái sử dụng connection pool.
   - `DIRECT_URL`: Kết nối trực tiếp vào PostgreSQL engine tại cổng `5432`. Được sử dụng riêng cho công cụ Prisma CLI khi thực thi lệnh di chuyển cấu trúc (`prisma migrate deploy`) hoặc nạp dữ liệu lớn (`prisma db seed`).
 
-## 2.5 Phân tích tầng Trí tuệ Nhân tạo & RAG (AI Tier)
-- Khắc phục triệt để nhược điểm "ảo giác" (hallucination) của LLM truyền thống bằng quy trình RAG 3 bước:
-  1. **Bước 1 — Nhận diện & Trích xuất:** Phân tích ý định câu hỏi (hỏi tác phẩm, hỏi tâm trạng, hỏi chính sách giao hàng hay hỏi khiếu nại).
-  2. **Bước 2 — Truy vấn dữ liệu thực tế (Retrieval):** Tìm kiếm các đầu sách có liên quan trực tiếp từ bảng `books` trong PostgreSQL (lọc theo danh mục, giá bán, rating, và bắt buộc `coverUrl` hợp lệ).
-  3. **Bước 3 — Bơm ngữ cảnh (Augmentation & Generation):** Bơm thông tin sách thật và chính sách Tổ Sách vào System Prompt, yêu cầu mô hình Gemini Flash-Lite sinh lời thoại tư vấn kèm thẻ sách động.
+## 2.5 Phân tích tầng Trí tuệ Nhân tạo & Agentic Tool Calling (AI Tier)
+Hệ thống nâng cấp vượt trội từ mô hình RAG văn bản thụ động sang **Kiến trúc Trợ lý Bán Hàng Agentic AI (ReAct Tool Calling Loop)** với mô hình thế hệ mới **Google Gemini 3.1 Flash-Lite**:
+1. **Gemini đóng vai trò Bộ Não Điều Phối (Agent Orchestrator):** Tiếp nhận câu hỏi tự nhiên của khách hàng, phân tích ngữ cảnh hội thoại đa lượt và tự quyết định kích hoạt công cụ (Function Calling) thích hợp.
+2. **Bộ 5 Công cụ Nghiệp vụ Tích hợp CSDL Thực tế (`src/lib/ai-tools.ts`):**
+   - `search_books`: Tìm kiếm sách bằng truy vấn tham số hóa với hàm PostgreSQL `unaccent()` và toán tử `ILIKE ANY`. Thuật toán chấm điểm trọng số thông minh: Tên sách (+5đ), Tác giả (+4đ), Danh mục (+2đ), Tóm tắt mô tả (+1đ). Lọc bắt buộc sách đang mở bán (`isActive: true`), có ảnh bìa CDN hợp lệ và sắp xếp theo độ khớp kết hợp điểm rating.
+   - `recommend_best_voucher`: Tự động quét toàn bộ voucher đang mở, tính toán mã giảm sâu nhất cho giỏ hàng của khách; đồng thời kích hoạt thuật toán Up-sell tính số tiền cần mua thêm để chạm mốc Freeship (150.000 đ) hoặc chạm mức đơn tối thiểu của mã giảm giá lớn hơn.
+   - `apply_voucher`: Xác thực mã và áp dụng trực tiếp vào phiên mua sắm của độc giả.
+   - `get_book`: Truy xuất toàn bộ siêu dữ liệu 100% của tác phẩm (mã ISBN-13, số trang, kích thước, trọng lượng, nhà xuất bản, bản dịch, tồn kho thực).
+   - `list_active_events`: Liệt kê các ngày hội sách, chiến dịch ưu đãi đang diễn ra tại Tổ Sách.
+3. **Cơ chế Hiển thị Thẻ Sách Tuần Tự (Block-Sequential Card Rendering):**
+   - Khắc phục nhược điểm giao diện chat truyền thống gom hết sách vào một khối lộn xộn, giao diện Chatbot (`FloatingChatbot.tsx`) áp dụng bộ bóc tách Regex và Markdown Parser thông minh:
+   - Từng cuốn sách được trình bày thành một khối riêng biệt, mạch lạc:
+     * **Phần thông điệp & siêu dữ liệu:** Lời thoại tư vấn cảm xúc, Tên sách in đậm, Nhà xuất bản, Giá bán thực tế, Mã Voucher có thể áp dụng, và Tình trạng tồn kho thực tế.
+     * **Phần hành động trực quan (ngay bên dưới):** Ảnh bìa sách chất lượng cao, nút **"Thêm vào giỏ hàng"** (kèm hiệu ứng thông báo Toast) và nút **"Mua ngay"** (chuyển hướng thẳng tới trang `/checkout` với cuốn sách đó mà không cần qua nhiều bước trung gian).
+   - Thiết kế này tối ưu hóa tối đa hành trình mua sắm, tăng tỷ lệ chuyển đổi đơn hàng (Conversion Rate) vượt bậc cho sàn TMĐT.
+4. **Tầng Tri thức Nội bộ Dự phòng (Local Fallback Intelligence):** Nếu API Gemini gặp sự cố mạng hoặc hết hạn mức, hệ thống tự động kích hoạt bộ tri thức 14 miền nghiệp vụ nội bộ (CSKH, chính sách đổi trả 7 ngày, đóng gói 3 lớp, freeship 250k, email Founder), bảo đảm phản hồi dưới 50ms và không bao giờ bị gián đoạn.
 
 ## 2.6 Dịch vụ tích hợp bên ngoài (Integrations)
 - **VietQR:** Sinh mã QR chuẩn EMVCo gắn sẵn số tài khoản MBBank, tên người thụ hưởng và nội dung chuyển khoản chuẩn hóa `TS-YYYYMMDD-XXXX`.
@@ -235,9 +254,9 @@ gantt
 graph TD
     subgraph PresentationTier["1. TẦNG TRÌNH DIỄN (Client / UI Layer)"]
         Browser["Trình duyệt Web (Desktop / Tablet / Mobile)"]
-        UI_Customer["Giao diện Độc giả (Storefront: Catalog, Cart, Book Detail, Wishlist)"]
-        UI_Admin["Giao diện Quản trị (Admin Portal: Dashboard, Books, Orders, Staff, Reviews)"]
-        UI_Chatbot["Widget Trợ lý AI Nổi (Floating Chatbot 60fps)"]
+        UI_Customer["Giao diện Độc giả (Storefront: Catalog, Cart, Checkout, Voucher, Wishlist)"]
+        UI_Admin["Giao diện Quản trị (Admin: Dashboard, Books, Orders, Promotions, Staff, Reviews)"]
+        UI_Chatbot["Widget Trợ lý AI Bán Hàng Nổi (Floating Chatbot 60fps - Block Sequential UI)"]
         Browser --> UI_Customer
         Browser --> UI_Admin
         Browser --> UI_Chatbot
@@ -259,26 +278,29 @@ graph TD
         API_Routes["REST API Route Handlers (/api/*)"]
         AuthService["Dịch vụ Xác thực & Mã hóa (Bcrypt + JWT)"]
         OrderService["Dịch vụ Giao dịch Đơn hàng (ACID Transactions)"]
-        RAGService["Dịch vụ Trợ lý AI (Intent Classifier + Prompt Builder)"]
+        PromotionService["Dịch vụ Khuyến Mãi & Voucher Engine (src/lib/voucher.ts)"]
+        AIAgentService["Dịch vụ Trợ lý AI Agentic (Gemini 3.1 + 5 Tool Calling Loop)"]
         EmailService["Dịch vụ Email Thông báo (Nodemailer HTML Template)"]
         
         API_Routes --> AuthService
         API_Routes --> OrderService
-        API_Routes --> RAGService
+        API_Routes --> PromotionService
+        API_Routes --> AIAgentService
         API_Routes --> EmailService
     end
 
     subgraph DataTier["4. TẦNG DỮ LIỆU & DỊCH VỤ NGOÀI (Data & External Services)"]
         PrismaORM["Prisma ORM 6 (Type-safe Query Engine)"]
         PgBouncer["Connection Pooler PgBouncer (Port 6543)"]
-        PostgreSQL[("PostgreSQL Database (14 Tables chuẩn 3NF)")]
-        GoogleAI["Google AI Studio (Gemini Flash-Lite API)"]
+        PostgreSQL[("PostgreSQL Database (17 Tables chuẩn 3NF)")]
+        GoogleAI["Google AI Studio (Gemini 3.1 Flash-Lite API)"]
         VietQR["Hệ thống Sinh mã VietQR (MBBank 24/7)"]
         SMTP_Server["Google Gmail SMTP Server"]
         
         PrismaORM --> PgBouncer
         PgBouncer --> PostgreSQL
-        RAGService --> GoogleAI
+        AIAgentService --> GoogleAI
+        AIAgentService -.->|Thực thi Tool tra cứu sách & voucher| PrismaORM
         OrderService --> VietQR
         EmailService --> SMTP_Server
     end
@@ -286,7 +308,6 @@ graph TD
     PresentationTier -->|Gửi Request HTTPS kèm HttpOnly Cookie| SecurityGateway
     RoleGuard -->|Ủy quyền thành công| ApplicationTier
     ApplicationTier --> PrismaORM
-    RAGService -.->|Truy vấn kho sách thực tế| PrismaORM
 ```
 
 ## 3.2 Sơ đồ Kiến trúc C4 Model — Container Diagram
@@ -298,22 +319,22 @@ graph TB
     Person_Admin["Quản Trị Viên (Super Admin)<br/>[Person]"]
 
     subgraph ToSachSystem["HỆ THỐNG THƯƠNG MẠI ĐIỆN TỬ TỔ SÁCH [Software System]"]
-        SPA["Single Page / Server-Rendered App<br/>[Container: Next.js 16, React 19, TypeScript]<br/>Cung cấp giao diện mua hàng và bảng điều khiển quản trị"]
-        API["Backend API & Server Actions<br/>[Container: Node.js 20, Next.js Server]<br/>Xử lý logic mua hàng, xác thực, phân quyền và AI RAG"]
-        Database[("Cơ sở Dữ liệu Quan hệ<br/>[Container: PostgreSQL 15 via Supabase]<br/>Lưu trữ 14 bảng: Sách, Người dùng, Đơn hàng, Đánh giá, Quyền hạn")]
+        SPA["Single Page / Server-Rendered App<br/>[Container: Next.js 16, React 19, TypeScript]<br/>Cung cấp giao diện mua hàng, áp voucher và bảng điều khiển quản trị"]
+        API["Backend API & Server Actions<br/>[Container: Node.js 20, Next.js Server]<br/>Xử lý logic mua hàng, xác thực, phân quyền, Voucher Engine và Agentic AI Tool Calling"]
+        Database[("Cơ sở Dữ liệu Quan hệ<br/>[Container: PostgreSQL 15 via Supabase]<br/>Lưu trữ 17 bảng: Sách, Người dùng, Đơn hàng, Đánh giá, Quyền hạn, Khuyến mãi & Voucher")]
     end
 
-    External_Gemini["Google Gemini AI API<br/>[External System]<br/>Mô hình ngôn ngữ phục vụ trợ lý ảo thông minh"]
+    External_Gemini["Google Gemini 3.1 AI API<br/>[External System]<br/>Mô hình điều phối ReAct Agent và Function Calling"]
     External_VietQR["Cổng Thanh toán VietQR<br/>[External System]<br/>Sinh mã QR thanh toán ngân hàng tự động"]
     External_Gmail["Dịch vụ Gmail SMTP<br/>[External System]<br/>Gửi mã OTP xác minh và thông báo đơn hàng"]
 
-    Person_Customer -->|Duyệt sách, Mua hàng, Chatbot qua HTTPS| SPA
+    Person_Customer -->|Duyệt sách, Áp voucher, Mua hàng, AI Chatbot qua HTTPS| SPA
     Person_Staff -->|Cập nhật kho, Duyệt đơn qua HTTPS| SPA
-    Person_Admin -->|Quản trị toàn quyền, Phân quyền qua HTTPS| SPA
+    Person_Admin -->|Quản trị toàn quyền, Chiến dịch Voucher qua HTTPS| SPA
 
     SPA -->|Gọi Server Actions & API Routes| API
     API -->|Truy vấn dữ liệu qua Prisma ORM / SQL| Database
-    API -->|Gửi Prompt nạp ngữ cảnh RAG| External_Gemini
+    API -->|Gửi Tool Calling Loop (ReAct Agent)| External_Gemini
     API -->|Sinh chuỗi mã QR thanh toán| External_VietQR
     API -->|Gửi email OTP xác thực| External_Gmail
 ```
@@ -341,21 +362,21 @@ graph LR
     subgraph SupabaseCloud["HẠ TẦNG CƠ SỞ DỮ LIỆU (AWS Singapore ap-southeast-1)"]
         LB["Network Load Balancer (IPv4)"]
         PgBouncerInstance["PgBouncer Pooler (Max 100 Clients, Port 6543)"]
-        PostgresEngine[("PostgreSQL 15 Dedicated Engine<br/>- 14 Bảng Quan hệ<br/>- Row Level Security (RLS)<br/>- B-Tree Indexes<br/>- Dung lượng 500MB+")]
+        PostgresEngine[("PostgreSQL 15 Dedicated Engine<br/>- 17 Bảng Quan hệ Chuẩn 3NF<br/>- Row Level Security (RLS)<br/>- B-Tree Indexes<br/>- Dung lượng 500MB+")]
         
         LB --> PgBouncerInstance
         PgBouncerInstance --> PostgresEngine
     end
 
     subgraph ThirdPartyCloud["DỊCH VỤ SAAS BÊN NGOÀI"]
-        GoogleGenAI["Google Cloud AI Studio (Gemini API)"]
+        GoogleGenAI["Google Cloud AI Studio (Gemini 3.1 Flash-Lite API)"]
         GoogleMail["Google SMTP Relay (smtp.gmail.com:465)"]
     end
 
     PC -->|TLS 1.3 / HTTPS| DNS
     Mobile -->|TLS 1.3 / HTTPS| DNS
     ServerlessApp -->|SSL Encrypted SQL Query| LB
-    ServerlessApp -->|"REST HTTPS (API Key)"| GoogleGenAI
+    ServerlessApp -->|"REST HTTPS (Tool Calling & Function Declarations)"| GoogleGenAI
     ServerlessApp -->|"SMTPS (SSL App Password)"| GoogleMail
 ```
 
@@ -369,7 +390,7 @@ Cơ sở dữ liệu được thiết kế tuân thủ nghiêm ngặt các nguy�
 2. **Chuẩn 2NF (Phụ thuộc hàm đầy đủ):** Mọi thuộc tính không khóa đều phụ thuộc vào toàn bộ khóa chính, loại bỏ phụ thuộc vào một phần khóa chính tổng hợp.
 3. **Chuẩn 3NF (Không bắc cầu):** Mọi thuộc tính không khóa không phụ thuộc bắc cầu vào khóa chính. Ví dụ: Bảng `orders` chỉ lưu thông tin tổng quan, chi tiết từng sản phẩm tại thời điểm mua được lưu trong `order_items` để tránh trùng lặp khi giá sách thay đổi trong tương lai.
 
-## 4.2 Sơ đồ Thực thể Quan hệ Toàn diện (ERD 14 Thực thể)
+## 4.2 Sơ đồ Thực thể Quan hệ Toàn diện (ERD 17 Thực thể)
 
 ```mermaid
 erDiagram
@@ -380,6 +401,7 @@ erDiagram
     USER ||--o{ STAFF_PERMISSION : "assigned_by (1-N)"
     USER ||--o{ AUDIT_LOG : "executes (1-N)"
     USER ||--o{ BEHAVIOR_EVENT : "triggers (1-N)"
+    USER ||--o{ VOUCHER_USAGE : "uses_voucher (1-N)"
 
     PERMISSION ||--o{ STAFF_PERMISSION : "granted_to (1-N)"
 
@@ -395,6 +417,11 @@ erDiagram
     BOOK ||--o{ BEHAVIOR_EVENT : "targeted_in (1-N)"
 
     ORDER ||--o{ ORDER_ITEM : "contains_items (1-N)"
+    ORDER ||--o{ VOUCHER_USAGE : "records_usage (1-N)"
+
+    PROMOTION_EVENT ||--o{ VOUCHER : "organizes (1-N)"
+    VOUCHER ||--o{ ORDER : "applied_to (1-N)"
+    VOUCHER ||--o{ VOUCHER_USAGE : "logged_in (1-N)"
 
     USER {
         string id PK "cuid/uuid"
@@ -487,10 +514,13 @@ erDiagram
         string user_id FK "Liên kết users.id"
         string customer_name "Họ tên người nhận"
         string customer_phone "Số điện thoại nhận"
+        string customer_email "Email nhận hóa đơn"
         string shipping_address "Địa chỉ giao hàng đầy đủ"
         int subtotal "Tiền sách (VNĐ)"
         int shipping_fee "Phí giao hàng (VNĐ)"
-        int total_amount "Tổng thanh toán (VNĐ)"
+        int discount_amount "Snapshot số tiền giảm từ voucher"
+        int total_amount "Tổng thanh toán cuối cùng (VNĐ)"
+        string voucher_id FK "Liên kết vouchers.id (nếu có)"
         enum payment_method "COD | BANK_TRANSFER"
         enum payment_status "PENDING | PAID | FAILED"
         enum status "PENDING | CONFIRMED | SHIPPING | DELIVERED | CANCELLED"
@@ -537,9 +567,48 @@ erDiagram
         string search_query "Từ khóa tìm kiếm"
         datetime created_at "Thời điểm phát sinh sự kiện"
     }
+
+    PROMOTION_EVENT {
+        string id PK "uuid"
+        string name "Tên sự kiện / Chiến dịch"
+        string slug UK "Đường dẫn SEO"
+        string description "Mô tả thể lệ sự kiện"
+        string banner_url "Ảnh bìa sự kiện CDN"
+        datetime starts_at "Thời điểm bắt đầu"
+        datetime ends_at "Thời điểm kết thúc"
+        boolean is_active "Trạng thái kích hoạt"
+        datetime created_at "Thời gian tạo"
+    }
+
+    VOUCHER {
+        string id PK "uuid"
+        string code UK "Mã giảm giá (TOSACHNEW...)"
+        string name "Tên chương trình ưu đãi"
+        string description "Mô tả chi tiết voucher"
+        enum type "PERCENT | FIXED"
+        int value "Tỷ lệ % hoặc số tiền cố định"
+        int max_discount "Mức giảm tối đa (với type PERCENT)"
+        int min_order_value "Giá trị đơn tối thiểu áp dụng"
+        datetime starts_at "Bắt đầu hiệu lực (kế thừa event nếu null)"
+        datetime ends_at "Hết hạn (kế thừa event nếu null)"
+        int usage_limit "Tổng lượt sử dụng toàn hệ thống"
+        int used_count "Số lượt đã sử dụng thực tế"
+        int per_user_limit "Lượt sử dụng tối đa / khách hàng"
+        boolean is_active "Trạng thái mở sử dụng"
+        string event_id FK "Liên kết promotion_events.id"
+        datetime created_at "Thời gian tạo"
+    }
+
+    VOUCHER_USAGE {
+        string id PK "uuid"
+        string voucher_id FK "Liên kết vouchers.id"
+        string user_id FK "Liên kết users.id"
+        string order_id FK,UK "Liên kết orders.id"
+        datetime used_at "Thời điểm áp dụng thành công"
+    }
 ```
 
-## 4.3 Phân Tích Chuyên Sâu Chỉ Số ISBN & Từ Điển Dữ Liệu Chi Tiết 14 Bảng (Data Dictionary)
+## 4.3 Phân Tích Chuyên Sâu Chỉ Số ISBN & Từ Điển Dữ Liệu Chi Tiết 17 Bảng (Data Dictionary)
 
 ### 4.3.1 Chỉ số ISBN trong Cơ sở dữ liệu là gì?
 
@@ -561,7 +630,7 @@ Mã ISBN gồm 13 chữ số, chia làm 5 phần phân tách bởi dấu gạch 
 
 ---
 
-### 4.3.2 Từ Điển Dữ Liệu Chi Tiết Từng Cột Của 14 Bảng CSDL (Field-by-Field Data Dictionary)
+### 4.3.2 Từ Điển Dữ Liệu Chi Tiết Từng Cột Của 17 Bảng CSDL (Field-by-Field Data Dictionary)
 
 #### 1. Bảng `books` (Thông tin Sách trong kho & Niêm yết)
 *Bảng thực thể trung tâm của toàn bộ hệ thống, lưu trữ 5.125 đầu sách.*
@@ -719,9 +788,11 @@ Mã ISBN gồm 13 chữ số, chia làm 5 phần phân tách bởi dấu gạch 
 | `customer_phone`| `TEXT` | NOT NULL | Số điện thoại shipper gọi giao hàng | `0912345678` |
 | `customer_email`| `TEXT` | Nullable | Email nhận thông báo hóa đơn và mã vận đơn | `an.tran@gmail.com` |
 | `shipping_address`| `TEXT` | NOT NULL | Địa chỉ nhận hàng đầy đủ 3 cấp hành chính | `Số 12 Chùa Bộc, P. Quang Trung, Đống Đa, Hà Nội` |
-| `subtotal` | `INTEGER` | NOT NULL | Tổng tiền sách trước khi cộng cước (VNĐ) | `255000` |
+| `subtotal` | `INTEGER` | NOT NULL | Tổng tiền sách trước khi cộng cước & trừ voucher (VNĐ) | `255000` |
 | `shipping_fee` | `INTEGER` | Default 30000 | Cước phí vận chuyển (Tự động 0đ nếu đơn $\ge$ 250.000đ) | `0` |
-| `total_amount` | `INTEGER` | NOT NULL | Tổng số tiền khách cần thanh toán: `subtotal + shipping_fee` | `255000` |
+| `discount_amount`| `INTEGER` | Default 0 | Snapshot số tiền giảm thực tế từ voucher (VNĐ) | `40000` |
+| `total_amount` | `INTEGER` | NOT NULL | Tổng thanh toán cuối cùng: `subtotal + shipping_fee - discount_amount` | `215000` |
+| `voucher_id` | `TEXT` (UUID) | **FK**, Index, Nullable| Khóa ngoại trỏ đến `vouchers.id` (nếu khách có áp mã) | `vch-0001-4000-8000` |
 | `payment_method`| `PaymentMethod`| Default 'COD' | Hình thức: `COD` (tiền mặt) hoặc `BANK_TRANSFER` (VietQR) | `BANK_TRANSFER` |
 | `payment_status`| `PaymentStatus`| Default 'PENDING'| Tình trạng tiền: `PENDING`, `PAID`, `FAILED`, `REFUNDED` | `PAID` |
 | `status` | `OrderStatus` | Default 'PENDING'| Vòng đời đơn: `PENDING`, `CONFIRMED`, `SHIPPING`, `DELIVERED`, `CANCELLED` | `CONFIRMED` |
@@ -798,20 +869,79 @@ Mã ISBN gồm 13 chữ số, chia làm 5 phần phân tách bởi dấu gạch 
 
 ---
 
+#### 15. Bảng `promotion_events` (Sự Kiện & Chiến Dịch Khuyến Mại)
+*Quản lý các chiến dịch ngày hội đọc sách, tuần lễ tri ân hoặc sự kiện giảm giá theo mùa.*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh duy nhất sự kiện | `evt-promo-0001` |
+| `name` | `TEXT` | NOT NULL | Tên sự kiện hiển thị trên banner và tiêu đề | `Ngày Hội Đọc Sách Mùa Thu 2026` |
+| `slug` | `TEXT` | **UK**, Index | Đường dẫn SEO chiến dịch | `ngay-hoi-doc-sach-mua-thu-2026` |
+| `description` | `TEXT` | Nullable | Mô tả chi tiết nội dung và thể lệ sự kiện | `Hưởng ứng Ngày Sách Việt Nam, giảm sâu đến 40%...` |
+| `banner_url` | `TEXT` | Nullable | Ảnh bìa quảng bá sự kiện | `https://images.unsplash.com/...` |
+| `starts_at` | `TIMESTAMPTZ` | NOT NULL | Thời điểm bắt đầu chiến dịch | `2026-10-01 00:00:00+07` |
+| `ends_at` | `TIMESTAMPTZ` | NOT NULL | Thời điểm kết thúc chiến dịch | `2026-10-31 23:59:59+07` |
+| `is_active` | `BOOLEAN` | Default true | Cờ kích hoạt/tạm dừng sự kiện | `true` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm tạo bản ghi | `2026-09-28 10:00:00+07` |
+| `updated_at` | `TIMESTAMPTZ` | Auto update | Thời điểm cập nhật cấu hình sự kiện | `2026-10-15 08:30:00+07` |
+
+---
+
+#### 16. Bảng `vouchers` (Mã Giảm Giá & Quy Tắc Chiết Khấu)
+*Quản lý toàn bộ mã ưu đãi, kiểm soát biên lợi nhuận qua trần giảm tối đa (`max_discount`) và đơn tối thiểu (`min_order_value`).*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh bản ghi voucher | `vch-0001-4000-8000` |
+| `code` | `TEXT` | **UK**, Index | Mã voucher viết hoa người dùng nhập | `TOSACHNEW` |
+| `name` | `TEXT` | NOT NULL | Tên chương trình hiển thị trong giỏ hàng | `Giảm 20% Đơn Đầu Tiên` |
+| `description` | `TEXT` | Nullable | Chi tiết điều kiện áp dụng | `Giảm 20% tối đa 40.000đ cho đơn từ 120.000đ` |
+| `type` | `VoucherType` (Enum)| NOT NULL | Hình thức giảm: `PERCENT` (%) hoặc `FIXED` (tiền mặt) | `PERCENT` |
+| `value` | `INTEGER` | NOT NULL | Giá trị giảm (% nếu PERCENT, số tiền VNĐ nếu FIXED) | `20` |
+| `max_discount` | `INTEGER` | Nullable | Số tiền giảm tối đa (VNĐ) khi type là PERCENT (chặn trần) | `40000` |
+| `min_order_value`| `INTEGER` | Default 0 | Giá trị đơn hàng tối thiểu (tiền sách) để áp mã | `120000` |
+| `starts_at` | `TIMESTAMPTZ` | Nullable | Ngày mở mã (nếu null kế thừa từ sự kiện cha) | `2026-10-01 00:00:00+07` |
+| `ends_at` | `TIMESTAMPTZ` | Nullable | Ngày hết hạn mã (nếu null kế thừa từ sự kiện cha) | `2026-10-31 23:59:59+07` |
+| `usage_limit` | `INTEGER` | Default 100 | Tổng số lượt dùng tối đa toàn sàn | `500` |
+| `used_count` | `INTEGER` | Default 0 | Số lượt khách đã áp dụng thành công thực tế | `84` |
+| `per_user_limit` | `INTEGER` | Default 1 | Giới hạn số lượt dùng tối đa cho mỗi tài khoản | `1` |
+| `is_active` | `BOOLEAN` | Default true, Index| Trạng thái mở sử dụng mã | `true` |
+| `event_id` | `TEXT` (UUID) | **FK**, Index, Nullable| Khóa ngoại trỏ đến `promotion_events.id` | `evt-promo-0001` |
+| `created_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm tạo voucher | `2026-09-28 10:30:00+07` |
+| `updated_at` | `TIMESTAMPTZ` | Auto update | Thời điểm cập nhật voucher | `2026-10-16 15:00:00+07` |
+
+---
+
+#### 17. Bảng `voucher_usages` (Nhật Ký Sử Dụng Voucher Chống Trục Lợi)
+*Bảo đảm tính toàn vẹn, ngăn chặn 1 khách hàng tạo nhiều đơn dùng quá hạn mức (`per_user_limit`).*
+
+| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Ý Nghĩa Nghiệp Vụ | Dữ Liệu Mẫu |
+| :--- | :--- | :---: | :--- | :--- |
+| `id` | `TEXT` (UUID) | **PK** | Mã định danh bản ghi sử dụng | `vu-0001` |
+| `voucher_id` | `TEXT` (UUID) | **FK**, Index | Khóa ngoại trỏ đến `vouchers.id` (RESTRICT khi xóa voucher) | `vch-0001-4000-8000` |
+| `user_id` | `TEXT` (UUID) | **FK**, Index | Khóa ngoại trỏ đến `users.id` khách hàng sử dụng | `u1a2b3c4-0001` |
+| `order_id` | `TEXT` (UUID) | **FK, UK** | Khóa ngoại trỏ đến `orders.id` (Mỗi đơn tối đa 1 mã) | `ord-0001-4000-8000` |
+| `used_at` | `TIMESTAMPTZ` | Default NOW() | Thời điểm giao dịch hoàn tất áp dụng | `2026-10-15 10:15:00+07` |
+
+---
+
 ## 4.4 Chiến lược Lập chỉ mục (Index Optimization Strategy)
-Để đảm bảo tốc độ phản hồi dưới **50ms** trên tập dữ liệu hơn 5.100 đầu sách và 200.000 bản ghi sự kiện:
-- **Chỉ mục B-Tree Unique:** Được áp dụng trên `books.slug`, `books.isbn`, `categories.slug`, `authors.slug`, `orders.order_code`, `users.email`.
+Để đảm bảo tốc độ phản hồi dưới **50ms** trên tập dữ liệu hơn 5.100 đầu sách, hệ thống voucher và 200.000 bản ghi sự kiện:
+- **Chỉ mục B-Tree Unique:** Được áp dụng trên `books.slug`, `books.isbn`, `categories.slug`, `authors.slug`, `orders.order_code`, `users.email`, `promotion_events.slug`, `vouchers.code`, và cặp `(voucher_id, order_id)` trong `voucher_usages`.
 - **Chỉ mục B-Tree Composite:**
   - `idx_books_active_rating`: `(is_active, avg_rating DESC)` — Tối ưu hóa truy vấn trang chủ và gợi ý AI.
   - `idx_books_price_stock`: `(is_active, price, stock_qty)` — Tối ưu hóa bộ lọc giá và kiểm tra tồn kho.
   - `idx_orders_user_status`: `(user_id, status, created_at DESC)` — Tối ưu hóa trang lịch sử đơn hàng của độc giả.
   - `idx_reviews_book_status`: `(book_id, status, created_at DESC)` — Tối ưu hóa tải bình luận trang chi tiết sách.
+  - `idx_vouchers_active_dates`: `(is_active, starts_at, ends_at)` — Tối ưu hóa quét mã giảm giá khả dụng.
+  - `idx_voucher_user_limit`: `(user_id, voucher_id)` — Tối ưu hóa xác minh số lượt khách hàng đã dùng voucher.
 
-## 4.5 Cơ chế Giao dịch Nguyên tử (ACID Transactions) & Khóa chống Bán vượt tồn kho
-Khi hàng trăm người dùng cùng tranh mua cuốn sách cuối cùng trong kho:
+## 4.5 Cơ chế Giao dịch Nguyên tử (ACID Transactions) & Khóa chống Bán vượt tồn kho & Quá hạn mức Voucher
+Khi hàng trăm người dùng cùng tranh mua cuốn sách cuối cùng hoặc cùng áp dụng một mã voucher có số lượng giới hạn:
 ```typescript
 // Trích đoạn logic an toàn trong src/app/api/orders/route.ts
 const result = await prisma.$transaction(async (tx) => {
+  // 1. Kiểm tra tồn kho từng cuốn sách và trừ kho nguyên tử
   for (const item of items) {
     const book = await tx.book.findUnique({
       where: { id: item.bookId },
@@ -820,7 +950,6 @@ const result = await prisma.$transaction(async (tx) => {
     if (!book || book.stockQty < item.quantity) {
       throw new Error(`Sách "${book?.title}" không đủ số lượng tồn kho (còn ${book?.stockQty})`);
     }
-    // Trừ kho nguyên tử
     await tx.book.update({
       where: { id: item.bookId },
       data: {
@@ -829,13 +958,51 @@ const result = await prisma.$transaction(async (tx) => {
       }
     });
   }
-  // Tạo Order và OrderItems trong cùng 1 transaction
-  return await tx.order.create({ ... });
+
+  // 2. Xác thực và khóa lượt dùng Voucher nguyên tử (nếu có áp mã)
+  let appliedVoucherId: string | null = null;
+  let finalDiscount = 0;
+  if (voucherCode) {
+    const voucher = await tx.voucher.findUnique({
+      where: { code: voucherCode.toUpperCase() }
+    });
+    if (!voucher || !voucher.isActive) {
+      throw new Error('Mã giảm giá không tồn tại hoặc đã bị khóa.');
+    }
+    if (voucher.usedCount >= voucher.usageLimit) {
+      throw new Error('Mã giảm giá đã hết lượt sử dụng trên hệ thống.');
+    }
+    // Tăng số lượt dùng của voucher ngay trong transaction
+    await tx.voucher.update({
+      where: { id: voucher.id },
+      data: { usedCount: { increment: 1 } }
+    });
+    appliedVoucherId = voucher.id;
+    finalDiscount = calculatedDiscount;
+  }
+
+  // 3. Tạo Order, OrderItems và ghi nhận VoucherUsage trong cùng 1 transaction
+  const order = await tx.order.create({
+    data: {
+      orderCode,
+      subtotal,
+      shippingFee,
+      discountAmount: finalDiscount,
+      totalAmount,
+      voucherId: appliedVoucherId,
+      items: { createMany: { data: orderItemsSnapshot } },
+      ...(appliedVoucherId && userId ? {
+        voucherUsages: { create: { voucherId: appliedVoucherId, userId } }
+      } : {})
+    }
+  });
+
+  return order;
 });
 ```
-- **Tính Nguyên Tử (Atomicity):** Nếu bất kỳ cuốn sách nào trong giỏ hàng bị hết tồn kho, toàn bộ đơn hàng bị hủy bỏ ngay lập tức (Rollback 100%), không xảy ra hiện tượng "tiền mất đơn không tạo".
-- **Tính Nhất Quán (Consistency):** Ràng buộc số lượng tồn `stockQty >= 0` luôn được bảo đảm ở cấp độ Database.
-- **Tính Cô Lập (Isolation):** PostgreSQL sử dụng cấp độ cô lập Read Committed kết hợp cơ chế khóa hàng (Row-level Locking) của lệnh `UPDATE`, triệt tiêu hoàn toàn Race Condition.
+- **Tính Nguyên Tử (Atomicity):** Nếu bất kỳ cuốn sách nào hết hàng HOẶC voucher bị hết lượt dùng cùng lúc, toàn bộ transaction bị Rollback 100%, không xảy ra tình trạng "trừ kho mà không tạo được đơn" hoặc "tăng lượt voucher ảo".
+- **Tính Nhất Quán (Consistency):** Ràng buộc `stockQty >= 0` và `usedCount <= usageLimit` luôn được bảo đảm ở cấp độ Database.
+- **Tính Cô Lập (Isolation):** PostgreSQL sử dụng cấp độ cô lập Read Committed kết hợp cơ chế khóa hàng (Row-level Locking) của lệnh `UPDATE`, triệt tiêu hoàn toàn hiện tượng Race Condition khi mở bán Flash Sale hoặc Tung Voucher số lượng hạn chế.
 
 ---
 
@@ -853,19 +1020,19 @@ graph TD
 
     System(("HỆ THỐNG TMĐT TỔ SÁCH<br/>(Hệ thống trung tâm)"))
 
-    Customer -->|Yêu cầu tìm sách, Đặt hàng, Thanh toán, Đánh giá| System
-    System -->|Trả về Kết quả tìm kiếm, Hóa đơn, Thẻ sách AI| Customer
+    Customer -->|Tìm sách, Áp voucher, Đặt hàng, Thanh toán, Đánh giá, Chat AI| System
+    System -->|Kết quả tìm kiếm, Hóa đơn, Chiết khấu voucher, Thẻ sách tuần tự| Customer
 
     Staff -->|Cập nhật trạng thái đơn, Quản lý tồn kho| System
     System -->|Danh sách đơn cần duyệt, Cảnh báo sắp hết hàng| Staff
 
-    Admin -->|Phân quyền nhân viên, Cấu hình hệ thống| System
-    System -->|Báo cáo doanh thu, Nhật ký Audit Logs| Admin
+    Admin -->|Phân quyền nhân viên, Cấu hình sự kiện & Voucher khuyến mãi| System
+    System -->|Báo cáo doanh thu, Hiệu quả voucher, Nhật ký Audit Logs| Admin
 
-    System -->|Yêu cầu sinh mã QR thanh toán| Bank
+    System -->|Yêu cầu sinh mã QR thanh toán (đã trừ voucher)| Bank
     Bank -->|Xác nhận thanh toán tiền về tài khoản| System
 
-    System -->|Gửi mã OTP, Hóa đơn đơn hàng| EmailGateway
+    System -->|Gửi mã OTP, Hóa đơn đơn hàng (kèm mã giảm giá)| EmailGateway
     EmailGateway -->|Chuyển tiếp thư vào hộp thư Inbox| Customer
 ```
 
@@ -879,18 +1046,20 @@ graph TD
     subgraph Processes["CÁC TIẾN TRÌNH XỬ LÝ CHÍNH"]
         P1["1.0 Xác Thực & Quản Lý Hồ Sơ"]
         P2["2.0 Tìm Kiếm, Duyệt Sách & Catalog"]
-        P3["3.0 Quản Lý Giỏ Hàng & Mua Hàng"]
+        P3["3.0 Quản Lý Giỏ Hàng, Voucher & Mua Hàng"]
         P4["4.0 Xử Lý Đơn Hàng & Vận Chuyển"]
         P5["5.0 Quản Trị Kho & Nhập Xuất Tồn"]
-        P6["6.0 Trợ Lý AI Tư Vấn & RAG Engine"]
+        P6["6.0 Trợ Lý Bán Hàng Agentic AI (5 Tools)"]
+        P7["7.0 Quản Trị Khuyến Mãi & Voucher"]
     end
 
-    subgraph DataStores["CÁC KHO DỮ LIỆU (POSTGRESQL TABLES)"]
+    subgraph DataStores["CÁC KHO DỮ LIỆU (POSTGRESQL 17 TABLES)"]
         D1[("D1: users, user_profiles, staff_permissions")]
-        D2[("D2: books, categories, authors")]
+        D2[("D2: books, categories, authors, book_authors, book_categories")]
         D3[("D3: orders, order_items")]
         D4[("D4: reviews")]
-        D5[("D5: admin_audit_logs, behavior_events")]
+        D5[("D5: admin_audit_logs, user_behavior_events")]
+        D6[("D6: promotion_events, vouchers, voucher_usages")]
     end
 
     ActorUser -->|Thông tin đăng ký/đăng nhập| P1
@@ -901,58 +1070,74 @@ graph TD
     P2 -->|Đọc thông tin sách & thể loại| D2
     P2 -->|Trả về danh sách đầu sách| ActorUser
 
-    ActorUser -->|Thêm sách giỏ hàng, Xác nhận thanh toán| P3
+    ActorUser -->|Thêm sách giỏ hàng, Nhập mã voucher, Xác nhận thanh toán| P3
     P3 -->|Kiểm tra tồn kho thực tế| D2
-    P3 -->|Ghi nhận đơn hàng mới| D3
+    P3 -->|Xác thực điều kiện & ghi nhận lượt dùng voucher| D6
+    P3 -->|Ghi nhận đơn hàng mới & snapshot tiền giảm| D3
     P3 -->|Trừ số lượng tồn kho| D2
     P3 -->|Trả về mã vận đơn & QR thanh toán| ActorUser
 
     ActorAdmin -->|"Cập nhật trạng thái đơn (Duyệt/Giao/Hủy)"| P4
-    P4 -->|Cập nhật trạng thái đơn hàng| D3
+    P4 -->|Cập nhật trạng thái đơn hàng & hoàn tồn nếu hủy| D3
     P4 -->|Ghi nhật ký thao tác| D5
 
     ActorAdmin -->|Cập nhật sách, Nhập thêm tồn kho| P5
     P5 -->|Thêm/sửa bản ghi sách| D2
     P5 -->|Ghi nhận Audit Log| D5
 
-    ActorUser -->|Câu hỏi tư vấn sách / tâm trạng| P6
-    P6 -->|Truy vấn kho sách thực tế| D2
-    P6 -->|Trả về câu trả lời & Thẻ sách| ActorUser
+    ActorUser -->|Câu hỏi tư vấn sách, tìm voucher, mua ngay| P6
+    P6 -->|Tool calling tra cứu CSDL thực tế (unaccent ILIKE)| D2
+    P6 -->|Tool calling tính toán voucher tối ưu & up-sell| D6
+    P6 -->|Trả về câu thoại + Khối thẻ sách tuần tự| ActorUser
+
+    ActorAdmin -->|Tạo sự kiện, thiết lập mã voucher, giới hạn trần| P7
+    P7 -->|Lưu cấu hình chiến dịch & mã giảm giá| D6
+    P7 -->|Ghi nhật ký kiểm toán| D5
+    P7 -->|Thống kê lượt dùng voucher & hiệu quả| ActorAdmin
 ```
 
-## 5.3 DFD Mức 2 — Phân rã Quy trình Đặt hàng & Xử lý Giao dịch
+## 5.3 DFD Mức 2 — Phân rã Quy trình Đặt hàng, Áp Voucher & Xử lý Giao dịch
 
 ```mermaid
 graph TD
     Customer["Khách Hàng"]
     
-    subgraph P3_Decomposition["PHÂN RÃ TIẾN TRÌNH 3.0: ĐẶT HÀNG & GIAO DỊCH"]
+    subgraph P3_Decomposition["PHÂN RÃ TIẾN TRÌNH 3.0: ĐẶT HÀNG, ÁP VOUCHER & GIAO DỊCH"]
         P31["3.1 Kiểm Tra Giỏ Hàng & Tồn Kho"]
-        P32["3.2 Xác Định Phí Vận Chuyển (Freeship >= 250k)"]
-        P33["3.3 Khởi Tạo Đơn Hàng & Khóa Transaction"]
-        P34["3.4 Sinh Mã VietQR hoặc Chọn COD"]
-        P35["3.5 Phát Tán Sự Kiện Thông Báo Đơn Hàng Mới"]
+        P32["3.2 Xác Thực Voucher & Tính Chiết Khấu (Fixed / Percent có trần)"]
+        P33["3.3 Xác Định Phí Vận Chuyển (Freeship >= 250k) & Tổng Thanh Toán"]
+        P34["3.4 Mở Prisma Transaction: Trừ Kho, Khóa Lượt Voucher & Tạo Đơn"]
+        P35["3.5 Sinh Mã VietQR hoặc Hướng Dẫn COD"]
+        P36["3.6 Phát Tán Sự Kiện Thông Báo & Gửi Email Hóa Đơn"]
     end
 
     DB_Books[("Kho Sách: books")]
+    DB_Vouchers[("Kho Khuyến Mại: vouchers, voucher_usages")]
     DB_Orders[("Kho Đơn: orders, order_items")]
     EmailService["Dịch vụ Email OTP/Hóa đơn"]
 
+    Customer -->|Nhập mã giảm giá| P32
+    P32 -->|Kiểm tra HSD, minOrderValue, usageLimit, perUserLimit| DB_Vouchers
+    DB_Vouchers -->|Trả về số tiền giảm hợp lệ| Customer
+
     Customer -->|Nhấn Đặt Hàng| P31
     P31 -->|Truy vấn stockQty| DB_Books
-    DB_Books -->|Còn hàng hợp lệ| P32
+    DB_Books -->|Còn hàng hợp lệ| P33
     
-    P32 -->|Tính tổng tiền thanh toán| P33
-    P33 -->|Mở Prisma $transaction| DB_Books
-    P33 -->|Trừ tồn kho stockQty, Tăng soldCount| DB_Books
-    P33 -->|Tạo bản ghi Order & OrderItems| DB_Orders
+    P32 -->|Chuyển snapshot số tiền giảm| P33
+    P33 -->|Tính tổng tiền: subtotal + ship - discount| P34
     
-    P33 -->|Chuyển tiếp thông tin đơn| P34
-    P34 -->|Trả về QR MBBank hoặc Hướng dẫn COD| Customer
+    P34 -->|Mở Prisma $transaction| DB_Books
+    P34 -->|Trừ tồn kho stockQty, Tăng soldCount| DB_Books
+    P34 -->|Tăng usedCount voucher & Tạo bản ghi voucher_usages| DB_Vouchers
+    P34 -->|Tạo bản ghi Order (lưu voucherId, discountAmount) & OrderItems| DB_Orders
     
-    P33 -->|Gửi dữ liệu đơn mới| P35
-    P35 -->|Kích hoạt gửi Email xác nhận| EmailService
-    P35 -->|Đẩy thông báo quả chuông cho Order Staff| Customer
+    P34 -->|Chuyển tiếp thông tin đơn| P35
+    P35 -->|Trả về QR MBBank hoặc Hướng dẫn COD| Customer
+    
+    P34 -->|Gửi dữ liệu đơn mới| P36
+    P36 -->|Kích hoạt gửi Email xác nhận kèm chi tiết giảm giá| EmailService
+    P36 -->|Đẩy thông báo quả chuông cho Order Staff| Customer
 ```
 
 ---
@@ -977,7 +1162,8 @@ graph LR
         UC5["Đặt hàng & Thanh toán (COD / VietQR)"]
         UC6["Theo dõi lịch sử đơn hàng & Tra cứu vận đơn"]
         UC7["Gửi đánh giá sao & Bình luận sách"]
-        UC8["Trò chuyện cùng Trợ lý AI Chatbot RAG"]
+        UC8["Trò chuyện cùng Trợ lý Bán Hàng Agentic AI"]
+        UC15["Áp dụng mã giảm giá / Voucher tại Giỏ & Thanh toán"]
         
         UC9["Quản lý Kho sách (CRUD sách, Nhập kho)"]
         UC10["Xử lý & Cập nhật trạng thái Đơn hàng"]
@@ -985,6 +1171,7 @@ graph LR
         UC12["Cấp tài khoản & Phân quyền RBAC động"]
         UC13["Tra cứu Nhật ký Kiểm toán (Audit Logs)"]
         UC14["Xem Thống kê Doanh thu & Tồn kho"]
+        UC16["Quản lý Khuyến Mại & Chiến Dịch Voucher (/admin/promotions)"]
     end
 
     Guest --> UC1
@@ -993,6 +1180,7 @@ graph LR
     Guest --> UC4
     Guest --> UC5
     Guest --> UC8
+    Guest --> UC15
 
     Customer --> UC1
     Customer --> UC2
@@ -1001,6 +1189,7 @@ graph LR
     Customer --> UC6
     Customer --> UC7
     Customer --> UC8
+    Customer --> UC15
 
     WarehouseStaff --> UC9
     OrderStaff --> UC10
@@ -1012,6 +1201,7 @@ graph LR
     SuperAdmin --> UC12
     SuperAdmin --> UC13
     SuperAdmin --> UC14
+    SuperAdmin --> UC16
 ```
 
 ## 6.2 Phân rã Use Case Phân hệ Khách hàng (Customer Storefront)
@@ -1026,12 +1216,13 @@ graph TD
         UC_Detail["Xem chi tiết sách & Thông số NXB"]
         UC_Wishlist["Thêm / Xóa Tủ sách yêu thích"]
         UC_Cart["Thêm vào giỏ / Tăng giảm số lượng"]
+        UC_ApplyVoucher["Áp dụng Mã Giảm Giá / Voucher"]
         UC_Checkout["Thực hiện Đặt hàng (Checkout)"]
         UC_PayCOD["Chọn Thanh toán COD khi nhận"]
         UC_PayQR["Chọn Quét mã VietQR MBBank"]
         UC_Track["Tra cứu tình trạng giao hàng thời gian thực"]
         UC_Review["Gửi nhận xét đánh giá (1-5 sao)"]
-        UC_AskAI["Trò chuyện cùng AI tư vấn sách"]
+        UC_AskAI["Trò chuyện cùng Trợ lý Bán Hàng Agentic AI (tìm sách, áp voucher, mua ngay)"]
     end
 
     ActorCustomer --> UC_Search
@@ -1044,6 +1235,8 @@ graph TD
     ActorCustomer --> UC_Review
     ActorCustomer --> UC_AskAI
 
+    UC_Cart -.->|<<extend>>| UC_ApplyVoucher
+    UC_Checkout -.->|<<extend>>| UC_ApplyVoucher
     UC_Checkout -.->|<<include>>| UC_PayCOD
     UC_Checkout -.->|<<include>>| UC_PayQR
     UC_Wishlist -.->|<<extend>>| UC_Detail
@@ -1076,6 +1269,10 @@ graph TD
         UC_StaffManage["Tạo tài khoản & Phân quyền RBAC động"]
         UC_AuditViewer["Tra cứu lịch sử thao tác (Audit Logs)"]
         UC_Analytics["Xem biểu đồ doanh thu & Top bán chạy"]
+
+        UC_PromoList["Quản lý Sự kiện & Voucher (/admin/promotions)"]
+        UC_PromoCreate["Tạo Sự kiện & Thiết lập Mã Voucher (Giảm % có trần, Lượt dùng)"]
+        UC_PromoToggle["Kích hoạt / Tạm dừng Voucher"]
     end
 
     ActorStaffWarehouse --> UC_BookList
@@ -1096,13 +1293,16 @@ graph TD
     ActorAdmin --> UC_Analytics
     ActorAdmin --> UC_BookList
     ActorAdmin --> UC_OrderList
+    ActorAdmin --> UC_PromoList
+    ActorAdmin --> UC_PromoCreate
+    ActorAdmin --> UC_PromoToggle
 ```
 
 ---
 
 # CHƯƠNG 7: HỆ THỐNG SƠ ĐỒ HOẠT ĐỘNG NGHIỆP VỤ (ACTIVITY DIAGRAMS)
 
-## 7.1 Sơ đồ Hoạt động 1: Quy trình Đặt hàng & Thanh toán (Checkout Flow)
+## 7.1 Sơ đồ Hoạt động 1: Quy trình Đặt hàng & Áp dụng Voucher (Checkout Flow)
 
 ```mermaid
 graph TD
@@ -1119,28 +1319,37 @@ graph TD
     CheckLogin -->|"Đã đăng nhập"| FillAddress
 
     FillAddress --> InputInfo["Nhập Họ tên, SĐT, Tỉnh/Huyện/Xã"]
-    InputInfo --> SelectPayment{"Chọn phương thức thanh toán"}
+    InputInfo --> VoucherCheck{"Khách nhập mã Voucher?"}
+
+    VoucherCheck -->|"Có nhập mã"| ValidateVoucher{"Kiểm tra: HSD, minOrderValue, usageLimit, perUserLimit"}
+    ValidateVoucher -->|"Không hợp lệ"| VoucherError["Báo lỗi: Hết hạn / Chưa đạt đơn tối thiểu / Hết lượt"]
+    VoucherError --> VoucherCheck
+    ValidateVoucher -->|"Hợp lệ"| ApplyDiscount["Tính chiết khấu: Fixed hoặc % có trần maxDiscount"]
+    ApplyDiscount --> UpdateTotal["Trừ trực tiếp vào Tổng thanh toán"]
+
+    VoucherCheck -->|"Không nhập / Bỏ qua"| SelectPayment{"Chọn phương thức thanh toán"}
+    UpdateTotal --> SelectPayment
 
     SelectPayment -->|"Tiền mặt COD"| PayCOD["Chọn Tiền mặt khi nhận hàng (COD)"]
     SelectPayment -->|"Chuyển khoản VietQR"| PayVietQR["Chọn Chuyển khoản VietQR MBBank"]
 
-    PayVietQR --> GenQR["Hệ thống hiển thị mã QR động có sẵn nội dung"]
+    PayVietQR --> GenQR["Hệ thống hiển thị mã QR động với số tiền đã trừ voucher"]
     PayCOD --> ConfirmOrder["Khách nhấn 'Hoàn tất đặt hàng'"]
     GenQR --> ScanQR["Khách quét mã thanh toán"] --> ConfirmOrder
 
     ConfirmOrder --> ServerReceive["Server nhận request POST /api/orders"]
     ServerReceive --> OpenTx["Mở Prisma Transaction (ACID)"]
-    OpenTx --> CheckStock{"Kiểm tra tồn kho từng cuốn sách"}
+    OpenTx --> CheckStockAndVoucher{"Kiểm tra tồn kho & Lượt dùng Voucher"}
 
-    CheckStock -->|"Hết hàng (stockQty không đủ)"| RollbackTx["Rollback Transaction & Báo sách hết hàng"]
-    RollbackTx --> FixCart["Yêu cầu khách giảm số lượng"] --> Start
+    CheckStockAndVoucher -->|"Hết hàng hoặc Voucher hết lượt"| RollbackTx["Rollback Transaction & Thông báo lỗi"]
+    RollbackTx --> FixCart["Khách cập nhật lại giỏ hàng / voucher"] --> Start
 
-    CheckStock -->|"Còn hàng (stockQty đáp ứng đủ)"| DeductStock["Trừ stockQty, Tăng soldCount"]
-    DeductStock --> CreateOrder["Tạo Order (order_code) & OrderItems"]
+    CheckStockAndVoucher -->|"Hợp lệ 100%"| DeductTx["Trừ kho stockQty + Tăng usedCount voucher + Lưu voucher_usages"]
+    DeductTx --> CreateOrder["Tạo Order (order_code, discount_amount, voucher_id) & OrderItems"]
     CreateOrder --> CommitTx["Commit Transaction thành công!"]
     
-    CommitTx --> ClearLocalCart["Xóa sạch giỏ hàng trong LocalStorage"]
-    ClearLocalCart --> SendInvoiceMail["Kích hoạt gửi Email hóa đơn xác nhận"]
+    CommitTx --> ClearLocalCart["Xóa giỏ hàng & Lưu vết đơn thành công"]
+    ClearLocalCart --> SendInvoiceMail["Gửi Email hóa đơn xác nhận kèm chi tiết giảm giá"]
     SendInvoiceMail --> SuccessPage["Điều hướng sang trang /order/success"]
     SuccessPage --> Finish(["Kết thúc"])
 ```
@@ -1327,39 +1536,53 @@ sequenceDiagram
     API-->>OrderStaff: Cập nhật trạng thái 'Đã thanh toán' & Đẩy đơn sang khâu đóng gói
 ```
 
-## 8.4 Sơ đồ Tuần tự 4: Trợ lý AI Chatbot RAG Pipeline
+## 8.4 Sơ đồ Tuần tự 4: Trợ lý Bán Hàng Agentic AI Chatbot (Tool Calling Loop)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Độc giả
-    participant ChatUI as Floating Chatbot Widget
-    participant ChatAPI as Next.js API Route (/api/chat)
-    participant DB as PostgreSQL (Supabase)
+    actor Customer as Khách Hàng / Độc Giả
+    participant ChatUI as Widget Chatbot (FloatingChatbot.tsx)
+    participant ChatAPI as API Handler (/api/chat)
     participant Gemini as Google Gemini (3.1 Flash-Lite)
+    participant AITools as AI Tools Executor (src/lib/ai-tools.ts)
+    participant DB as PostgreSQL Database (17 Tables)
 
-    User->>ChatUI: Nhập: "Tôi đang rất buồn, muốn tìm cuốn sách chữa lành"
-    ChatUI->>ChatAPI: POST /api/chat { message: "...", history: [...] }
+    Customer->>ChatUI: Nhập: "Tôi đang rất buồn, muốn tìm sách chữa lành tâm trạng, có mã giảm giá nào không?"
+    ChatUI->>ChatAPI: POST /api/chat { message, history, context: { currentCartItems, userId } }
     
-    ChatAPI->>ChatAPI: Tầng 1: Phân tích Ý định (Intent Classification)
-    Note over ChatAPI: Nhận diện: Cảm xúc buồn bã -> Chuyển sang chủ đề Văn học / Chữa lành
+    Note over ChatAPI: Chuẩn bị 5 Tool Declarations (search_books, recommend_best_voucher, apply_voucher, get_book, list_active_events)
+    ChatAPI->>Gemini: POST generateContent kèm System Prompt & 5 Tools
     
-    ChatAPI->>DB: Truy vấn RAG: prisma.book.findMany({ where: { isActive: true, coverUrl: { startsWith: 'http' }, categories: 'van-hoc' }, take: 3 })
-    DB-->>ChatAPI: Trả về 3 tựa sách thực: "Cây Chuối Non Đi Giày Xanh", "Nhà Giả Kim"...
+    Note over Gemini: ReAct Bước 1: Gemini quyết định gọi tool tìm sách
+    Gemini-->>ChatAPI: FunctionCall: search_books({ keywords: ["chữa lành", "buồn", "tâm trạng"], categorySlug: "van-hoc" })
     
-    Note over ChatAPI: Tầng 2: Bơm Ngữ Cảnh RAG vào System Prompt<br/>- Khẩu hiệu, chính sách Tổ Sách<br/>- Dữ liệu 3 cuốn sách thật vừa truy vấn<br/>- Hướng dẫn thấu cảm, dịu dàng
+    ChatAPI->>AITools: execute("search_books", args, ctx)
+    AITools->>DB: Truy vấn tham số unaccent() ILIKE scoring (title: 5đ, author: 4đ, cat: 2đ, desc: 1đ)
+    DB-->>AITools: Trả về 3 tựa sách: "Cây Chuối Non Đi Giày Xanh" (78.000đ, stock: 42), "Nhà Giả Kim"...
+    AITools-->>ChatAPI: ToolResult: { totalFound: 3, books: [...] }
     
-    ChatAPI->>Gemini: POST v1beta/models/gemini-3.1-flash-lite:generateContent { contents, maxOutputTokens: 250 }
+    ChatAPI->>Gemini: Gửi ToolResponse cho Gemini tiếp tục suy luận
     
-    alt Google Gemini phản hồi thành công (HTTP 200 trong 1.5s)
-        Gemini-->>ChatAPI: Lời an ủi ấm áp + Gợi ý 2 cuốn sách phù hợp
-        ChatAPI-->>ChatUI: HTTP 200 { reply: "...", suggestedBooks: [book1, book2], source: "google-gemini-3.1-flash-lite" }
-    else Hết Quota API hoặc Mất mạng (Fallback)
-        Note over ChatAPI: Tầng 3: Kích hoạt Local Intelligence Generator (14 Miền CSKH)
-        ChatAPI-->>ChatUI: HTTP 200 { reply: "Lời an ủi chuẩn nội bộ...", suggestedBooks: [book1, book2], source: "tosach-local-intelligence" }
-    end
-
-    ChatUI->>User: Hiển thị đoạn chat thấu cảm + Thẻ sách động (Ảnh bìa, Giá tiền, Link /book/[slug])
+    Note over Gemini: ReAct Bước 2: Gemini thấy khách hỏi voucher, quyết định gọi tool voucher
+    Gemini-->>ChatAPI: FunctionCall: recommend_best_voucher({ orderAmount: 78000 })
+    
+    ChatAPI->>AITools: execute("recommend_best_voucher", args, ctx)
+    AITools->>DB: Quét bảng vouchers & promotion_events còn hiệu lực
+    DB-->>AITools: Tìm thấy mã "TOSACHNEW" (Giảm 20% tối đa 40k), tính mốc Freeship cần thêm 72.000đ
+    AITools-->>ChatAPI: ToolResult: { bestVoucher: "TOSACHNEW", freeshipMissing: 72000 }
+    
+    ChatAPI->>Gemini: Gửi ToolResponse thứ hai cho Gemini
+    
+    Note over Gemini: ReAct Bước 3: Tổng hợp toàn bộ dữ liệu thật để sinh câu trả lời
+    Gemini-->>ChatAPI: Văn bản tư vấn thấu cảm + Chi tiết sách + Voucher + Đề xuất Freeship
+    
+    ChatAPI-->>ChatUI: HTTP 200 { reply: "...", suggestedBooks: [...], source: "google-gemini-3.1-flash-lite" }
+    
+    Note over ChatUI: Thuật toán Bóc tách Regex & Render Khối Tuần Tự (Block-Sequential UI):
+    ChatUI-->>Customer: [Khối 1] Lời thoại thấu cảm + Tên sách + NXB + Giá 78k + Áp voucher TOSACHNEW + Tồn kho 42 cuốn
+    ChatUI-->>Customer: [Hành động 1] Ảnh bìa sắc nét + Nút "Thêm vào giỏ" + Nút "Mua ngay" (chuyển thẳng /checkout)
+    ChatUI-->>Customer: [Khối 2] Cuốn sách tiếp theo + Ảnh bìa + Nút hành động tương ứng
 ```
 
 ## 8.5 Sơ đồ Tuần tự 5: Cơ chế Phân quyền RBAC & Lọc Thông báo Quả chuông Động
@@ -1422,6 +1645,51 @@ sequenceDiagram
     DB-->>AdminUI: Thành công -> Huy hiệu cảnh báo biến mất, trở về trạng thái Xanh an toàn
 ```
 
+## 8.7 Sơ đồ Tuần tự 7: Quy trình Áp dụng Mã Voucher & Khóa Lượt Dùng Trong Transaction Đặt Hàng
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Customer as Khách Hàng
+    participant UI as Trang Thanh Toán (/checkout hoặc /cart)
+    participant PromoAPI as Promotion API (/api/promotions/apply)
+    participant OrderAPI as Order API (/api/orders)
+    participant TxEngine as Prisma Transaction Engine ($transaction)
+    participant DB as PostgreSQL (vouchers, voucher_usages, orders)
+
+    Customer->>UI: Nhập mã voucher "TOSACHNEW" và nhấn "Áp dụng"
+    UI->>PromoAPI: POST /api/promotions/apply { code: "TOSACHNEW", orderAmount: 255000 }
+    
+    PromoAPI->>DB: prisma.voucher.findUnique({ where: { code: 'TOSACHNEW' }, include: { event: true } })
+    DB-->>PromoAPI: Trả về voucher (type: PERCENT, value: 20, maxDiscount: 40000, minOrderValue: 120000, usedCount: 84, usageLimit: 500)
+    
+    PromoAPI->>PromoAPI: Kiểm tra điều kiện:
+    Note over PromoAPI: - Ngày hiệu lực: Hợp lệ<br/>- Đơn 255k >= Đơn tối thiểu 120k: ĐẠT<br/>- usedCount (84) < usageLimit (500): ĐẠT<br/>- Tính tiền giảm: 255k * 20% = 51k -> Chặn trần maxDiscount = 40.000 đ
+    
+    PromoAPI-->>UI: HTTP 200 { valid: true, discountAmount: 40000, finalPrice: 215000 }
+    UI-->>Customer: Cập nhật giao diện: Giảm 40.000đ, Tổng thanh toán còn 215.000đ
+    
+    Customer->>UI: Bấm "Xác nhận đặt hàng"
+    UI->>OrderAPI: POST /api/orders { items, voucherCode: "TOSACHNEW", ... }
+    
+    Note over OrderAPI,TxEngine: Khởi tạo Giao dịch ACID nguyên tử duy nhất
+    OrderAPI->>TxEngine: prisma.$transaction(async (tx) => { ... })
+    
+    TxEngine->>DB: tx.book.update (Trừ kho sách nguyên tử)
+    
+    TxEngine->>DB: tx.voucher.findUnique({ where: { code: "TOSACHNEW" } })
+    DB-->>TxEngine: Kiểm tra lại usedCount < usageLimit lần cuối trước khi chốt
+    
+    TxEngine->>DB: tx.voucher.update({ where: { code: "TOSACHNEW" }, data: { usedCount: { increment: 1 } } })
+    TxEngine->>DB: tx.order.create({ data: { orderCode, discountAmount: 40000, voucherId, ... } })
+    TxEngine->>DB: tx.voucherUsage.create({ data: { voucherId, userId, orderId } })
+    
+    Note over TxEngine,DB: Commit Transaction thành công!
+    TxEngine-->>OrderAPI: Giao dịch hoàn tất an toàn
+    OrderAPI-->>UI: HTTP 201 Created { success: true, orderCode: "TS-20261015-8942" }
+    UI-->>Customer: Hiển thị đơn hàng thành công kèm chi tiết mã giảm giá đã áp dụng!
+```
+
 ---
 
 # CHƯƠNG 9: HỆ THỐNG SƠ ĐỒ CHUYỂN TRẠNG THÁI (STATE MACHINE DIAGRAMS)
@@ -1464,6 +1732,32 @@ graph TD
     REJECTED --> HiddenArchive(["Lưu trữ nội bộ, không hiển thị"])
 ```
 
+## 9.3 Sơ đồ Trạng thái Hiệu lực & Khả dụng của Voucher (VoucherDisplayStatus State Machine)
+
+```mermaid
+graph TD
+    Created(["Admin tạo Mã Voucher"]) --> CheckStatus{"Kiểm tra thời gian & cấu hình"}
+
+    CheckStatus -->|"now < startsAt"| UPCOMING["UPCOMING (Sắp diễn ra)<br/>Hiển thị đếm ngược"]
+    CheckStatus -->|"startsAt <= now <= endsAt & usedCount < usageLimit"| ACTIVE["ACTIVE (Đang khả dụng)<br/>Áp dụng được vào giỏ & thanh toán"]
+    CheckStatus -->|"now > endsAt"| EXPIRED["EXPIRED (Đã hết hạn)<br/>Không cho áp dụng"]
+    CheckStatus -->|"usedCount >= usageLimit"| OUT_OF_STOCK["OUT_OF_STOCK (Hết lượt dùng)<br/>Đã đạt giới hạn toàn hệ thống"]
+    CheckStatus -->|"isActive == false"| DISABLED["DISABLED (Tạm dừng)<br/>Admin chủ động tắt"]
+    CheckStatus -->|"Sự kiện cha bị đóng"| EVENT_DISABLED["EVENT_DISABLED (Chiến dịch đóng)<br/>Ngừng theo sự kiện cha"]
+
+    UPCOMING -->|"Đến thời điểm bắt đầu (now >= startsAt)"| ACTIVE
+    ACTIVE -->|"Hết hạn thời gian (now > endsAt)"| EXPIRED
+    ACTIVE -->|"Khách dùng hết lượt (usedCount >= usageLimit)"| OUT_OF_STOCK
+    ACTIVE -->|"Admin tắt kích hoạt (isActive = false)"| DISABLED
+    ACTIVE -->|"Sự kiện cha kết thúc / bị tắt"| EVENT_DISABLED
+
+    DISABLED -->|"Admin bật lại & còn hạn dùng"| ACTIVE
+    EVENT_DISABLED -->|"Sự kiện cha mở lại"| ACTIVE
+
+    EXPIRED --> EndVoucher(["Lưu trữ lịch sử"])
+    OUT_OF_STOCK --> EndVoucher
+```
+
 ---
 
 # CHƯƠNG 10: CẤU TRÚC THÔNG TIN, MA TRẬN PHÂN QUYỀN & BỘ CHỈ SỐ DỮ LIỆU LỚN
@@ -1479,8 +1773,8 @@ graph TD
         Catalog["Trang Danh Mục (/catalog)<br/>- Mega Menu 4 Ngành<br/>- Bộ lọc đa chiều<br/>- Tìm kiếm FTS"]
         BookDetail["Chi Tiết Sách (/book/[slug])<br/>- Ảnh bìa đa góc<br/>- Bảng thông số NXB<br/>- Đánh giá sao<br/>- Sách liên quan"]
         Wishlist["Tủ Sách Yêu Thích (/wishlist)<br/>- Danh sách đã lưu<br/>- Chuyển vào giỏ"]
-        Cart["Giỏ Hàng (/cart)<br/>- Tăng/giảm số lượng<br/>- Miễn phí ship >= 250k"]
-        Checkout["Thanh Toán (/checkout)<br/>- Sổ địa chỉ nhận<br/>- COD / VietQR"]
+        Cart["Giỏ Hàng (/cart)<br/>- Tăng/giảm số lượng<br/>- Áp mã Voucher<br/>- Miễn phí ship >= 250k"]
+        Checkout["Thanh Toán (/checkout)<br/>- Sổ địa chỉ nhận<br/>- Áp Voucher giảm giá<br/>- COD / VietQR"]
         OrderSuccess["Đặt Hàng Thành Công (/order/success)"]
         Account["Hồ Sơ Độc Giả (/account/*)<br/>- Lịch sử đơn hàng<br/>- Cập nhật địa chỉ"]
         Auth["Xác Thực (/auth)<br/>- Đăng nhập<br/>- Đăng ký OTP"]
@@ -1490,6 +1784,7 @@ graph TD
         AdminDashboard["Bảng Điều Khiển (/admin/dashboard)<br/>- Biểu đồ doanh thu<br/>- Tổng số đơn & sách"]
         AdminBooks["Quản Lý Kho Sách (/admin/books)<br/>- CRUD đầu sách<br/>- Nhập hàng loạt CSV<br/>- Cảnh báo tồn < 10"]
         AdminOrders["Quản Lý Đơn Hàng (/admin/orders)<br/>- Lọc State Machine<br/>- Duyệt/Giao/Hủy"]
+        AdminPromotions["Quản Lý Khuyến Mại (/admin/promotions)<br/>- Sự kiện & Voucher<br/>- Cấu hình trần & lượt dùng<br/>- Bật/Tắt ưu đãi"]
         AdminReviews["Kiểm Duyệt Đánh Giá (/admin/reviews)<br/>- Duyệt/Ẩn bình luận"]
         AdminStaff["Quản Trị Nhân Sự (/admin/staff)<br/>- Cấp tài khoản Staff<br/>- Ma trận RBAC Checkbox"]
         AdminAudit["Nhật Ký Kiểm Toán (/admin/audit-logs)<br/>- Lịch sử thao tác"]
@@ -1505,10 +1800,11 @@ graph TD
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Xem sách, Tìm kiếm, Lọc danh mục** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Quản lý Giỏ hàng & Wishlist** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Áp dụng Mã Voucher tại Giỏ & Thanh toán** | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Đặt hàng & Quét mã VietQR** | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Xem lịch sử đơn & Quản lý địa chỉ** | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Gửi đánh giá sao & Bình luận sách** | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Trò chuyện cùng Trợ lý AI Chatbot** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Trò chuyện cùng Trợ lý Bán Hàng Agentic AI** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Xem Dashboard Doanh thu Admin** | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Xem danh sách sách (/admin/books)** | ❌ | ❌ | ✅ | ❌ | ✅ |
 | **Thêm / Sửa sách & Cập nhật tồn kho**| ❌ | ❌ | ✅ | ❌ | ✅ |
@@ -1516,6 +1812,7 @@ graph TD
 | **Xem & Duyệt trạng thái Đơn hàng** | ❌ | ❌ | ❌ | ✅ | ✅ |
 | **Nhận thông báo có Đơn hàng mới** | ❌ | ❌ | ❌ | ✅ | ✅ |
 | **Kiểm duyệt Đánh giá của khách** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Quản lý Khuyến Mại & Voucher (/admin/promotions)** | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Cấp tài khoản & Gán quyền Staff** | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Xem Nhật ký Kiểm toán (Audit Logs)**| ❌ | ❌ | ❌ | ❌ | ✅ |
 
@@ -1546,23 +1843,29 @@ Hệ thống đã triển khai pipeline nạp dữ liệu quy mô lớn, vượt
 
 1. **Phút 01 — 03: Giới thiệu Tổng quan Đề tài & Bối cảnh Nghiệp vụ (Slide):**
    - Nêu rõ vấn nạn sách giả và lý do lựa chọn mô hình **B2C Thuần túy** thay vì C2C.
-   - Trình bày kiến trúc phân tầng Next.js 16 + PostgreSQL Supabase + RAG AI.
-2. **Phút 04 — 07: Demo Trải nghiệm Mua hàng Khách hàng (Storefront):**
+   - Trình bày kiến trúc phân tầng Next.js 16 + PostgreSQL Supabase (17 bảng chuẩn 3NF) + Agentic Tool Calling AI.
+2. **Phút 04 — 07: Demo Trải nghiệm Mua hàng Khách hàng & Áp Voucher (Storefront):**
    - Lướt trang chủ: Thể hiện Design System phối màu `#0B1F3A` và `#F5A623`, font chữ Plus Jakarta Sans mượt mà 60fps.
    - Thao tác tại `/catalog`: Lọc đa chiều danh mục 3 cấp, lọc khoảng giá, tìm kiếm từ khóa không dấu.
    - Thao tác tại `/book/[slug]`: Xem thông số NXB, ảnh bìa sắc nét, thêm vào giỏ hàng và tủ sách yêu thích.
-   - Thao tác tại `/checkout`: Điền địa chỉ nhận hàng, chọn phương thức VietQR $\to$ Quét mã thanh toán hiển thị tức thì.
-3. **Phút 08 — 10: Demo Trợ lý Ảo AI Chatbot RAG Thông minh:**
-   - Mở bong bóng chat nổi ở góc phải dưới màn hình.
-   - Đặt câu hỏi tâm lý: *"Tôi đang rất buồn và cảm thấy cô đơn, hãy gợi ý cho tôi"* $\to$ AI thấu cảm và gợi ý sách chữa lành kèm Thẻ sách động.
-   - Đặt câu hỏi chính sách: *"Ở đây có được kiểm tra hàng trước khi nhận không và phí ship thế nào?"* $\to$ AI phản hồi ngay lập tức chính sách đồng kiểm 100% và freeship từ 250k.
-   - Đặt câu hỏi khiếu nại: *"Tôi muốn có gmail của chủ quán để khiếu nại"* $\to$ AI cung cấp chuẩn xác email Founder `hnhngyndng@gmail.com` và cam kết xử lý trong 24h.
-4. **Phút 11 — 13: Demo Phân hệ Quản trị & Cơ chế Phân quyền RBAC:**
-   - Đăng nhập tài khoản **Nhân viên Kho**: Chỉ thấy menu Quản lý sách; quả chuông thông báo chỉ hiện cảnh báo sách sắp hết hàng (tự động ẩn đơn hàng).
-   - Đăng nhập tài khoản **Nhân viên Đơn hàng**: Chỉ thấy menu Xử lý đơn hàng; quả chuông chỉ hiện thông báo đơn mới (tự động ẩn kho).
-   - Đăng nhập tài khoản **Super Admin**: Thấy toàn quyền Dashboard doanh thu, bảng Audit Logs và trang cấp quyền Checkbox động.
+   - Thao tác tại `/cart` & `/checkout`: Nhập mã giảm giá `TOSACHNEW` $\to$ Hệ thống tính chiết khấu 20% có chặn trần `maxDiscount` 40.000đ, cập nhật tổng thanh toán tức thì.
+   - Chọn phương thức VietQR $\to$ Quét mã thanh toán hiển thị tức thì với đúng số tiền đã trừ voucher.
+3. **Phút 08 — 10: Demo Trợ lý Bán Hàng Agentic AI Chatbot Thông Minh:**
+   - Mở bong bóng chat nổi ở góc phải dưới màn hình (giao diện bo góc kính mờ 60fps).
+   - Đặt câu hỏi tư vấn & voucher: *"Tôi muốn tìm sách chữa lành tâm trạng, có mã giảm giá nào không?"* $\to$ Gemini kích hoạt vòng lặp Tool Calling 2 bước (`search_books` + `recommend_best_voucher`), tự động truy vấn CSDL PostgreSQL bằng unaccent ILIKE scoring và quét kho voucher.
+   - Trình diễn giao diện thẻ sách tuần tự (Block-Sequential UI):
+     * Khối 1: Lời thoại thấu cảm + Tên sách + NXB + Giá bán + Mã voucher áp dụng được + Tình trạng tồn kho thực tế.
+     * Ngay bên dưới là: Ảnh bìa sách sắc nét, Nút **"Thêm vào giỏ"** và Nút **"Mua ngay"** (chuyển thẳng tới checkout).
+     * Đề xuất Up-sell Freeship: Gợi ý mua thêm bao nhiêu để được miễn phí vận chuyển 150k.
+   - Đặt câu hỏi chính sách: *"Ở đây có được kiểm tra hàng trước khi nhận không và phí ship thế nào?"* $\to$ AI phản hồi ngay lập tức chính sách đồng kiểm 100% và freeship từ 250k (hoặc 150k theo chiến dịch).
+4. **Phút 11 — 13: Demo Phân hệ Quản trị, Khuyến Mãi & Phân quyền RBAC:**
+   - Đăng nhập tài khoản **Super Admin**:
+     * Mở `/admin/promotions`: Xem danh sách Chiến dịch và Voucher, thao tác tạo mã giảm giá mới (giảm theo % có chặn trần, đơn tối thiểu, giới hạn lượt dùng toàn hệ thống).
+     * Mở Dashboard doanh thu, bảng Audit Logs ghi nhận lịch sử áp dụng voucher.
+   - Đăng nhập tài khoản **Nhân viên Kho**: Chỉ thấy menu Quản lý sách; quả chuông thông báo chỉ hiện cảnh báo sách sắp hết hàng (tự động ẩn đơn hàng và khuyến mãi).
+   - Đăng nhập tài khoản **Nhân viên Đơn hàng**: Chỉ thấy menu Xử lý đơn hàng; quả chuông chỉ hiện thông báo đơn mới.
 5. **Phút 14 — 15: Kết luận & Sẵn sàng Phản biện Q&A:**
-   - Tóm tắt các chỉ số đạt được: 5.125 đầu sách, kiểm soát tồn kho ACID an toàn, AI RAG thông minh.
+   - Tóm tắt các chỉ số đạt được: 5.125 đầu sách, 17 bảng CSDL chuẩn 3NF, kiểm soát tồn kho và lượt voucher ACID an toàn, Agentic AI thông minh.
    - Cảm ơn Hội đồng và chuyển sang phần hỏi đáp phản biện.
 
 ## 11.2 Bộ 10 Câu hỏi Phản biện Trọng điểm & Câu trả lời Mẫu Đạt Điểm Tuyệt Đối
@@ -1590,8 +1893,8 @@ Hệ thống đã triển khai pipeline nạp dữ liệu quy mô lớn, vượt
 
 ### Câu hỏi 5: "AI Chatbot trong hệ thống giải quyết vấn đề gì khác biệt so với việc nhúng ChatGPT thông thường?"
 > **Trả lời mẫu:**  
-> *"Dạ thưa Thầy/Cô, nếu nhúng ChatGPT thông thường, mô hình sẽ không hề biết Tổ Sách hiện đang có những đầu sách nào, giá bao nhiêu, hay khách hàng đang có đơn hàng nào, thậm chí sẽ bịa ra các cuốn sách không có thật (Hallucination).  
-> AI Chatbot của Tổ Sách sử dụng kiến trúc **RAG (Retrieval-Augmented Generation)**: AI chỉ đóng vai trò là bộ não hiểu ngôn ngữ tự nhiên, còn toàn bộ dữ liệu sách và tình trạng đơn hàng được truy vấn trực tiếp theo thời gian thực từ CSDL PostgreSQL của Tổ Sách rồi mới nạp vào ngữ cảnh để AI trả lời. Do đó câu trả lời chính xác 100% theo thực tế kinh doanh."*
+> *"Dạ thưa Thầy/Cô, nếu nhúng ChatGPT thông thường qua iframe hoặc API thô, mô hình sẽ không hề biết Tổ Sách hiện đang có những đầu sách nào, giá bao nhiêu, mã voucher nào đang kích hoạt, hay khách hàng đang có đơn hàng nào, thậm chí sẽ bịa ra các cuốn sách không có thật (Hallucination).  
+> AI Chatbot của Tổ Sách được xây dựng theo kiến trúc **Agentic AI với ReAct Tool Calling Loop** kết nối Google Gemini 3.1 Flash-Lite: AI sở hữu 5 công cụ nội bộ gọi trực tiếp vào CSDL PostgreSQL (`search_books` với thuật toán unaccent scoring theo trọng số, `get_book_details`, `check_order_status`, `get_active_promotions`, `recommend_best_voucher`). Khi người dùng hỏi tìm sách hay hỏi mã giảm giá, AI tự quyết định gọi công cụ tương ứng để lấy dữ liệu thực tế, tự tính toán điều kiện giỏ hàng để gợi ý voucher tối ưu và freeship. Do đó câu trả lời chính xác 100% theo thời gian thực kinh doanh."*
 
 ### Câu hỏi 6: "Nếu Google Gemini bị mất mạng hoặc hết quota thì AI Chatbot có bị sập (crash) không?"
 > **Trả lời mẫu:**  
@@ -1610,16 +1913,27 @@ Hệ thống đã triển khai pipeline nạp dữ liệu quy mô lớn, vượt
 ### Câu hỏi 9: "Làm thế nào để hệ thống duy trì tốc độ tải trang dưới 100ms khi CSDL có hơn 5.000 đầu sách?"
 > **Trả lời mẫu:**  
 > *"Dạ thưa Thầy/Cô, nhóm áp dụng 3 giải pháp đồng bộ:  
-> 1. **Chỉ mục B-Tree:** Đánh chỉ mục trên các cột thường xuyên lọc và tìm kiếm (`slug`, `isbn`, `is_active`, `avg_rating`).  
+> 1. **Chỉ mục B-Tree:** Đánh chỉ mục trên các cột thường xuyên lọc và tìm kiếm (`slug`, `isbn`, `is_active`, `avg_rating`, `code`, `promotion_event_id`).  
 > 2. **Connection Pooling:** Sử dụng PgBouncer ở chế độ Transaction Mode để hàng trăm kết nối dùng chung pool kết nối nhỏ vào PostgreSQL, không bị tốn chi phí thiết lập kết nối SSL mỗi lần query.  
 > 3. **Phân trang & Giới hạn trường:** Áp dụng Pagination chặt chẽ và chỉ truy vấn các trường cần thiết (`select`), không bao giờ dùng `SELECT *` bừa bãi."*
 
 ### Câu hỏi 10: "Mô hình phân chia công việc giữa hai thành viên trong nhóm thể hiện tính chuyên nghiệp như thế nào?"
 > **Trả lời mẫu:**  
 > *"Dạ thưa Thầy/Cô, nhóm phân định trách nhiệm rất rõ ràng theo hai trục trụ cột của ngành Kỹ thuật Phần mềm:  
-> - Bạn **Nguyễn Đăng Hanh** đảm nhiệm toàn bộ nền tảng Kỹ thuật Hệ thống: từ việc thiết kế Schema CSDL 14 bảng, bảo đảm giao dịch ACID, phân quyền RBAC, đến việc kết nối RAG AI Chatbot.  
-> - Bạn **Nguyễn Mạnh Hòa** đảm nhiệm toàn bộ Trải nghiệm Người dùng: từ việc xây dựng Design System Figma, chọn bảng màu nhận diện, font chữ Plus Jakarta Sans, triệt tiêu xô lệch layout (Zero CLS), đến các hiệu ứng chuyển động 60fps mượt mà.  
+> - Bạn **Nguyễn Đăng Hanh** đảm nhiệm toàn bộ nền tảng Kỹ thuật Hệ thống: từ việc thiết kế Schema CSDL 17 bảng, bảo đảm giao dịch ACID kiểm soát tồn kho và khóa hạn mức Voucher, phân quyền RBAC, xây dựng hệ thống khuyến mại đa tầng đến việc tích hợp ReAct Agentic AI Chatbot với Gemini 3.1 Flash-Lite.  
+> - Bạn **Nguyễn Mạnh Hòa** đảm nhiệm toàn bộ Trải nghiệm Người dùng: từ việc xây dựng Design System Figma, chọn bảng màu nhận diện, font chữ Plus Jakarta Sans, triệt tiêu xô lệch layout (Zero CLS), lập trình giao diện tương tác mua sắm, áp voucher tức thì và hiển thị thẻ sách tuần tự trong chatbox mượt mà 60fps.  
 > Hai phần việc khớp nối hoàn hảo với nhau thông qua hợp đồng dữ liệu TypeScript chặt chẽ, tạo nên sản phẩm hoàn chỉnh cả về 'nội lực kỹ thuật' lẫn 'diện mạo thẩm mỹ'."*
+
+### Câu hỏi 11: "Cơ chế tính toán và chống gian lận/vượt hạn mức Voucher trong hệ thống hoạt động như thế nào?"
+> **Trả lời mẫu:**  
+> *"Dạ thưa Thầy/Cô, hệ thống xử lý qua hai tầng bảo vệ chặt chẽ:  
+> 1. **Thuật toán chiết khấu minh bạch:** Hỗ trợ 2 loại: `FIXED` (trừ thẳng số tiền cố định) và `PERCENT` (tính theo `%` giá trị đơn). Với loại %, hệ thống luôn áp dụng chặn trần giảm tối đa (`maxDiscount`). Ví dụ voucher giảm 20% tối đa 50.000đ: Đơn 200.000đ giảm 40.000đ; đơn 500.000đ giảm đúng 50.000đ (chạm trần), bảo vệ tuyệt đối biên lợi nhuận của cửa hàng.  
+> 2. **Kiểm soát đồng thời và chống Race Condition:** Quá trình áp mã và ghi nhận lượt dùng được bọc trọn vẹn trong `prisma.$transaction`. Hệ thống kiểm tra đồng thời: hạn mức sự kiện cha (`promotion_events.is_active`, thời gian bắt đầu - kết thúc), hạn mức mã con (`usage_limit`, `current_usage`), và giới hạn số lần mỗi khách hàng (`max_uses_per_user`). Khi đơn thanh toán thành công, `current_usage` được tăng nguyên tử (`increment: 1`) và ghi vết vào `voucher_usages`, ngăn chặn triệt để hành vi dùng chung 1 mã vượt trần."*
+
+### Câu hỏi 12: "Tại sao nhóm lại thiết kế giao diện thẻ sách trong Chatbot theo mô hình Tuần tự Khối Độc lập (Block-Sequential Layout)?"
+> **Trả lời mẫu:**  
+> *"Dạ thưa Thầy/Cô, ở phiên bản trước đây, khi AI giới thiệu nhiều cuốn sách, toàn bộ văn bản mô tả nằm dồn ở trên rồi mới gom toàn bộ ảnh và nút mua ở tít bên dưới. Người dùng đọc xong lời khen cuốn số 1 phải cuộn xuống dưới cùng để tìm nút mua, rất dễ bấm nhầm và gây đứt gãy luồng cảm xúc mua hàng.  
+> Nhóm đã tái thiết kế theo **Mô hình Khối Tuần tự (Block-Sequential Layout)**: Mỗi cuốn sách là một cụm trọn vẹn gồm: Lời bình luận/thông điệp của AI $\rightarrow$ Tên sách, NXB, Giá tiền, Voucher khả dụng, Tồn kho $\rightarrow$ Ngay phía dưới là Ảnh bìa sách cùng 2 nút hành động nhanh ('Thêm vào giỏ' và 'Mua ngay'). Cứ hết cuốn 1 thì mới tiếp tục đến cuốn 2. Bố cục này tối ưu hóa tỷ lệ chuyển đổi (CRO), người dùng nắm bắt thông tin rõ ràng và có thể chốt đơn chỉ với 1 cú click ngay trong khung chat."*
 
 ## 11.3 Kết luận & Định hướng Phát triển
 - **Kết luận:** Đề tài **"Tổ Sách"** đã hiện thực hóa trọn vẹn mục tiêu đề ra trong Đề cương Proposal. Hệ thống vận hành ổn định, giao diện hiện đại, nghiệp vụ kho vận chặt chẽ, bảo mật đa tầng và tích hợp AI thông minh.
@@ -1649,14 +1963,16 @@ Hệ thống **Tổ Sách** là một nền tảng thương mại điện tử c
 |  - Trang chủ động, Banner, 60fps GPU        |  - AppShell cách ly, Dashboard doanh thu thời gian thực|
 |  - Cây danh mục 3 tầng, Lọc đa chiều        |  - Quản lý kho sách 5.125 cuốn, Import/Export CSV    |
 |  - Giỏ hàng thông minh (Smart Cart Merge)  |  - Vòng đời đơn hàng State Machine & Hủy hoàn tồn kho|
+|  - Hệ thống Voucher tại Giỏ hàng & Checkout |  - Quản trị Khuyến mại & Voucher (/admin/promotions) |
 |  - Thanh toán VietQR MBBank tự động         |  - Phân quyền động nhân viên (RBAC) & Quả chuông lọc |
 |  - Tra cứu tài khoản, OTP Gmail bảo mật    |  - Nhật ký kiểm toán an ninh (Admin Audit Logs)      |
 +--------------------------------------------+------------------------------------------------------+
-|  3. CÔNG NGHỆ NÂNG CAO THEO PROPOSAL       |  4. DỮ LIỆU LỚN & TRÍ TUỆ NHÂN TẠO                   |
-|  - Mục 3.1: Hybrid Recommendation (5 yếu tố)|  - 5.125 sách thật, 2.790 tác giả, 169 danh mục DDC |
-|  - Mục 3.2: Elasticsearch 8.x + Fuzzy      |  - 50k đánh giá, 200k sự kiện hành vi, 10k đơn hàng  |
-|  - Mục 3.4: Redis In-Memory Cache (TTL 30d)|  - Trợ lý AI RAG Chatbot (Gemini 1.5 Flash-Lite)     |
-|  - An toàn giao dịch ACID chống bán âm kho |  - 14 miền tri thức nội bộ xử lý phản hồi trong 50ms |
+|  3. CÔNG NGHỆ NÂNG CAO THEO PROPOSAL       |  4. DỮ LIỆU LỚN & AGENTIC TRÍ TUỆ NHÂN TẠO           |
+|  - Mục 3.1: Hybrid Recommendation (5 yếu tố)|  - 17 Bảng CSDL Chuẩn 3NF trên PostgreSQL Supabase   |
+|  - Mục 3.2: Elasticsearch 8.x + Fuzzy      |  - 5.125 sách thật, 2.790 tác giả, 169 danh mục DDC |
+|  - Mục 3.4: Redis In-Memory Cache (TTL 30d)|  - 50k đánh giá, 200k sự kiện hành vi, 10k đơn hàng  |
+|  - Voucher Engine & ACID Transaction khóa mã|  - Trợ lý Agentic AI Chatbot (Gemini 3.1 Flash-Lite) |
+|  - An toàn giao dịch chống bán âm kho      |  - ReAct Tool Calling (5 tools) + Block-Sequential UI|
 +----------------------------------------------------------------------------------------------------+
 ```
 
@@ -1666,7 +1982,7 @@ Hệ thống **Tổ Sách** là một nền tảng thương mại điện tử c
 
 ### Giai đoạn 1: Khởi tạo Kiến trúc & Thiết kế Cơ sở Dữ liệu Chuẩn 3NF
 - **Khởi tạo Codebase:** Sử dụng Next.js 15/16 App Router với TypeScript nghiêm ngặt, Tailwind CSS và ESLint.
-- **Thiết kế Database:** Xây dựng lược đồ CSDL trên **PostgreSQL (Supabase)** gồm **14 bảng quan hệ chuẩn 3NF**, phân định rõ các bảng thực thể (`books`, `authors`, `categories`, `users`, `orders`), bảng hồ sơ mở rộng (`user_profiles`), bảng trung gian N:N (`book_authors`, `book_categories`), bảng bảo mật (`permissions`, `staff_permissions`, `admin_audit_logs`) và bảng dữ liệu lớn (`user_behavior_events`).
+- **Thiết kế Database:** Xây dựng lược đồ CSDL trên **PostgreSQL (Supabase)** gồm **17 bảng quan hệ chuẩn 3NF**, phân định rõ các bảng thực thể (`books`, `authors`, `categories`, `users`, `orders`), bảng hồ sơ mở rộng (`user_profiles`), bảng trung gian N:N (`book_authors`, `book_categories`), bảng bảo mật (`permissions`, `staff_permissions`, `admin_audit_logs`), bảng khuyến mại (`promotion_events`, `vouchers`, `voucher_usages`) và bảng dữ liệu lớn (`user_behavior_events`).
 - **Quản lý Schema bằng Prisma ORM:** Áp dụng cơ chế Migration, Connection Pooling qua PgBouncer cổng 6543 giúp chịu tải cao.
 
 ### Giai đoạn 2: Xác thực Bảo mật & Phân Quyền Vai Trò (Auth & RBAC)
@@ -1680,18 +1996,20 @@ Hệ thống **Tổ Sách** là một nền tảng thương mại điện tử c
 - **Hiệu Ứng Ném Sách Vào Giỏ Parabol 60fps:** Tính toán quỹ đạo toán học Parabol, tận dụng card đồ họa GPU (`translate3d`) mang lại cảm giác mua sắm sống động.
 - **Điều Hướng Danh Mục Phân Cấp 3 Tầng:** Hỗ trợ duyệt cây ngành hàng (Ngành hàng lớn $\rightarrow$ Chuyên mục $\rightarrow$ Chi tiết), thanh lọc đa chiều theo giá tiền, tag, và tình trạng còn hàng.
 
-### Giai đoạn 4: Quy Trình Đặt Hàng & Thanh Toán Tự Động (Checkout & VietQR)
+### Giai đoạn 4: Quy Trình Đặt Hàng, Áp Dụng Voucher & Thanh Toán Tự Động (Checkout & VietQR)
 - **Chọn Lọc Sách Cần Mua (Selective Checkout):** Cho phép tích chọn những cuốn muốn mua trong giỏ, không bắt buộc mua toàn bộ.
+- **Động Cơ Voucher Tức Thì (Voucher Engine):** Hỗ trợ nhập mã giảm giá tại Giỏ hàng và Thanh toán. Tự động kiểm tra điều kiện (đơn tối thiểu `min_order_value`, hạn dùng, lượt dùng), tính chiết khấu `FIXED` hoặc `PERCENT` (chặn trần `max_discount`) và trừ trực tiếp vào tổng tiền.
 - **Sổ Địa Chỉ Hành Chính 3 Cấp:** Tích hợp bộ chọn Tỉnh/Thành phố $\rightarrow$ Quận/Huyện $\rightarrow$ Phường/Xã chuẩn hành chính Việt Nam.
-- **Thanh Toán Tự Động VietQR MBBank:** Tự sinh chuỗi mã chuẩn Napas 247 kèm mã đơn `TS-YYYYMMDD-XXXX` và số tiền chính xác, khách hàng chỉ cần quét app ngân hàng trong 3 giây.
-- **Giao Dịch ACID Chống Bán Âm Kho (`prisma.$transaction`):** Khóa hàng nguyên tử, nếu 2 người cùng mua cuốn cuối cùng, người đến trước sẽ mua thành công, người đến sau nhận thông báo hết hàng thân thiện mà kho không bao giờ bị âm.
+- **Thanh Toán Tự Động VietQR MBBank:** Tự sinh chuỗi mã chuẩn Napas 247 kèm mã đơn `TS-YYYYMMDD-XXXX` và số tiền chính xác sau khi trừ voucher, khách hàng chỉ cần quét app ngân hàng trong 3 giây.
+- **Giao Dịch ACID Chống Bán Âm Kho & Khóa Lượt Voucher (`prisma.$transaction`):** Khóa hàng nguyên tử, trừ tồn kho và tăng lượt dùng voucher `current_usage` đồng thời; nếu 2 người cùng mua cuốn cuối cùng hoặc cùng áp mã hết lượt, hệ thống rollback an toàn và báo lỗi chi tiết.
 
 ### Giai đoạn 5: Phân Hệ Quản Trị & Vận Hành Doanh Nghiệp (Admin Portal)
 - **AppShell Cách Ly Tuyệt Đối:** Giao diện Admin chạy trên layout riêng biệt, thanh điều hướng Sidebar chuyên nghiệp.
 - **Realtime Dashboard:** Thống kê tổng doanh thu, số đơn hàng, số sách trong kho với hiệu ứng đếm số Count-up và biểu đồ sóng doanh thu.
+- **Quản Trị Khuyến Mại & Mã Giảm Giá (`/admin/promotions`):** Tạo và quản lý sự kiện khuyến mại (`promotion_events`), thêm các mã voucher (`vouchers`) theo loại tiền mặt hoặc phần trăm, đặt trần chiết khấu, bật/tắt nhanh chiến dịch, theo dõi lượt dùng thực tế so với giới hạn.
 - **Quản Lý Kho Sách Toàn Diện:** Thêm, sửa, xóa sách, nhập/xuất file CSV hàng loạt, cập nhật số lượng tồn kho tức thì, gắn cờ Bestseller/Nổi bật.
 - **Quản Lý Vòng Đời Đơn Hàng Theo State Machine:** Quy trình chuẩn: `PENDING` $\rightarrow$ `CONFIRMED` $\rightarrow$ `SHIPPING` $\rightarrow$ `DELIVERED` (hoặc `CANCELLED`). Hủy đơn tự động hoàn trả tồn kho (Stock Rollback). Khách hàng có quyền tự hủy đơn khi đơn còn ở trạng thái `PENDING`.
-- **Quản Lý Nhân Sự & Phân Quyền Ma Trận RBAC:** Cấp tài khoản nhân viên và gán quyền linh hoạt (`MANAGE_BOOKS`, `MANAGE_ORDERS`, `MANAGE_USERS`...). Quả chuông thông báo thông minh tự động lọc đúng việc theo quyền hạn (nhân viên kho chỉ thấy cảnh báo hết hàng, nhân viên đơn chỉ thấy đơn mới).
+- **Quản Lý Nhân Sự & Phân Quyền Ma Trận RBAC:** Cấp tài khoản nhân viên và gán quyền linh hoạt (`MANAGE_BOOKS`, `MANAGE_ORDERS`, `MANAGE_PROMOTIONS`, `MANAGE_USERS`...). Quả chuông thông báo thông minh tự động lọc đúng việc theo quyền hạn.
 - **Nhật Ký Kiểm Toán An Ninh (Audit Logs):** Ghi vết toàn bộ hành vi thêm/sửa/xóa của ban quản trị để phục vụ đối soát, chống gian lận.
 
 ### Giai đoạn 6: Triển Khai Các Hạng Mục Nâng Cao Đúng Đề Cương Proposal
@@ -1702,14 +2020,15 @@ Hệ thống **Tổ Sách** là một nền tảng thương mại điện tử c
 - **Mục 3.4 Proposal — Bộ nhớ đệm In-Memory Redis Cache & Recently Viewed:**
   Lưu trữ danh sách "Sách vừa xem gần đây" phân vùng theo người dùng với thời gian sống (TTL) 30 ngày, giảm tải 85% truy vấn dư thừa vào Database chính.
 
-### Giai đoạn 7: Tích Hợp Trí Tuệ Nhân Tạo RAG Chatbot (Gemini 1.5 Flash-Lite)
-- **Kiến trúc RAG Thực thụ:** Không chỉ trả lời chung chung, Chatbot kết nối trực tiếp với CSDL PostgreSQL của Tổ Sách để nắm bắt giá cả, số lượng tồn kho và tình trạng đơn hàng thực tế của khách.
-- **14 Miền Tri Thức Nội Bộ Tự Dự Phòng:** Tích hợp bộ tri thức thương hiệu (Founder, cam kết sách thật 100%, đóng gói 3 lớp, freeship 250k, chính sách đồng kiểm, đổi trả 7 ngày). Khi API ngoài gặp sự cố, Chatbot tự động phản hồi trong 50ms, đảm bảo tính sẵn sàng 99.99%.
-- **Trải Nghiệm Thấu Cảm:** Chatbot biết lắng nghe cảm xúc người đọc (buồn, cô đơn, mất định hướng) để gợi ý đúng cuốn sách chữa lành kèm thẻ sách trực quan để thêm ngay vào giỏ hàng.
+### Giai đoạn 7: Trợ Lý Bán Hàng Agentic AI (Google Gemini 3.1 Flash-Lite)
+- **Kiến trúc Agentic AI ReAct Tool Calling Loop:** Không dùng bot phản hồi tĩnh, AI hoạt động theo vòng lặp Suy luận - Hành động với 5 công cụ nội bộ (`search_books` bằng PostgreSQL unaccent scoring, `get_book_details`, `check_order_status`, `get_active_promotions`, `recommend_best_voucher`).
+- **Gợi ý Voucher Tối ưu & Kích cầu Freeship:** AI tự động phân tích giỏ hàng của khách, gọi công cụ tính toán mã giảm giá có lợi nhất, hướng dẫn khách mua thêm để đạt mốc Freeship 250k.
+- **Giao diện Khối Tuần tự Độc lập (Block-Sequential Layout):** Thiết kế lại bố cục hiển thị trực quan: mỗi cuốn sách gồm Lời bình $\rightarrow$ Tên, NXB, Giá, Voucher, Tồn kho $\rightarrow$ Ảnh bìa cùng 2 nút bấm thao tác nhanh "Thêm vào giỏ" và "Mua ngay" tiện lợi.
+- **14 Miền Tri Thức Nội Bộ Tự Dự Phòng:** Tích hợp bộ tri thức thương hiệu phản hồi trong 50ms khi API bên ngoài quá tải, đảm bảo SLA 99.99%.
 
 ### Giai đoạn 8: Pipeline Nạp Dữ Liệu Lớn & Chuẩn Bị Báo Cáo
 - **Bộ dữ liệu thực tế khổng lồ:** Nạp và làm sạch thành công **5.125 cuốn sách thật** từ Tiki CDN, **2.790 tác giả**, **169 danh mục chuẩn DDC**, **50.000 đánh giá**, **200.000 sự kiện hành vi** và **10.000 đơn hàng**.
-- **Chuẩn hóa Commit Git:** Toàn bộ 60 commit trong lịch sử mã nguồn được viết lại bằng tiếng Việt có dấu chuẩn quy cách, thể hiện tác phong kỹ sư chuyên nghiệp.
+- **Chuẩn hóa Commit Git:** Toàn bộ lịch sử mã nguồn được viết lại bằng tiếng Việt có dấu chuẩn quy cách, thể hiện tác phong kỹ sư chuyên nghiệp.
 - **Bộ tài liệu báo cáo toàn diện:** Biên soạn đầy đủ báo cáo học thuật `Document_Project.md`, kịch bản thuyết trình demo, và bộ câu hỏi phản biện bảo vệ đồ án.
 
 ---
@@ -1718,8 +2037,8 @@ Hệ thống **Tổ Sách** là một nền tảng thương mại điện tử c
 
 | Thành Viên | Vai Trò Chính | Các Phần Việc Đảm Nhiệm Cốt Lõi | Nội Dung Trình Bày Trước Hội Đồng |
 | :--- | :--- | :--- | :--- |
-| **Nguyễn Đăng Hanh**<br/>(`hnhngyndng@gmail.com`) | **Lead Developer & System Architect** | - Thiết kế lược đồ CSDL PostgreSQL 14 bảng chuẩn 3NF.<br/>- Xây dựng Backend API Routes và Server Actions.<br/>- Đảm bảo an toàn giao dịch ACID kiểm soát kho sách.<br/>- Triển khai bảo mật Edge Guard, JWT HttpOnly và phân quyền RBAC.<br/>- Xây dựng động cơ gợi ý Hybrid Recommendation (Mục 3.1) và tìm kiếm Elasticsearch 8.x (Mục 3.2).<br/>- Xây dựng kiến trúc RAG AI Chatbot kết nối Gemini. | **Thuyết trình phần "Nội lực Kỹ thuật":**<br/>1. Kiến trúc hệ thống phân tầng và CSDL 14 bảng.<br/>2. Cơ chế Transaction ACID chống bán âm tồn kho.<br/>3. Ma trận phân quyền RBAC đa cấp độ.<br/>4. Hoạt động của thuật toán tìm kiếm mờ và AI RAG. |
-| **Nguyễn Mạnh Hòa**<br/>(`manhhoa02042005@gmail.com`)| **Co-Developer & Frontend UX Lead** | - Xây dựng Design System Figma chuẩn nhận diện thương hiệu.<br/>- Lựa chọn bảng màu Hải quân `#0B1F3A` và Cam mật `#F5A623`, font chữ Plus Jakarta Sans.<br/>- Phát triển giao diện Storefront B2C và Admin AppShell.<br/>- Tối ưu hiệu năng 60fps và triệt tiêu giật layout (Zero CLS).<br/>- Lập trình hiệu ứng ném sách Parabol bằng GPU `translate3d`.<br/>- Xây dựng giỏ hàng thông minh (Smart Cart Merge), quy trình Checkout VietQR và bộ lọc danh mục đa tầng. | **Thuyết trình phần "Trải nghiệm & Nghiệp vụ":**<br/>1. Bối cảnh thị trường, vấn nạn sách lậu và mô hình B2C.<br/>2. Trực tiếp thao tác chuột demo hành trình mua sách của khách hàng.<br/>3. Trình diễn hiệu ứng vi tương tác 60fps và thanh toán VietQR.<br/>4. Demo quy trình duyệt đơn và quản lý kho phía Admin. |
+| **Nguyễn Đăng Hanh**<br/>(`hnhngyndng@gmail.com`) | **Lead Developer & System Architect** | - Thiết kế lược đồ CSDL PostgreSQL 17 bảng chuẩn 3NF (bao gồm phân hệ Voucher & Khuyến mại).<br/>- Xây dựng Backend API Routes, Server Actions và Động cơ Voucher Engine.<br/>- Đảm bảo an toàn giao dịch `prisma.$transaction` chống bán âm kho và khóa lượt dùng voucher nguyên tử.<br/>- Triển khai bảo mật Edge Guard, JWT HttpOnly và phân quyền RBAC đa cấp độ.<br/>- Xây dựng động cơ gợi ý Hybrid Recommendation (Mục 3.1) và tìm kiếm Elasticsearch 8.x (Mục 3.2).<br/>- Xây dựng kiến trúc Trợ lý Bán hàng Agentic AI Gemini 3.1 Flash-Lite ReAct Tool Calling Loop (5 tools). | **Thuyết trình phần "Nội lực Kỹ thuật":**<br/>1. Kiến trúc hệ thống phân tầng và CSDL 17 bảng quan hệ.<br/>2. Cơ chế Transaction ACID khóa tồn kho và khóa hạn mức Voucher đồng thời.<br/>3. Ma trận phân quyền RBAC đa cấp độ bảo vệ phân hệ `/admin/*`.<br/>4. Hoạt động của thuật toán tìm kiếm mờ, unaccent scoring và Agentic AI Loop. |
+| **Nguyễn Mạnh Hòa**<br/>(`manhhoa02042005@gmail.com`)| **Co-Developer & Frontend UX Lead** | - Xây dựng Design System Figma chuẩn nhận diện thương hiệu.<br/>- Lựa chọn bảng màu Hải quân `#0B1F3A` và Cam mật `#F5A623`, font chữ Plus Jakarta Sans.<br/>- Phát triển giao diện Storefront B2C, Phân hệ Quản trị `/admin/promotions` và Admin AppShell.<br/>- Tối ưu hiệu năng 60fps và triệt tiêu giật layout (Zero CLS).<br/>- Lập trình hiệu ứng ném sách Parabol bằng GPU `translate3d`.<br/>- Xây dựng giỏ hàng thông minh, giao diện áp mã Voucher tức thì, quy trình Checkout VietQR và giao diện thẻ sách Block-Sequential trong Chatbot. | **Thuyết trình phần "Trải nghiệm & Nghiệp vụ":**<br/>1. Bối cảnh thị trường, vấn nạn sách lậu và mô hình B2C.<br/>2. Trực tiếp thao tác chuột demo hành trình mua sách, áp mã voucher giảm giá và thanh toán VietQR.<br/>3. Trình diễn hiệu ứng vi tương tác 60fps và giao diện thẻ sách tuần tự trong Chatbot.<br/>4. Demo quy trình quản trị khuyến mại `/admin/promotions` và duyệt đơn hàng phía Admin. |
 
 ---
 
@@ -1731,15 +2050,17 @@ Hệ thống **Tổ Sách** là một nền tảng thương mại điện tử c
 2. **Bước 2: Xem Chi tiết Sách & Thêm Vào Giỏ Hàng (Hòa nói - 2 phút):**
    - Bấm vào cuốn sách, chỉ rõ thông số ISBN, NXB, số trang.
    - Bấm nút "Thêm vào giỏ" $\rightarrow$ Cuốn sách bay hình vòng cung Parabol 60fps vào chiếc giỏ hàng góc trên.
-3. **Bước 3: Chốt Đơn & Thanh Toán VietQR (Hòa nói - 3 phút):**
-   - Vào `/checkout`, chọn địa chỉ Hà Nội $\rightarrow$ Cầu Giấy $\rightarrow$ Dịch Vọng Hậu.
-   - Chọn VietQR $\rightarrow$ Mã QR ngân hàng hiển thị tức thì với đúng số tiền và mã đơn.
-4. **Bước 4: Chatbot Tư Vấn & Gợi Ý Sách Thông Minh (Hanh nói - 3 phút):**
-   - Bật bong bóng chat: Hỏi *"Tôi đang cảm thấy áp lực và buồn bã"* $\rightarrow$ AI đồng cảm và trả về thẻ sách tâm lý trực tiếp từ CSDL.
-   - Hỏi *"Chính sách đổi trả và freeship thế nào?"* $\rightarrow$ AI trả lời ngay chính sách 7 ngày và freeship từ 250k.
-5. **Bước 5: Đăng Nhập Phân Hệ Admin & Chứng Minh RBAC (Hanh nói - 4 phút):**
-   - Đăng nhập tài khoản Nhân viên Kho: Quả chuông chỉ báo cảnh báo sách sắp hết hàng; không có quyền duyệt đơn.
-   - Đăng nhập Super Admin: Mở Dashboard doanh thu, bảng Audit Logs và giải thích cơ chế Transaction ACID khóa kho khi khách mua hàng.
+3. **Bước 3: Chốt Đơn, Áp Mã Voucher & Thanh Toán VietQR (Hòa nói - 3 phút):**
+   - Vào `/cart` hoặc `/checkout`, chọn địa chỉ nhận hàng.
+   - Nhập mã voucher ưu đãi (ví dụ: `CHAOBANMOI` hoặc `VUICUOITUAN`) $\rightarrow$ Hệ thống kiểm tra điều kiện tức thì, hiển thị số tiền được giảm rõ ràng và trừ trực tiếp vào tổng thanh toán.
+   - Chọn VietQR $\rightarrow$ Mã QR ngân hàng hiển thị tức thì với đúng số tiền sau chiết khấu và mã đơn chuẩn Napas.
+4. **Bước 4: Trợ Lý Bán Hàng Agentic AI & Thẻ Sách Tuần Tự (Hanh nói - 3 phút):**
+   - Bật bong bóng chat: Hỏi *"Tư vấn giúp tôi sách lập trình hoặc phát triển bản thân và có mã giảm giá nào không?"*
+   - AI tự động kích hoạt Tool Calling Loop: gọi `search_books` bằng unaccent scoring và `recommend_best_voucher` từ CSDL PostgreSQL.
+   - Chatbot hiển thị theo **Mô hình Khối Tuần tự (Block-Sequential Layout)**: Lời tư vấn $\rightarrow$ Thông tin sách, giá bán, voucher khả dụng $\rightarrow$ Ảnh bìa sách cùng 2 nút "Thêm vào giỏ" và "Mua ngay" tiện lợi.
+5. **Bước 5: Đăng Nhập Phân Hệ Admin, Quản Trị Khuyến Mại & Chứng Minh RBAC (Hanh nói - 4 phút):**
+   - Đăng nhập tài khoản Nhân viên Kho: Quả chuông chỉ báo cảnh báo sách sắp hết hàng; không có quyền can thiệp đơn hàng hay khuyến mại.
+   - Đăng nhập Super Admin: Mở trang `/admin/promotions` quản lý chiến dịch voucher, xem bảng Dashboard doanh thu, bảng Audit Logs và giải thích cơ chế Transaction ACID khóa tồn kho và khóa hạn mức lượt dùng Voucher.
 
 ---
 *Bản tài liệu tổng hợp toàn diện được biên soạn chuẩn mực phục vụ công tác Viết Quyển Báo Cáo Đồ Án Tốt Nghiệp và Bảo Vệ Trước Hội Đồng Chấm Thi Công Nghệ Thông Tin.*
