@@ -39,17 +39,56 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const userMessage: string = (body.message || '').trim();
-    const history: ChatMessage[] = Array.isArray(body.history) ? body.history : [];
-    const rawCartItems: IncomingCartItem[] = Array.isArray(body.cartItems) ? body.cartItems : [];
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Dữ liệu yêu cầu không đúng định dạng JSON.' },
+        { status: 400 }
+      );
+    }
 
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: 'Body yêu cầu không hợp lệ.' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof body.message !== 'string') {
+      return NextResponse.json(
+        { error: 'Nội dung tin nhắn phải là chuỗi ký tự.' },
+        { status: 400 }
+      );
+    }
+
+    const userMessage: string = body.message.trim();
     if (!userMessage) {
       return NextResponse.json(
         { error: 'Nội dung tin nhắn không được để trống.' },
         { status: 400 }
       );
     }
+
+    // N12: Giới hạn độ dài tin nhắn tối đa 1.000 ký tự chống DoS/quota
+    if (userMessage.length > 1000) {
+      return NextResponse.json(
+        { error: 'Nội dung tin nhắn quá dài. Vui lòng gửi dưới 1.000 ký tự mỗi lượt nhé!' },
+        { status: 400 }
+      );
+    }
+
+    // N12: Lịch sử tối đa 10 tin, mỗi tin tối đa 2.000 ký tự
+    const rawHistory = Array.isArray(body.history) ? body.history : [];
+    const history: ChatMessage[] = rawHistory
+      .slice(-10)
+      .filter((h: any) => h && typeof h.content === 'string')
+      .map((h: any) => ({
+        role: h.role === 'assistant' ? 'assistant' : 'user',
+        content: String(h.content).slice(0, 2000),
+      }));
+    const rawCartItems: IncomingCartItem[] = Array.isArray(body.cartItems) ? body.cartItems : [];
 
     // 2. Lấy Session Người Dùng từ HttpOnly Cookie ở Server (Bảo mật: BOLA/IDOR prevention)
     const user = await getCurrentUser();
@@ -63,15 +102,39 @@ export async function POST(req: NextRequest) {
       currentCartItems: cartItems,
     };
 
-    // 3. Kiểm tra API Key Gemini
+    // 3. Kiểm tra API Key Gemini (Nếu thiếu -> Tự động Fallback sang tra cứu CSDL cục bộ)
     const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     if (!geminiApiKey) {
-      return NextResponse.json({
-        reply:
-          'Xin chào bạn! Hiện tại kết nối AI đang được bảo trì trong ít phút. Bạn có thể tham khảo trực tiếp các đầu sách nổi bật trên trang chủ hoặc liên hệ hotline 0988.123.456 để được phục vụ ngay nhé!',
-        suggestedBooks: [],
-        actions: [],
-      });
+      try {
+        const searchTool = AI_TOOLS_REGISTRY['search_books'];
+        const voucherTool = AI_TOOLS_REGISTRY['recommend_best_voucher'];
+        const searchRes = await searchTool.execute({ keywords: [userMessage] }, ctx);
+        const books = (searchRes?.books || []).slice(0, 5);
+        let bestVoucher = null;
+        if (books.length > 0) {
+          const vRes = await voucherTool.execute({ orderAmount: books[0].price }, ctx);
+          bestVoucher = vRes?.bestVoucher || null;
+        }
+
+        const reply = books.length > 0
+          ? `Chào bạn! Mình đã tra cứu trực tiếp trong kho sách Tổ Sách theo yêu cầu "${userMessage}" và tìm thấy các cuốn sách phù hợp nhất dưới đây. Bạn có thể bấm xem chi tiết hoặc đặt mua ngay nhé!`
+          : 'Tổ Sách luôn sẵn sàng tư vấn cho bạn các tựa sách hay cùng các chương trình ưu đãi hấp dẫn. Bạn đang quan tâm đến cuốn sách hay thể loại nào hôm nay?';
+
+        return NextResponse.json({
+          reply,
+          suggestedBooks: books,
+          bestVoucher,
+          actions: [],
+          source: 'local-db-fallback',
+        });
+      } catch (err) {
+        console.error('Lỗi fallback local:', err);
+        return NextResponse.json({
+          reply: 'Tổ Sách luôn sẵn sàng tư vấn cho bạn các tựa sách hay. Bạn đang tìm cuốn sách nào hôm nay?',
+          suggestedBooks: [],
+          actions: [],
+        });
+      }
     }
 
     // 4. Lấy danh mục động từ CSDL thật để nhúng vào Prompt
@@ -155,20 +218,43 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
     let bestVoucherInfo: any = null;
     let finalReply = '';
 
-    // Hàm gọi Gemini có cơ chế Retry khi gặp 503 / 429
-    const callGeminiApi = async (payload: any, retries = 2): Promise<Response> => {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${geminiApiKey}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+    // Danh sách các model fallback theo thứ tự ưu tiên (N14 resilience)
+    const GEMINI_MODELS = [
+      'gemini-3.1-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-1.5-flash',
+    ];
 
-      if ((res.status === 503 || res.status === 429) && retries > 0) {
-        await new Promise((r) => setTimeout(r, 1500));
-        return callGeminiApi(payload, retries - 1);
+    // Hàm gọi Gemini có cơ chế thử các model fallback, timeout 20s và retry khi gặp 503 / 429
+    const callGeminiApi = async (payload: any, retries = 2): Promise<Response> => {
+      let lastRes: Response | null = null;
+      for (const modelName of GEMINI_MODELS) {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(20000), // Timeout 20s chống treo kết nối
+          });
+
+          // Nếu model chưa có quyền truy cập hoặc 404, thử model tiếp theo
+          if (res.status === 404) {
+            console.warn(`Model ${modelName} trả về 404, chuyển sang model dự phòng tiếp theo...`);
+            lastRes = res;
+            continue;
+          }
+
+          if ((res.status === 503 || res.status === 429) && retries > 0) {
+            await new Promise((r) => setTimeout(r, 1200));
+            return callGeminiApi(payload, retries - 1);
+          }
+          return res;
+        } catch (fetchErr: any) {
+          console.warn(`Lỗi kết nối tới model ${modelName}:`, fetchErr?.message);
+        }
       }
-      return res;
+      return lastRes || new Response(JSON.stringify({ error: 'All Gemini models unreachable' }), { status: 502 });
     };
 
     // 7. Vòng Lặp Điều Phối Tool Calling (Agent Loop, tối đa 5 vòng an toàn)
@@ -186,7 +272,7 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
         tools: [{ functionDeclarations: geminiToolDeclarations }],
         generationConfig: {
           temperature: 0.35,
-          maxOutputTokens: 800,
+          maxOutputTokens: 2048, // Nâng từ 800 lên 2048 tránh cụt output khi reasoning
         },
       });
 
@@ -203,6 +289,24 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
       if (!geminiRes.ok) {
         const errorText = await geminiRes.text();
         console.error(`Gemini API Error (Status ${geminiRes.status}):`, errorText);
+        // Fallback tra cứu CSDL cục bộ khi Gemini gặp lỗi (N14)
+        if (accumulatedBooks.length === 0) {
+          try {
+            const searchTool = AI_TOOLS_REGISTRY['search_books'];
+            const voucherTool = AI_TOOLS_REGISTRY['recommend_best_voucher'];
+            const searchRes = await searchTool.execute({ keywords: [userMessage] }, ctx);
+            if (searchRes?.books && searchRes.books.length > 0) {
+              accumulatedBooks = searchRes.books.slice(0, 5);
+              const vRes = await voucherTool.execute({ orderAmount: accumulatedBooks[0].price }, ctx);
+              if (vRes?.bestVoucher) {
+                bestVoucherInfo = vRes.bestVoucher;
+              }
+              finalReply = `Chào bạn! Mình đã tra cứu trực tiếp trong kho sách Tổ Sách theo yêu cầu "${userMessage}" và tìm thấy các cuốn sách phù hợp dưới đây. Bạn có thể bấm xem chi tiết hoặc đặt mua ngay nhé!`;
+            }
+          } catch (localErr) {
+            console.error('Lỗi local search fallback:', localErr);
+          }
+        }
         break;
       }
 

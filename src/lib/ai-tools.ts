@@ -14,9 +14,9 @@ export interface ToolDefinition<TArgs = any, TResult = any> {
   declaration: {
     name: string;
     description: string;
-    parameters: {
+    parameters?: {
       type: 'OBJECT';
-      properties: Record<string, any>;
+      properties?: Record<string, any>;
       required?: string[];
     };
   };
@@ -315,12 +315,32 @@ export const recommendBestVoucherTool: ToolDefinition = {
         },
       });
 
-      // Lọc các voucher còn hiệu lực thời gian
+      // Lấy danh sách số lần user hiện tại đã dùng từng voucher (nếu đã đăng nhập)
+      const userUsageCounts = new Map<string, number>();
+      if (ctx.userId) {
+        const usages = await prisma.voucherUsage.groupBy({
+          by: ['voucherId'],
+          where: { userId: ctx.userId },
+          _count: { id: true },
+        });
+        for (const u of usages) {
+          userUsageCounts.set(u.voucherId, u._count.id);
+        }
+      }
+
+      // Lọc các voucher còn hiệu lực thời gian và chưa vượt quá giới hạn dùng của người dùng
       const validDateVouchers = allVouchers.filter((v) => {
         if (v.event && !v.event.isActive) return false;
         const { effectiveStartsAt, effectiveEndsAt } = getEffectiveVoucherDates(v);
         if (effectiveStartsAt && now < effectiveStartsAt) return false;
         if (effectiveEndsAt && now > effectiveEndsAt) return false;
+
+        // Chặn gợi ý nếu người dùng hiện tại đã dùng hết lượt mã này (N13)
+        if (ctx.userId) {
+          const usedByUser = userUsageCounts.get(v.id) || 0;
+          if (usedByUser >= v.perUserLimit) return false;
+        }
+
         return true;
       });
 
@@ -529,10 +549,6 @@ export const listActiveEventsTool: ToolDefinition = {
   declaration: {
     name: 'list_active_events',
     description: 'Lấy danh sách các sự kiện khuyến mãi, ngày hội đọc sách hoặc lễ hội ưu đãi đang diễn ra tại Tổ Sách.',
-    parameters: {
-      type: 'OBJECT',
-      properties: {},
-    },
   },
   execute: async () => {
     try {
@@ -583,4 +599,14 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDefinition> = {
   list_active_events: listActiveEventsTool,
 };
 
-export const geminiToolDeclarations = Object.values(AI_TOOLS_REGISTRY).map((t) => t.declaration);
+// Chuẩn hóa function declarations cho Gemini API: Loại bỏ thuộc tính parameters rỗng nếu không có đối số
+export const geminiToolDeclarations = Object.values(AI_TOOLS_REGISTRY).map((t) => {
+  const decl: any = {
+    name: t.declaration.name,
+    description: t.declaration.description,
+  };
+  if (t.declaration.parameters && Object.keys(t.declaration.parameters.properties || {}).length > 0) {
+    decl.parameters = t.declaration.parameters;
+  }
+  return decl;
+});

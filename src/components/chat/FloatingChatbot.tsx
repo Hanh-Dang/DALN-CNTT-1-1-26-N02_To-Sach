@@ -661,9 +661,11 @@ export function FloatingChatbot() {
       try {
         sessionStorage.setItem('tosach_checkout_selected_ids', JSON.stringify([book.id]));
 
-        // 3. Nếu đang có voucher tốt nhất được tư vấn, tự động gán vào checkout
-        if (currentBestVoucher) {
+        // 3. Nếu đang có voucher tốt nhất được tư vấn VÀ giá sách đủ điều kiện minOrderValue (N13)
+        if (currentBestVoucher && book.price >= (currentBestVoucher.minOrderValue || 0)) {
           sessionStorage.setItem('tosach_checkout_voucher', JSON.stringify(currentBestVoucher));
+        } else {
+          sessionStorage.removeItem('tosach_checkout_voucher');
         }
       } catch (err) {
         console.warn('Lỗi ghi sessionStorage checkout:', err);
