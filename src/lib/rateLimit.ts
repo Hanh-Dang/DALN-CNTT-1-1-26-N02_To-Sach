@@ -27,19 +27,16 @@ if (typeof setInterval !== 'undefined') {
   if (cleanupTimer.unref) cleanupTimer.unref();
 }
 
-/**
- * Trích xuất địa chỉ IP của Client từ Request Headers
- */
 export function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
+  // TRUST_PROXY=true khi deploy sau Nginx / Vercel (proxy tự ghi đè header, client không giả được)
+  if (process.env.TRUST_PROXY === 'true') {
+    const realIp = req.headers.get('x-real-ip');
+    if (realIp) return realIp.trim();
+    const forwarded = req.headers.get('x-forwarded-for');
+    // Lấy giá trị CUỐI: do proxy của mình thêm vào; giá trị đầu là do client tự gửi
+    if (forwarded) return forwarded.split(',').at(-1)!.trim();
   }
-  const realIp = req.headers.get('x-real-ip');
-  if (realIp) {
-    return realIp.trim();
-  }
-  return '127.0.0.1';
+  return 'direct';
 }
 
 /**
@@ -149,11 +146,11 @@ export async function isLoginBlocked(
 
 export async function recordLoginFailure(
   identifier: string,
-  windowSeconds = 900 // Mặc định khóa 15 phút
+  windowSeconds = 900, // Mặc định khóa 15 phút
+  maxAttempts = 5
 ): Promise<{ currentFailures: number; remainingAttempts: number; isNowBlocked: boolean }> {
   const key = `${LOGIN_ATTEMPT_PREFIX}${identifier.toLowerCase().trim()}`;
   const now = Date.now();
-  const maxAttempts = 5;
 
   let record = memoryStore.get(key);
   if (!record || now > record.resetAt) {

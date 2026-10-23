@@ -39,12 +39,13 @@ export async function POST(req: NextRequest) {
       where: { email: normalizedEmail },
     });
 
+    const SUCCESS_MSG = 'Nếu địa chỉ email hợp lệ, mã xác minh OTP sẽ được gửi tới hòm thư của bạn trong vài phút.';
+
     if (existing && existing.status === 'ACTIVE') {
       // L-j: Chống dò quét tài khoản (User Enumeration): Trả về thông báo thành công chung
       return NextResponse.json({
         success: true,
-        message: 'Nếu địa chỉ email hợp lệ và đủ điều kiện, mã xác minh OTP sẽ được gửi tới hòm thư của bạn trong vài phút.',
-        sentRealEmail: false,
+        message: SUCCESS_MSG,
       });
     }
 
@@ -59,9 +60,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: result.sentRealEmail
-        ? 'Mã xác minh đã được gửi tới hòm thư Gmail của bạn. Vui lòng kiểm tra hộp thư đến hoặc thư rác!'
-        : 'Mã xác minh đã được tạo thành công!',
+      message: SUCCESS_MSG,
       sentRealEmail: result.sentRealEmail,
       demoOtp: process.env.NODE_ENV !== 'production' ? result.demoOtp : undefined, // Chỉ hỗ trợ khi demo/dev đồ án
     });

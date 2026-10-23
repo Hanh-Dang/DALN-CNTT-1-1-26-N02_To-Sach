@@ -16,17 +16,23 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
     const clientIp = getClientIp(req);
-    // N19: Khóa đăng nhập theo cặp (IP, Email) chống kẻ xấu lợi dụng DoS khóa tài khoản admin
+    // N19 & R2: Khóa đăng nhập theo cặp (IP, Email) và ngưỡng phụ theo Email toàn cục chống brute-force đổi IP
     const loginIdentifier = `${clientIp}:${normalizedEmail}`;
+    const emailKey = `email:${normalizedEmail}`;
 
-    // 1. Kiểm tra tài khoản từ IP này có đang bị khóa do nhập sai mật khẩu quá 5 lần không (N19)
-    const lockCheck = await isLoginBlocked(loginIdentifier);
-    if (lockCheck.blocked) {
-      const waitMinutes = Math.max(1, Math.ceil(lockCheck.retryAfterSeconds / 60));
+    // 1. Kiểm tra tài khoản từ IP này hoặc theo email toàn cục có đang bị khóa không (R2)
+    const [lockCheck, emailLock] = await Promise.all([
+      isLoginBlocked(loginIdentifier, 5), // 5 lần / 15 phút theo IP + email
+      isLoginBlocked(emailKey, 20), // 20 lần / 15 phút theo email cộng dồn mọi IP
+    ]);
+
+    if (lockCheck.blocked || emailLock.blocked) {
+      const waitSeconds = Math.max(lockCheck.retryAfterSeconds, emailLock.retryAfterSeconds, 60);
+      const waitMinutes = Math.max(1, Math.ceil(waitSeconds / 60));
       return NextResponse.json(
         {
-          error: `Bạn đã nhập sai mật khẩu quá 5 lần liên tiếp trên thiết bị này. Vui lòng thử lại sau ${waitMinutes} phút hoặc đặt lại mật khẩu.`,
-          retryAfter: lockCheck.retryAfterSeconds,
+          error: `Bạn đã thử quá nhiều lần. Vui lòng thử lại sau ${waitMinutes} phút hoặc đặt lại mật khẩu.`,
+          retryAfter: waitSeconds,
         },
         { status: 429 }
       );
@@ -44,7 +50,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      const fail = await recordLoginFailure(loginIdentifier);
+      const [fail] = await Promise.all([
+        recordLoginFailure(loginIdentifier, 900, 5),
+        recordLoginFailure(emailKey, 900, 20),
+      ]);
       if (fail.isNowBlocked) {
         return NextResponse.json(
           {
@@ -69,7 +78,10 @@ export async function POST(req: NextRequest) {
 
     const isMatch = await comparePassword(password, user.passwordHash);
     if (!isMatch) {
-      const fail = await recordLoginFailure(loginIdentifier);
+      const [fail] = await Promise.all([
+        recordLoginFailure(loginIdentifier, 900, 5),
+        recordLoginFailure(emailKey, 900, 20),
+      ]);
       if (fail.isNowBlocked) {
         return NextResponse.json(
           {
@@ -85,8 +97,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Đăng nhập thành công -> Xóa bộ đếm thử sai
-    await clearLoginFailures(loginIdentifier);
+    // Đăng nhập thành công -> Xóa bộ đếm thử sai của cả IP và Email
+    await Promise.all([
+      clearLoginFailures(loginIdentifier),
+      clearLoginFailures(emailKey),
+    ]);
 
     // Update lastLoginAt
     await prisma.user.update({
