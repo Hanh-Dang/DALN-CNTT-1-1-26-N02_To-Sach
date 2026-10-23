@@ -171,20 +171,22 @@ export async function validateVoucher(
     },
   });
 
+  const INVALID_VOUCHER_MSG = 'Mã giảm giá không hợp lệ hoặc đã hết hiệu lực.';
+
   if (!voucher) {
-    return { isValid: false, error: `Mã giảm giá "${code}" không tồn tại trên hệ thống.` };
+    return { isValid: false, error: INVALID_VOUCHER_MSG };
   }
 
   // 2. Kiểm tra trạng thái kích hoạt của voucher
   if (!voucher.isActive) {
-    return { isValid: false, error: `Mã giảm giá "${code}" hiện đang tạm ngưng hoạt động.` };
+    return { isValid: false, error: INVALID_VOUCHER_MSG };
   }
 
   // 3. Kiểm tra trạng thái của sự kiện cha (nếu có gắn eventId)
   if (voucher.event && !voucher.event.isActive) {
     return {
       isValid: false,
-      error: `Sự kiện "${voucher.event.name}" gắn với mã này đã tạm ngưng hoặc kết thúc.`,
+      error: INVALID_VOUCHER_MSG,
     };
   }
 
@@ -195,14 +197,14 @@ export async function validateVoucher(
   if (effectiveStartsAt && now < effectiveStartsAt) {
     return {
       isValid: false,
-      error: `Mã giảm giá "${code}" chưa đến thời gian áp dụng.`,
+      error: INVALID_VOUCHER_MSG,
     };
   }
 
   if (effectiveEndsAt && now > effectiveEndsAt) {
     return {
       isValid: false,
-      error: `Mã giảm giá "${code}" đã hết hạn sử dụng.`,
+      error: INVALID_VOUCHER_MSG,
     };
   }
 

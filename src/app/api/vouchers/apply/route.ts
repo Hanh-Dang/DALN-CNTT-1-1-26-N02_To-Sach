@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { validateVoucher } from '@/lib/voucher';
+import { getClientIp, checkRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,16 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: NextRequest) {
   try {
+    // L-f: Giới hạn tần suất 20 lần/phút/IP để chống brute-force mã voucher
+    const ip = getClientIp(req);
+    const rateCheck = await checkRateLimit(`voucher-apply:${ip}`, 20, 60);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        { error: 'Bạn đang thử mã quá nhanh. Vui lòng đợi 1 phút trước khi thử lại.' },
+        { status: 429 }
+      );
+    }
+
     const user = await getCurrentUser();
     const body = await req.json();
     const { code, subtotal } = body;

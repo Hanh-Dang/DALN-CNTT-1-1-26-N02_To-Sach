@@ -5,6 +5,11 @@ import { UserRole, VoucherType } from '@prisma/client';
 import { formatDateTimeVN } from '@/lib/utils';
 import { getVoucherDisplayStatus } from '@/lib/voucher';
 
+function parseVnDate(raw: string): Date {
+  const hasTimezone = /(Z|[+-]\d{2}:?\d{2})$/.test(raw);
+  return new Date(hasTimezone ? raw : `${raw}+07:00`);
+}
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -14,9 +19,13 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== UserRole.SUPER_ADMIN) {
+    const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+    const hasManagePerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+    const hasViewPerm = user?.permissions?.includes('VIEW_PROMOTIONS') ?? false;
+
+    if (!user || (!isSuperAdmin && !hasManagePerm && !hasViewPerm)) {
       return NextResponse.json(
-        { error: 'Chỉ Super Admin mới có quyền truy cập quản lý Voucher.' },
+        { error: 'Bạn không có quyền truy cập danh sách Voucher.' },
         { status: 403 }
       );
     }
@@ -81,9 +90,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== UserRole.SUPER_ADMIN) {
+    const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+    const hasManagePerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+
+    if (!user || (!isSuperAdmin && !hasManagePerm)) {
       return NextResponse.json(
-        { error: 'Chỉ Super Admin mới có quyền tạo Voucher.' },
+        { error: 'Bạn không có quyền tạo Voucher mới (cần quyền MANAGE_PROMOTIONS hoặc Quản trị viên).' },
         { status: 403 }
       );
     }
@@ -150,9 +162,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === VoucherType.PERCENT) {
-      if (numValue < 1 || numValue > 100) {
+      if (!Number.isInteger(numValue) || numValue < 1 || numValue > 100) {
         return NextResponse.json(
-          { error: 'Mức giảm theo phần trăm (%) phải từ 1% đến 100%.' },
+          { error: 'Mức giảm theo phần trăm (%) phải là số nguyên từ 1% đến 100%.' },
           { status: 400 }
         );
       }
@@ -213,8 +225,8 @@ export async function POST(req: NextRequest) {
       }
 
       if (rawStartsAt && rawEndsAt) {
-        const vStart = new Date(rawStartsAt);
-        const vEnd = new Date(rawEndsAt);
+        const vStart = parseVnDate(rawStartsAt);
+        const vEnd = parseVnDate(rawEndsAt);
 
         if (isNaN(vStart.getTime()) || isNaN(vEnd.getTime())) {
           return NextResponse.json({ error: 'Định dạng ngày voucher không hợp lệ.' }, { status: 400 });
@@ -260,8 +272,8 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        const vStart = new Date(rawStartsAt);
-        const vEnd = new Date(rawEndsAt);
+        const vStart = parseVnDate(rawStartsAt);
+        const vEnd = parseVnDate(rawEndsAt);
         if (isNaN(vStart.getTime()) || isNaN(vEnd.getTime())) {
           return NextResponse.json({ error: 'Định dạng ngày voucher không hợp lệ.' }, { status: 400 });
         }
@@ -275,6 +287,13 @@ export async function POST(req: NextRequest) {
         finalStartsAt = vStart;
         finalEndsAt = vEnd;
       }
+    }
+
+    if (isActive !== undefined && typeof isActive !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Trạng thái kích hoạt (isActive) phải là kiểu boolean (true/false).' },
+        { status: 400 }
+      );
     }
 
     const created = await prisma.voucher.create({
@@ -292,7 +311,7 @@ export async function POST(req: NextRequest) {
         endsAt: finalEndsAt,
         usageLimit: numUsageLimit,
         perUserLimit: numPerUserLimit,
-        isActive: Boolean(isActive),
+        isActive: isActive === undefined ? true : isActive,
       },
     });
 

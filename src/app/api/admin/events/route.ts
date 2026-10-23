@@ -25,9 +25,13 @@ function slugify(text: string): string {
 export async function GET() {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== UserRole.SUPER_ADMIN) {
+    const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+    const hasManagePerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+    const hasViewPerm = user?.permissions?.includes('VIEW_PROMOTIONS') ?? false;
+
+    if (!user || (!isSuperAdmin && !hasManagePerm && !hasViewPerm)) {
       return NextResponse.json(
-        { error: 'Chỉ Super Admin mới có quyền truy cập quản lý sự kiện khuyến mãi.' },
+        { error: 'Bạn không có quyền truy cập danh sách sự kiện khuyến mãi.' },
         { status: 403 }
       );
     }
@@ -51,6 +55,11 @@ export async function GET() {
   }
 }
 
+function parseVnDate(raw: string): Date {
+  const hasTimezone = /(Z|[+-]\d{2}:?\d{2})$/.test(raw);
+  return new Date(hasTimezone ? raw : `${raw}+07:00`);
+}
+
 /**
  * POST /api/admin/events
  * Tạo sự kiện khuyến mãi mới (Chỉ SUPER_ADMIN)
@@ -58,9 +67,12 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== UserRole.SUPER_ADMIN) {
+    const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+    const hasManagePerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+
+    if (!user || (!isSuperAdmin && !hasManagePerm)) {
       return NextResponse.json(
-        { error: 'Chỉ Super Admin mới có quyền tạo sự kiện khuyến mãi.' },
+        { error: 'Bạn không có quyền tạo sự kiện khuyến mãi (cần quyền MANAGE_PROMOTIONS hoặc Quản trị viên).' },
         { status: 403 }
       );
     }
@@ -79,8 +91,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const startDate = new Date(startsAt);
-    const endDate = new Date(endsAt);
+    const startDate = parseVnDate(startsAt);
+    const endDate = parseVnDate(endsAt);
 
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       return NextResponse.json({ error: 'Định dạng ngày tháng không hợp lệ.' }, { status: 400 });
