@@ -11,7 +11,7 @@
 ## 📖 Giới Thiệu
 **Tổ Sách** là hệ thống thương mại điện tử chuyên bán sách trực tuyến theo mô hình B2C (Business-to-Consumer) thuần túy. Toàn bộ catalog sách được nhập và quản lý tập trung từ các nhà xuất bản uy tín, mang lại trải nghiệm mua sắm đồng nhất, tìm kiếm chuyên sâu và quản trị tinh gọn.
 
-Chi tiết phân tích kiến trúc, thiết kế cơ sở dữ liệu và bí kíp bảo vệ đồ án: xem tại file [**`PROJECT_DOCUMENTATION.md`**](./PROJECT_DOCUMENTATION.md).
+Chi tiết phân tích kiến trúc, thiết kế cơ sở dữ liệu và bí kíp bảo vệ đồ án: xem tại file [**`Document_Project.md`**](./Document_Project.md).
 
 ---
 
@@ -85,8 +85,8 @@ Dự án sử dụng file `.env` để bảo mật chuỗi kết nối cơ sở 
    # 2. Chuỗi kết nối PostgreSQL trực tiếp Direct (cổng 5432 - dùng cho Prisma Migration)
    DIRECT_URL="postgresql://postgres.[project-ref]:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
 
-   # 3. Mã khóa bí mật JWT dùng để ký phiên đăng nhập (tối thiểu 32 ký tự, sinh bằng: openssl rand -base64 48)
-   JWT_SECRET="your_random_secure_jwt_secret_key_at_least_32_chars"
+   # 3. Mã khóa bí mật JWT dùng để ký phiên đăng nhập (tạo bằng lệnh: openssl rand -base64 48)
+   JWT_SECRET=""
 
    # 4. API Key của Google Gemini dùng cho Trợ lý Bán hàng Agentic AI (Gemini 3.1 Flash-Lite)
    GEMINI_API_KEY="your-gemini-api-key"
@@ -113,7 +113,7 @@ npx prisma db push
 npx prisma db seed
 ```
 
-> **Mẹo hữu ích:** Nếu bạn muốn nạp đầy đủ kho sách thực tế 5.000+ cuốn, 2.000+ tác giả, 50.000+ reviews và 10.000+ đơn hàng theo chuẩn Proposal:
+> **Mẹo hữu ích:** Nếu bạn muốn nạp đầy đủ kho sách thực tế 5.000+ cuốn, 2.000+ tác giả, đánh giá mẫu và các đơn hàng lịch sử thực nghiệm:
 > ```bash
 > # 1. Nạp toàn bộ danh mục, tác giả và 5.000+ sách:
 > npx tsx prisma/seed-large-dataset.ts

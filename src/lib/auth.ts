@@ -5,37 +5,9 @@ import { prisma } from './prisma';
 import { UserRole } from '@prisma/client';
 
 import { redis } from './redis';
+import { getJwtSecretKey } from './jwtKey';
 
-const INSECURE_DEFAULT_SECRETS = new Set([
-  'tosach_super_secret_jwt_key_2026_proposals',
-  'default_tosach_jwt_secret_dev_2026_dev_only',
-]);
-
-export function getJwtSecretKey(): Uint8Array {
-  const secret = process.env.JWT_SECRET?.trim();
-  const isInsecure = !secret || secret.length < 32 || INSECURE_DEFAULT_SECRETS.has(secret);
-
-  if (isInsecure) {
-    // Cho phép quá trình build static của Next.js hoàn tất thành công với cảnh báo (N5)
-    if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.npm_lifecycle_event === 'build') {
-      console.warn(
-        '[SECURITY WARNING] Build phase detected with default/insecure JWT_SECRET. Please make sure to configure a strong JWT_SECRET before launching production server!'
-      );
-      return new TextEncoder().encode('temp_build_key_must_be_overridden_in_prod_env_64bytes');
-    }
-
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(
-        'CRITICAL SECURITY ERROR: JWT_SECRET environment variable is missing, shorter than 32 characters, or using the public insecure default key from .env.example! Server refused to start. Please generate a strong key using "openssl rand -base64 48".'
-      );
-    }
-    console.warn(
-      '[SECURITY WARNING] process.env.JWT_SECRET is missing, insecure, or using the public default template key. Please set a custom secure JWT_SECRET.'
-    );
-    return new TextEncoder().encode('default_tosach_jwt_secret_dev_2026_dev_only');
-  }
-  return new TextEncoder().encode(secret);
-}
+export { getJwtSecretKey };
 
 const key = getJwtSecretKey();
 

@@ -1,19 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
-
-function getJwtSecretKey(): Uint8Array {
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret.trim().length < 32) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(
-        'CRITICAL SECURITY ERROR: JWT_SECRET environment variable is missing or shorter than 32 characters in production! Server refused to start.'
-      );
-    }
-    return new TextEncoder().encode(secret || 'default_tosach_jwt_secret_dev_2026_dev_only');
-  }
-  return new TextEncoder().encode(secret);
-}
+import { getJwtSecretKey } from './lib/jwtKey';
 
 const key = getJwtSecretKey();
 
