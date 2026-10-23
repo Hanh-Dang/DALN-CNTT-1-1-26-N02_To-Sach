@@ -152,12 +152,15 @@ Mở trình duyệt web và truy cập vào địa chỉ:
 
 ## 🔑 Tài Khoản Thử Nghiệm Mặc Định (Seed Accounts)
 
-| Vai trò | Email | Mật khẩu | Quyền hạn |
+| Vai trò | Email | Mật khẩu | Quyền hạn Hệ thống |
 |---|---|---|---|
-| **Super Admin** | `admin@tosach.vn` | `Admin@123` | Toàn quyền quản trị hệ sinh thái |
-| **Nhân viên Kho** | `staff.kho@tosach.vn` | `Staff@123` | Quản lý kho sách & Cây danh mục (`MANAGE_BOOKS`) |
-| **Nhân viên Đơn** | `staff.order@tosach.vn` | `Staff@123` | Tiếp nhận & Xử lý trạng thái đơn hàng (`MANAGE_ORDERS`) |
-| **Khách hàng mẫu** | `customer@gmail.com` | `User@123` | Mua sắm, áp voucher, đánh giá, xem đơn hàng |
+| **Super Admin** | `admin@tosach.vn` | `Admin@123` | Toàn quyền quản trị hệ sinh thái, xem toàn bộ doanh thu shop (`VIEW_REVENUE`), quản trị khuyến mại (`MANAGE_PROMOTIONS`), quản lý nhân sự & phân quyền (`MANAGE_USERS`), xem nhật ký kiểm toán (`VIEW_AUDIT_LOG`). |
+| **Nhân viên Kho** | `staff.kho@tosach.vn` | `Staff@123` | Quản lý kho sách (`MANAGE_BOOKS`) & Cây danh mục (`MANAGE_CATEGORIES`). Cảnh báo sách sắp hết tồn kho. *(Bị ẩn hoàn toàn doanh thu shop)*. |
+| **Nhân viên Đơn** | `staff.order@tosach.vn` | `Staff@123` | Tiếp nhận & Xử lý đơn hàng (`MANAGE_ORDERS`), Kiểm duyệt đánh giá (`MANAGE_REVIEWS`), Xem danh sách sự kiện & voucher (`VIEW_PROMOTIONS` - Chế độ chỉ xem để hỗ trợ khách áp mã, không có nút Thêm/Sửa/Tắt/Xóa). *(Bị ẩn hoàn toàn doanh thu shop)*. |
+| **Khách hàng mẫu** | `customer@gmail.com` | `User@123` | Mua sắm, áp voucher, thanh toán VietQR, gửi đánh giá sao, theo dõi đơn hàng thời gian thực. |
+
+> 🔒 **Nguyên tắc Bảo mật Doanh thu & Quản trị Nhân sự:**  
+> Theo chuẩn mực vận hành TMĐT và bảo mật tài chính, **nhân viên thông thường (Staff) tuyệt đối không được xem tổng doanh thu của shop**. Tại giao diện Dashboard Admin của tài khoản nhân viên, thẻ *"Doanh thu tháng này"* hoàn toàn bị gỡ bỏ khỏi DOM, bố cục lưới tự động co giãn từ 4 cột sang 3 cột cân đối (`grid-cols-1 md:grid-cols-3`), và API `/api/admin/dashboard/metrics` trả về `revenue: 0` cùng cờ `canViewRevenue: false`.
 
 ---
 

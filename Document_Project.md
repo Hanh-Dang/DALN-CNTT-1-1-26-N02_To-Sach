@@ -760,8 +760,21 @@ Mã ISBN gồm 13 chữ số, chia làm 5 phần phân tách bởi dấu gạch 
 | :--- | :--- | :---: | :--- | :--- |
 | `id` | `TEXT` (UUID) | **PK** | Mã định danh quyền hạn | `p-001` |
 | `code` | `TEXT` | **UK**, Index | Mã quyền dùng kiểm tra trong Middleware & API | `MANAGE_BOOKS` |
-| `name` | `TEXT` | NOT NULL | Tên hiển thị tiếng Việt trên giao diện phân quyền | `Quản lý kho sách` |
-| `description` | `TEXT` | Nullable | Giải thích quyền: Xem, thêm, sửa, xóa sách, nhập kho | `Cho phép CRUD sách và cập nhật số lượng tồn kho` |
+| `name` | `TEXT` | NOT NULL | Tên hiển thị tiếng Việt trên giao diện phân quyền | `Quản lý sách & kho` |
+| `description` | `TEXT` | Nullable | Giải thích quyền: Xem, thêm, sửa, xóa sách, nhập kho | `Thêm, sửa, xóa, nhập kho và cập nhật giá sách` |
+
+##### Danh Mục 9 Mã Quyền RBAC Chuẩn Hóa Của Hệ Sinh Thái Tổ Sách:
+| STT | Mã Quyền (`code`) | Tên Hiển Thị Tiếng Việt (`name`) | Phạm Vi Thẩm Quyền Kỹ Thuật (`description`) | Vai Trò Mặc Định Được Cấp |
+| :---: | :--- | :--- | :--- | :--- |
+| 1 | `MANAGE_BOOKS` | Quản lý sách & kho | Thêm, sửa, xóa sách, nhập kho, cập nhật số lượng tồn kho và giá bán | Nhân viên Kho, Super Admin |
+| 2 | `MANAGE_ORDERS` | Xử lý đơn hàng | Xem chi tiết đơn hàng, duyệt trạng thái từ PENDING sang CONFIRMED, SHIPPING | Nhân viên Đơn, Super Admin |
+| 3 | `MANAGE_CATEGORIES` | Quản lý danh mục | Tổ chức, sắp xếp cây phân cấp danh mục 3 tầng DDC của kho sách | Nhân viên Kho, Super Admin |
+| 4 | `MANAGE_USERS` | Quản lý người dùng & phân quyền | Xem danh sách người dùng, cấp/hủy quyền hạn Staff trong ma trận RBAC | Super Admin |
+| 5 | `VIEW_AUDIT_LOG` | Xem nhật ký kiểm toán | Truy vết toàn bộ lịch sử thao tác nhạy cảm (nhập kho, đổi giá, gán quyền) | Super Admin |
+| 6 | `MANAGE_REVIEWS` | Kiểm duyệt đánh giá | Phê duyệt hoặc ẩn bình luận, đánh giá sao của độc giả | Nhân viên Đơn, Super Admin |
+| 7 | `VIEW_PROMOTIONS` | Xem khuyến mãi & voucher | Xem danh sách sự kiện và voucher để hỗ trợ khách hàng (Không có nút Thêm, Sửa, Tắt, Xóa) | Nhân viên Đơn, Super Admin |
+| 8 | `MANAGE_PROMOTIONS` | Quản trị khuyến mãi & voucher | Toàn quyền tạo chiến dịch sự kiện, sinh mã voucher, bật/tắt và xóa voucher | Super Admin |
+| 9 | `VIEW_REVENUE` | Xem tổng doanh thu shop | Xem tổng doanh thu bán hàng, biểu đồ tài chính và chỉ số tiền tệ trên Dashboard | Super Admin (Ẩn với Staff) |
 
 ---
 
@@ -1003,6 +1016,58 @@ const result = await prisma.$transaction(async (tx) => {
 - **Tính Nguyên Tử (Atomicity):** Nếu bất kỳ cuốn sách nào hết hàng HOẶC voucher bị hết lượt dùng cùng lúc, toàn bộ transaction bị Rollback 100%, không xảy ra tình trạng "trừ kho mà không tạo được đơn" hoặc "tăng lượt voucher ảo".
 - **Tính Nhất Quán (Consistency):** Ràng buộc `stockQty >= 0` và `usedCount <= usageLimit` luôn được bảo đảm ở cấp độ Database.
 - **Tính Cô Lập (Isolation):** PostgreSQL sử dụng cấp độ cô lập Read Committed kết hợp cơ chế khóa hàng (Row-level Locking) của lệnh `UPDATE`, triệt tiêu hoàn toàn hiện tượng Race Condition khi mở bán Flash Sale hoặc Tung Voucher số lượng hạn chế.
+
+### 4.5.2 Cơ Chế Ngăn Chặn Deadlock (Deadlock Prevention Strategy) Khi Hủy Đơn & Hoàn Tồn Kho
+
+Trong môi trường thương mại điện tử với tải cao, nhiều tác vụ có thể đồng thời cập nhật trạng thái đơn hàng (ví dụ: khách hàng bấm "Hủy đơn" trên giao diện cá nhân trong khi nhân viên quản trị cũng thao tác duyệt trạng thái đơn hoặc hệ thống chạy job tự động hủy đơn quá hạn thanh toán). Khi một đơn hàng bị hủy, hệ thống bắt buộc phải thực hiện 2 thao tác hoàn nguyên dữ liệu:
+1. Hoàn lại số lượt sử dụng voucher (`usedCount: decrement(1)`).
+2. Hoàn lại số lượng tồn kho cho từng cuốn sách trong đơn (`stockQty: increment(qty)`, `soldCount: decrement(qty)`).
+
+Nếu các giao dịch đồng thời khóa các bản ghi theo thứ tự ngẫu nhiên hoặc không đồng nhất (ví dụ Transaction 1 khóa Sách A rồi chờ khóa Sách B, trong khi Transaction 2 khóa Sách B rồi chờ khóa Sách A), PostgreSQL sẽ phát sinh hiện tượng **Khóa Chéo (Deadlock - Mã lỗi 40P01 / Prisma ClientKnownRequestError `P2034`)**, khiến transaction bị abort cưỡng bức.
+
+**Giải pháp Kỹ thuật Chuẩn hóa được triển khai trong mã nguồn Tổ Sách:**
+Hệ thống áp dụng nguyên lý **Deterministic Global Resource Ordering (Khóa tài nguyên theo thứ tự xác định toàn cục)**:
+
+```typescript
+// Trích đoạn logic an toàn trong src/app/api/orders/[id]/cancel/route.ts
+// và src/app/api/admin/orders/[id]/status/route.ts
+await prisma.$transaction(async (tx) => {
+  // 1. Cập nhật trạng thái đơn sang CANCELLED
+  await tx.order.update({
+    where: { id: order.id },
+    data: { status: 'CANCELLED', updatedAt: new Date() }
+  });
+
+  // 2. KHÓA VOUCHER TRƯỚC TIÊN (NẾU ĐƠN CÓ ÁP DỤNG VOUCHER)
+  if (order.voucherId) {
+    await tx.voucher.update({
+      where: { id: order.voucherId },
+      data: { usedCount: { decrement: 1 } }
+    });
+    // Xóa bản ghi lịch sử sử dụng voucher của user đối với đơn này
+    await tx.voucherUsage.deleteMany({
+      where: { orderId: order.id, voucherId: order.voucherId }
+    });
+  }
+
+  // 3. KHÓA CÁC BẢN GHI SÁCH THEO THỨ TỰ ID TĂNG DẦN (DEADLOCK-SAFE)
+  // Sắp xếp items theo thứ tự bookId xác định để loại bỏ hoàn toàn Circular Wait:
+  const sortedItems = [...order.items].sort((a, b) => a.bookId.localeCompare(b.bookId));
+
+  for (const item of sortedItems) {
+    await tx.book.update({
+      where: { id: item.bookId },
+      data: {
+        stockQty: { increment: item.quantity },
+        soldCount: { decrement: item.quantity }
+      }
+    });
+  }
+});
+```
+
+- **Ngăn chặn triệt để Deadlock:** Nhờ việc luôn luôn khóa `Voucher` trước, sau đó khóa các cuốn sách theo thứ tự chuỗi `bookId` tăng dần (`localeCompare`), 100% mọi luồng giao dịch đồng thời trên toàn hệ thống đều tuân thủ duy nhất một chiều khóa tài nguyên. Điều này thỏa mãn định lý Havender, loại bỏ hoàn toàn điều kiện "Chờ đợi vòng tròn" (Circular Wait) của Deadlock.
+- **Bắt ngoại lệ xung đột ghi an toàn (Safe Conflict Handling):** Nếu phát sinh xung đột ghi đồng thời hoặc mã lỗi Prisma `P2034` / `P2002`, API tự động bắt ngoại lệ và trả về mã phản hồi HTTP `409 Conflict` kèm thông điệp rõ ràng, cho phép client retry một cách an toàn mà không làm rò rỉ lỗi hệ thống 500.
 
 ---
 
@@ -1805,16 +1870,32 @@ graph TD
 | **Xem lịch sử đơn & Quản lý địa chỉ** | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Gửi đánh giá sao & Bình luận sách** | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Trò chuyện cùng Trợ lý Bán Hàng Agentic AI** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Xem Dashboard Doanh thu Admin** | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Xem Doanh thu Shop (Card Doanh thu & Biểu đồ tài chính)** | ❌ | ❌ | ❌ | ❌ | ✅ *(Quyền VIEW_REVENUE)* |
+| **Xem các chỉ số vận hành cơ bản trên Dashboard** | ❌ | ❌ | ✅ | ✅ | ✅ |
 | **Xem danh sách sách (/admin/books)** | ❌ | ❌ | ✅ | ❌ | ✅ |
-| **Thêm / Sửa sách & Cập nhật tồn kho**| ❌ | ❌ | ✅ | ❌ | ✅ |
+| **Thêm / Sửa sách & Cập nhật tồn kho (`MANAGE_BOOKS`)**| ❌ | ❌ | ✅ | ❌ | ✅ |
 | **Nhận cảnh báo sách sắp hết hàng** | ❌ | ❌ | ✅ | ❌ | ✅ |
-| **Xem & Duyệt trạng thái Đơn hàng** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Xem & Duyệt trạng thái Đơn hàng (`MANAGE_ORDERS`)** | ❌ | ❌ | ❌ | ✅ | ✅ |
 | **Nhận thông báo có Đơn hàng mới** | ❌ | ❌ | ❌ | ✅ | ✅ |
-| **Kiểm duyệt Đánh giá của khách** | ❌ | ❌ | ❌ | ✅ | ✅ |
-| **Quản lý Khuyến Mại & Voucher (/admin/promotions)** | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Cấp tài khoản & Gán quyền Staff** | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Xem Nhật ký Kiểm toán (Audit Logs)**| ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Kiểm duyệt Đánh giá của khách (`MANAGE_REVIEWS`)** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Xem danh sách Khuyến Mại & Voucher (`VIEW_PROMOTIONS`)** | ❌ | ❌ | ❌ | ✅ *(Chỉ xem)* | ✅ |
+| **Toàn quyền Quản lý Khuyến Mại (`MANAGE_PROMOTIONS`)** | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Cấp tài khoản & Gán quyền Staff (`MANAGE_USERS`)** | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Xem Nhật ký Kiểm toán (`VIEW_AUDIT_LOG`)** | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+### 10.2.1 Nguyên Tắc Quản Trị Kinh Doanh: Tại Sao Nhân Viên Bị Ẩn Hoàn Toàn Doanh Thu Shop?
+
+Theo logic vận hành và quản trị nhân sự kinh điển trong hầu hết các doanh nghiệp thương mại bán lẻ và sàn TMĐT:
+1. **Bảo mật Thông tin Kinh doanh Cốt lõi (Commercial Confidentiality):** Tổng doanh thu, biên lợi nhuận, doanh số theo từng tháng và biểu đồ dòng tiền là thông tin tài chính chiến lược của doanh nghiệp, chỉ thuộc thẩm quyền của Ban Giám đốc (Super Admin) và Kế toán trưởng. Việc nhân viên vận hành (Kho, Đơn hàng) biết chính xác doanh thu tổng dễ dẫn đến rò rỉ dữ liệu tài chính cho đối thủ cạnh tranh hoặc gây so sánh tâm lý không lành mạnh về chế độ đãi ngộ.
+2. **Nguyên lý Đặc quyền Tối thiểu (Principle of Least Privilege - PoLP):** Nhân viên xử lý đơn hàng chỉ cần biết số lượng đơn hàng cần giao, trạng thái đơn và thông tin giao nhận để hoàn tất đơn; Nhân viên kho chỉ cần biết số lượng sách tồn, sách bán chạy và ngưỡng cảnh báo hết hàng để nhập xuất kho. Doanh thu tổng bằng tiền hoàn toàn nằm ngoài phạm vi thực thi nhiệm vụ hàng ngày của họ.
+3. **Hiện thực hóa Kỹ thuật 2 Lớp (Defense-in-Depth):**
+   - **Tầng Backend API (`/api/admin/dashboard/metrics`):** Thuộc tính `canViewRevenue` được tính toán dựa trên quyền hạn của người dùng (`user.role === 'SUPER_ADMIN' || user.permissions.includes('VIEW_REVENUE')`). Nếu người dùng là `STAFF` không có quyền này, trường `revenue` bị ghi đè cứng về `0`, mảng `revenueTrend` bị loại bỏ và `canViewRevenue: false`. Ngay cả khi nhân viên cố tình gọi trực tiếp API qua Postman hay DevTools, họ cũng tuyệt đối không thể lấy được con số doanh thu thực tế.
+   - **Tầng Frontend UI (`AdminDashboardClient.tsx`):** Nếu `!canViewRevenue`, thẻ Card 1 *"Doanh thu tháng này"* hoàn toàn bị gỡ bỏ khỏi DOM (không render), lưới hiển thị tự động co giãn từ 4 cột sang 3 cột cân đối (`grid-cols-1 md:grid-cols-3` gồm: Đơn hàng tháng này, Sách đang bán, Cảnh báo sắp hết), đồng thời thanh biểu đồ doanh số cột tiền được ẩn đi chỉ giữ lại cột số lượng đơn hàng vận hành.
+
+### 10.2.2 Nghiệp Vụ Khuyến Mại Dành Cho Nhân Viên Đơn (`VIEW_PROMOTIONS`)
+
+- **Nhu cầu nghiệp vụ thực tế:** Khi nhân viên đơn hàng gọi điện xác nhận đơn cho khách hoặc hỗ trợ khách qua hotline, khách hàng thường thắc mắc về điều kiện áp mã (ví dụ: *"Đơn của tôi 200.000đ sao không áp được mã GIAM25K?"*). Do đó, nhân viên đơn cần được quyền xem danh sách các sự kiện khuyến mại và các voucher đang hiệu lực, cùng điều kiện áp dụng (`minOrderValue`, `maxDiscount`, ngày hết hạn).
+- **Cơ chế cấp quyền `VIEW_PROMOTIONS`:** Nhân viên đơn hàng (`staff.order@tosach.vn`) được cấp quyền `VIEW_PROMOTIONS` để truy cập vào phân hệ `/admin/promotions`. Tuy nhiên, trên giao diện quản trị, hệ thống hiển thị huy hiệu *"Chế độ chỉ xem (VIEW_PROMOTIONS)"*, đồng thời **hoàn toàn loại bỏ toàn bộ các nút thao tác nghiệp vụ:** Không có nút *Thêm sự kiện*, không có nút *Tạo Voucher*, không có nút *Bật/Tắt trạng thái* và không có nút *Xóa voucher*. Toàn bộ các API Mutation (`POST`, `PATCH`, `DELETE`) tại `/api/admin/vouchers` và `/api/admin/events` đều kiểm tra bắt buộc quyền `MANAGE_PROMOTIONS`, ngăn chặn tuyệt đối mọi hành vi can thiệp trái phép.
 
 ## 10.3 Bộ Chỉ số Dữ liệu Thực nghiệm (Big Data & Seed Metrics)
 
@@ -1834,6 +1915,16 @@ Hệ thống đã triển khai pipeline nạp dữ liệu quy mô lớn, vượt
 | Đơn hàng mẫu (orders)    | 10.000+ đơn hàng    | 10.000 orders dataset | 100.0% (Đạt)   |
 +--------------------------+---------------------+-----------------------+----------------+
 ```
+
+### 10.3.1 Bộ Dữ Liệu Hạt Giống Vận Hành Thực Nghiệm (Operational Seed Data)
+
+Bên cạnh bộ dữ liệu lớn mô phỏng, hệ thống còn nạp sẵn bộ dữ liệu hạt giống sống động từ tháng 06/2026 đến tháng 10/2026 phục vụ trực tiếp cho kịch bản báo cáo và thuyết trình trực quan trước Hội đồng:
+
+| Thành Phần Dữ Liệu | Số Lượng Thực Tế | Phạm Vi Thời Gian | Ý Nghĩa Thực Tiễn Phục Vụ Báo Cáo |
+| :--- | :---: | :---: | :--- |
+| **Đơn hàng lịch sử đa trạng thái** | **151 đơn hàng** | 01/06/2026 — 23/10/2026 | Trải đều 5 tháng liên tục với đầy đủ trạng thái `DELIVERED` (110 đơn), `SHIPPING` (15 đơn), `CONFIRMED` (12 đơn), `PENDING` (8 đơn), `CANCELLED` (6 đơn). Thể hiện biểu đồ tăng trưởng doanh số chân thực và sinh động. |
+| **Nhật ký nhập kho kiểm toán** | **10 đợt nhập kho** | 05/06/2026 — 18/10/2026 | Ghi nhận chi tiết từng đợt nhập bổ sung sách vào kho từ các NXB (Kim Đồng, Trẻ, Nhã Nam) trong bảng `admin_audit_logs` với action `IMPORT_STOCK`, lưu trữ đầy đủ `userId`, snapshot số lượng và IP thao tác. |
+| **Voucher thực tế** | **8 voucher đa dạng** | Chiến dịch 2026 | Bao gồm cả voucher giảm theo % (`KHAITRUONG10`), voucher số tiền cố định (`GIAM25K`), voucher hết hạn, voucher hết lượt dùng và voucher giới hạn lượt/người để demo trọn vẹn mọi ca kiểm thử. |
 
 ---
 
@@ -1934,6 +2025,22 @@ Hệ thống đã triển khai pipeline nạp dữ liệu quy mô lớn, vượt
 > **Trả lời mẫu:**  
 > *"Dạ thưa Thầy/Cô, ở phiên bản trước đây, khi AI giới thiệu nhiều cuốn sách, toàn bộ văn bản mô tả nằm dồn ở trên rồi mới gom toàn bộ ảnh và nút mua ở tít bên dưới. Người dùng đọc xong lời khen cuốn số 1 phải cuộn xuống dưới cùng để tìm nút mua, rất dễ bấm nhầm và gây đứt gãy luồng cảm xúc mua hàng.  
 > Nhóm đã tái thiết kế theo **Mô hình Khối Tuần tự (Block-Sequential Layout)**: Mỗi cuốn sách là một cụm trọn vẹn gồm: Lời bình luận/thông điệp của AI $\rightarrow$ Tên sách, NXB, Giá tiền, Voucher khả dụng, Tồn kho $\rightarrow$ Ngay phía dưới là Ảnh bìa sách cùng 2 nút hành động nhanh ('Thêm vào giỏ' và 'Mua ngay'). Cứ hết cuốn 1 thì mới tiếp tục đến cuốn 2. Bố cục này tối ưu hóa tỷ lệ chuyển đổi (CRO), người dùng nắm bắt thông tin rõ ràng và có thể chốt đơn chỉ với 1 cú click ngay trong khung chat."*
+
+### Câu hỏi 13: "Tại sao trên Dashboard Admin, hệ thống của nhóm lại ẩn hoàn toàn doanh thu đối với tài khoản nhân viên, và cơ chế kỹ thuật thực hiện như thế nào?"
+> **Trả lời mẫu:**  
+> *"Dạ thưa Thầy/Cô, đây là nguyên tắc **Bảo mật kinh doanh cốt lõi (Commercial Confidentiality)** và **Nguyên lý Đặc quyền Tối thiểu (Principle of Least Privilege)** kinh điển trong quản trị nhân sự và thương mại bán lẻ:  
+> 1. **Về mặt nghiệp vụ:** Doanh thu tổng, lợi nhuận và biên độ dòng tiền là dữ liệu tài chính chiến lược chỉ thuộc thẩm quyền của Ban Giám đốc (Super Admin) và Kế toán trưởng. Nhân viên vận hành (Kho, Xử lý đơn) chỉ cần tập trung vào các chỉ số nghiệp vụ như số lượng đơn cần giao, tình trạng tồn kho và cảnh báo hết hàng; việc thấy doanh thu tổng vừa nằm ngoài trách nhiệm vừa dễ dẫn đến rò rỉ dữ liệu ra đối thủ hoặc so sánh đãi ngộ nội bộ.  
+> 2. **Về mặt kỹ thuật (Bảo vệ 2 tầng Defense-in-Depth):**  
+>    - Tại tầng Backend API (`/api/admin/dashboard/metrics`): Nếu người dùng là nhân viên `STAFF` (không có quyền `VIEW_REVENUE`), trường `revenue` bị ghi đè cứng bằng `0`, mảng `revenueTrend` bị loại bỏ và trả cờ `canViewRevenue: false`. Dù nhân viên cố tình gọi API qua DevTools hay Postman cũng không thể lấy được số liệu.  
+>    - Tại tầng Frontend UI (`AdminDashboardClient.tsx`): Nếu `!canViewRevenue`, thẻ Card 1 ('Doanh thu tháng này') hoàn toàn bị gỡ bỏ khỏi DOM, lưới giao diện tự động co giãn từ 4 cột sang 3 cột cân đối (`grid-cols-1 md:grid-cols-3`), và thanh biểu đồ tài chính được ẩn đi, chỉ giữ lại số lượng đơn hàng vận hành."*
+
+### Câu hỏi 14: "Khi khách hàng hủy đơn đồng thời với việc nhân viên duyệt đơn, hệ thống làm thế nào để ngăn ngừa xung đột Deadlock giữa Voucher và Sách?"
+> **Trả lời mẫu:**  
+> *"Dạ thưa Thầy/Cô, khi hủy một đơn hàng có áp mã voucher, hệ thống phải hoàn nguyên cả lượt dùng voucher (`usedCount: decrement(1)`) và số lượng tồn kho của nhiều cuốn sách (`stockQty: increment(qty)`). Nếu hai giao dịch đồng thời khóa các tài nguyên theo thứ tự khác nhau (ví dụ: giao dịch 1 khóa Sách A rồi chờ khóa Sách B; giao dịch 2 khóa Sách B rồi chờ khóa Sách A), PostgreSQL sẽ xảy ra Deadlock (Mã lỗi 40P01 / Prisma P2034).  
+> Nhóm đã giải quyết triệt để vấn đề này bằng nguyên lý **Deterministic Global Resource Ordering (Khóa tài nguyên theo thứ tự xác định toàn cục)**:  
+> 1. Transaction luôn khóa và hoàn lại lượt dùng của `Voucher` trước tiên.  
+> 2. Toàn bộ sách trong đơn được sắp xếp theo chuỗi ID tăng dần (`[...items].sort((a,b) => a.bookId.localeCompare(b.bookId))`) trước khi thực hiện câu lệnh cập nhật tồn kho.  
+> Nhờ đó, 100% mọi luồng giao dịch đồng thời trên toàn hệ thống đều yêu cầu khóa theo một chiều duy nhất, loại bỏ hoàn toàn điều kiện Circular Wait của Deadlock theo định lý Havender. Đồng thời, API bắt ngoại lệ xung đột ghi an toàn và trả về mã HTTP 409 Conflict cho phép client retry."*
 
 ## 11.3 Kết luận & Định hướng Phát triển
 - **Kết luận:** Đề tài **"Tổ Sách"** đã hiện thực hóa trọn vẹn mục tiêu đề ra trong Đề cương Proposal. Hệ thống vận hành ổn định, giao diện hiện đại, nghiệp vụ kho vận chặt chẽ, bảo mật đa tầng và tích hợp AI thông minh.
