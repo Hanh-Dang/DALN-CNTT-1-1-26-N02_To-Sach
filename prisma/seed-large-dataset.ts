@@ -50,6 +50,30 @@ function parseCSV(filePath: string): any[] {
   return records;
 }
 
+function parseAuthorNames(raw: string): string[] {
+  const s = (raw || '').trim();
+  if (!s) return [];
+  let names: string[] = [s];
+  if (s.startsWith('[')) {
+    try {
+      const arr = JSON.parse(s);
+      if (Array.isArray(arr)) names = arr.map((n) => String(n));
+    } catch {
+      // Không phải JSON hợp lệ thì giữ nguyên chuỗi
+    }
+  } else {
+    names = s.split(/\s*[,;]\s*/);
+  }
+  // normalize NFC để "Brontë" viết kiểu tổ hợp vẫn khớp; Set để bỏ tên lặp
+  return Array.from(new Set(names.map((n) => n.normalize('NFC').trim()).filter(Boolean)));
+}
+
+function toAuthorSlug(name: string): string {
+  const base = name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
+  return `${base || 'tac-gia'}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
 async function main() {
   console.log('🚀 Starting Large Dataset Seed (Proposal Compliant: 5000+ Books, 2000+ Authors)...');
 
@@ -175,9 +199,16 @@ async function main() {
     const bookId = bookByTitle.get(b.title.trim().toLowerCase());
     if (!bookId) continue;
 
-    const authorName = (b.authors || '').trim().toLowerCase();
-    const authorId = authorMap.get(authorName) || allAuthors[0]?.id;
-    if (authorId) {
+    const parsedAuthors = parseAuthorNames(b.authors);
+    for (const name of parsedAuthors) {
+      let authorId = authorMap.get(name.toLowerCase());
+      if (!authorId) {
+        const created = await prisma.author.create({
+          data: { name, slug: toAuthorSlug(name) },
+        });
+        authorId = created.id;
+        authorMap.set(name.toLowerCase(), authorId);
+      }
       bookAuthorsToCreate.push({ bookId, authorId });
     }
 
