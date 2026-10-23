@@ -224,6 +224,13 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
     return () => { isMounted = false; };
   }, [selectedSubtotal, appliedVoucher?.code]);
 
+  // R8: Tự động xóa thông báo lỗi voucher cũ khi người dùng thay đổi sản phẩm / số lượng
+  useEffect(() => {
+    if (!appliedVoucher) {
+      setVoucherError('');
+    }
+  }, [selectedSubtotal, appliedVoucher]);
+
   // Trạng thái chọn tất cả (chỉ dựa trên danh sách sách còn hàng)
   const allSelected = inStockItems.length > 0 && selectedItems.length === inStockItems.length;
 
@@ -678,7 +685,7 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
               <h3 className="font-extrabold text-base text-[#0B1F3A] pb-3 border-b border-slate-100 flex items-center justify-between">
                 <span>Tóm Tắt Đơn Hàng</span>
                 <span className="text-xs font-semibold text-slate-400">
-                  {selectedItems.length} cuốn
+                  {selectedItems.reduce((sum, item) => sum + item.quantity, 0)} cuốn
                 </span>
               </h3>
 

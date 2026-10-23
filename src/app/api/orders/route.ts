@@ -62,11 +62,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Vui lòng cung cấp số điện thoại nhận hàng.' }, { status: 400 });
     }
 
-    // Chuẩn hóa và validate số điện thoại (chấp nhận +84, 84 hoặc 0...) (L-d)
-    const phoneClean = customerPhone.trim().replace(/^\+/, '').replace(/[\s.\-()]/g, '');
-    const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
+    // Chuẩn hóa và validate số điện thoại (chấp nhận +84, 84 hoặc 0...) (L-d, R10)
+    let phoneClean = customerPhone.trim().replace(/^\+/, '').replace(/[\s.\-()]/g, '');
+    phoneClean = phoneClean.replace(/^84/, '0');
+    const phoneRegex = /^0(3|5|7|8|9)[0-9]{8}$/;
     if (!phoneRegex.test(phoneClean)) {
       return NextResponse.json({ error: 'Số điện thoại không hợp lệ (chuẩn 10 chữ số di động Việt Nam hoặc +84).' }, { status: 400 });
+    }
+
+    // R9: Kiểm tra kiểu dữ liệu cho customerEmail và note
+    let cleanCustomerEmail = user.email;
+    if (customerEmail !== undefined && customerEmail !== null) {
+      if (typeof customerEmail !== 'string') {
+        return NextResponse.json({ error: 'Định dạng email người nhận không hợp lệ.' }, { status: 400 });
+      }
+      const trimmedEmail = customerEmail.trim();
+      if (trimmedEmail) {
+        const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!EMAIL_REGEX.test(trimmedEmail)) {
+          return NextResponse.json({ error: 'Email người nhận không đúng định dạng.' }, { status: 400 });
+        }
+        cleanCustomerEmail = trimmedEmail.toLowerCase();
+      }
+    }
+
+    let cleanNote: string | null = null;
+    if (note !== undefined && note !== null) {
+      if (typeof note !== 'string') {
+        return NextResponse.json({ error: 'Ghi chú đơn hàng phải là dạng chuỗi văn bản.' }, { status: 400 });
+      }
+      cleanNote = note.trim() || null;
     }
 
     if (!shippingAddress || typeof shippingAddress !== 'string' || !shippingAddress.trim() || shippingAddress.trim().length < 5) {
@@ -230,7 +255,7 @@ export async function POST(req: NextRequest) {
           userId: user.id,
           customerName: customerName.trim(),
           customerPhone: phoneClean,
-          customerEmail: customerEmail?.trim() || user.email,
+          customerEmail: cleanCustomerEmail,
           shippingAddress: shippingAddress.trim(),
           subtotal: calculatedSubtotal,
           shippingFee: calculatedShippingFee,
@@ -240,7 +265,7 @@ export async function POST(req: NextRequest) {
           paymentMethod: validPaymentMethod,
           paymentStatus: PaymentStatus.PENDING,
           status: OrderStatus.PENDING,
-          note: note?.trim() || null,
+          note: cleanNote,
           timeline: initialTimeline,
           items: {
             create: orderItemsData,
@@ -262,8 +287,11 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // G. Trừ tồn kho nguyên tử (Atomic Conditional Decrement) và tăng số lượng bán (soldCount)
-      for (const item of items) {
+      // G. Trừ tồn kho nguyên tử theo thứ tự bookId cố định để chống deadlock (R12)
+      const sortedItemsToDeduct = [...items].sort((a: any, b: any) =>
+        String(a.bookId).localeCompare(String(b.bookId))
+      );
+      for (const item of sortedItemsToDeduct) {
         const qty = Number(item.quantity) || 1;
         const updateResult = await tx.book.updateMany({
           where: {

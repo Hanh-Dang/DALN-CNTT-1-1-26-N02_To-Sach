@@ -104,26 +104,30 @@ export async function POST(
         throw new Error('Đơn hàng không ở trạng thái chờ xác nhận hoặc đã được xử lý trước đó.');
       }
 
-      // 5.2. Chỉ khi cập nhật trạng thái thành công (duy nhất 1 request chiến thắng) mới hoàn trả tồn kho
-      for (const item of order.items) {
+      // 5.2. R12: Hoàn trả lượt sử dụng Voucher trước (nếu đơn hàng có áp dụng Voucher)
+      if (order.voucherId) {
+        const del = await tx.voucherUsage.deleteMany({
+          where: { orderId: order.id },
+        });
+        // R11: Chỉ giảm usedCount khi thực sự xóa được bản ghi sử dụng và usedCount > 0
+        if (del.count > 0) {
+          await tx.voucher.updateMany({
+            where: { id: order.voucherId, usedCount: { gt: 0 } },
+            data: {
+              usedCount: { decrement: 1 },
+            },
+          });
+        }
+      }
+
+      // 5.3. R12: Sắp xếp bookId cố định và hoàn trả tồn kho sách
+      const sortedItems = [...order.items].sort((a, b) => a.bookId.localeCompare(b.bookId));
+      for (const item of sortedItems) {
         await tx.book.update({
           where: { id: item.bookId },
           data: {
             stockQty: { increment: item.quantity },
             soldCount: { decrement: item.quantity },
-          },
-        });
-      }
-
-      // 5.3. Hoàn trả lượt sử dụng Voucher (nếu đơn hàng có áp dụng Voucher - Quy tắc 7)
-      if (order.voucherId) {
-        await tx.voucherUsage.deleteMany({
-          where: { orderId: order.id },
-        });
-        await tx.voucher.update({
-          where: { id: order.voucherId },
-          data: {
-            usedCount: { decrement: 1 },
           },
         });
       }
@@ -146,10 +150,10 @@ export async function POST(
   } catch (error: any) {
     console.error('Cancel order error:', error);
     const errorMessage = error?.message || '';
-    const isBusinessError = errorMessage.includes('Đơn hàng không ở trạng thái');
+    const isConflictError = errorMessage.includes('Đơn hàng không ở trạng thái');
     return NextResponse.json(
-      { error: isBusinessError ? errorMessage : 'Có lỗi xảy ra khi xử lý hủy đơn hàng: ' + errorMessage },
-      { status: isBusinessError ? 400 : 500 }
+      { error: isConflictError ? errorMessage : 'Có lỗi xảy ra khi xử lý hủy đơn hàng: ' + errorMessage },
+      { status: isConflictError ? 409 : 500 }
     );
   }
 }

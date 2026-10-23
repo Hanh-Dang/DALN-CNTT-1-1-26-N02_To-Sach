@@ -61,8 +61,24 @@ export async function cancelExpiredBankTransferOrders(operatorName = 'Hệ thố
         // Nếu đơn đã được xử lý bởi luồng khác thì bỏ qua
         if (updateResult.count === 0) return;
 
-        // Hoàn trả tồn kho cho từng sản phẩm
-        for (const item of order.items) {
+        // Hoàn trả lượt sử dụng Voucher trước (nếu có - N6, R11, R12)
+        if (order.voucherId) {
+          const del = await tx.voucherUsage.deleteMany({
+            where: { orderId: order.id },
+          });
+          if (del.count > 0) {
+            await tx.voucher.updateMany({
+              where: { id: order.voucherId, usedCount: { gt: 0 } },
+              data: {
+                usedCount: { decrement: 1 },
+              },
+            });
+          }
+        }
+
+        // R12: Sắp xếp bookId cố định và hoàn trả tồn kho cho từng sản phẩm
+        const sortedItems = [...order.items].sort((a, b) => a.bookId.localeCompare(b.bookId));
+        for (const item of sortedItems) {
           await tx.book.update({
             where: { id: item.bookId },
             data: {
@@ -70,19 +86,6 @@ export async function cancelExpiredBankTransferOrders(operatorName = 'Hệ thố
             },
           });
           totalRestockedBooks += item.quantity;
-        }
-
-        // Hoàn trả lượt sử dụng Voucher (nếu có - N6)
-        if (order.voucherId) {
-          await tx.voucherUsage.deleteMany({
-            where: { orderId: order.id },
-          });
-          await tx.voucher.updateMany({
-            where: { id: order.voucherId },
-            data: {
-              usedCount: { decrement: 1 },
-            },
-          });
         }
 
         // Bổ sung sự kiện vào timeline

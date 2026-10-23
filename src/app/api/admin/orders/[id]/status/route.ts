@@ -182,9 +182,27 @@ export async function POST(
         throw new Error('Trạng thái đơn hàng vừa được cập nhật bởi một thao tác khác. Vui lòng tải lại trang!');
       }
 
-      // 1. Nếu chuyển sang CANCELLED mà trước đó chưa hủy -> Hoàn kho + Hoàn voucher (N2, N6)
+      // 1. Nếu chuyển sang CANCELLED mà trước đó chưa hủy -> Hoàn kho + Hoàn voucher (N2, N6, R11, R12)
       if (newStatus === OrderStatus.CANCELLED && oldStatus !== OrderStatus.CANCELLED) {
-        for (const item of order.items) {
+        // R12: Xử lý hoàn trả Voucher trước
+        if (order.voucherId) {
+          const del = await tx.voucherUsage.deleteMany({
+            where: { orderId: order.id },
+          });
+          // R11: Chỉ giảm usedCount khi thực sự xóa được bản ghi sử dụng và usedCount > 0
+          if (del.count > 0) {
+            await tx.voucher.updateMany({
+              where: { id: order.voucherId, usedCount: { gt: 0 } },
+              data: {
+                usedCount: { decrement: 1 },
+              },
+            });
+          }
+        }
+
+        // R12: Sắp xếp bookId cố định để hoàn kho, chống deadlock giữa các đơn hủy song song
+        const sortedItems = [...order.items].sort((a, b) => a.bookId.localeCompare(b.bookId));
+        for (const item of sortedItems) {
           await tx.book.update({
             where: { id: item.bookId },
             data: {
@@ -193,24 +211,12 @@ export async function POST(
             },
           });
         }
-
-        // N6: Hoàn trả lượt dùng voucher nếu đơn có voucher
-        if (order.voucherId) {
-          await tx.voucherUsage.deleteMany({
-            where: { orderId: order.id },
-          });
-          await tx.voucher.updateMany({
-            where: { id: order.voucherId },
-            data: {
-              usedCount: { decrement: 1 },
-            },
-          });
-        }
       }
 
       // 2. Nếu chuyển từ CANCELLED sang trạng thái khác (phục hồi đơn) -> Kiểm tra tồn kho & Trừ lại kho
       if (oldStatus === OrderStatus.CANCELLED && newStatus !== OrderStatus.CANCELLED) {
-        for (const item of order.items) {
+        const sortedItems = [...order.items].sort((a, b) => a.bookId.localeCompare(b.bookId));
+        for (const item of sortedItems) {
           // Trừ kho có điều kiện gte để đảm bảo atomic và không bao giờ bị âm
           const updateResult = await tx.book.updateMany({
             where: {
@@ -252,9 +258,22 @@ export async function POST(
   } catch (error: any) {
     console.error('Admin update order status error:', error);
     const errorMessage = error?.message || '';
+    const isConflictError =
+      errorMessage.includes('vừa được cập nhật bởi một thao tác khác') ||
+      errorMessage.includes('xung đột') ||
+      errorMessage.includes('conflict');
     const isBusinessError =
       errorMessage.includes('Không thể khôi phục đơn hàng') ||
       errorMessage.includes('Không được phép chuyển trạng thái');
+
+    // R7: Xung đột phiên bản / trạng thái đơn hàng trả HTTP 409 Conflict
+    if (isConflictError) {
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       { error: isBusinessError ? errorMessage : 'Lỗi khi cập nhật trạng thái đơn hàng: ' + errorMessage },
       { status: isBusinessError ? 400 : 500 }
