@@ -10,10 +10,12 @@ export const dynamic = 'force-dynamic';
 export default async function AdminPromotionsPage() {
   const user = await getCurrentUser();
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
-  const hasPromoPerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
-  const canAccessPromotions = isSuperAdmin || hasPromoPerm;
+  const hasManagePerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+  const hasViewPerm = user?.permissions?.includes('VIEW_PROMOTIONS') ?? false;
+  const canAccessPromotions = isSuperAdmin || hasManagePerm || hasViewPerm;
+  const canManagePromotions = isSuperAdmin || hasManagePerm;
 
-  // N18: Siết quyền truy cập trang khuyến mãi & voucher
+  // N18: Siết quyền truy cập trang khuyến mãi & voucher (hỗ trợ cả MANAGE_PROMOTIONS và VIEW_PROMOTIONS)
   if (!canAccessPromotions) {
     return (
       <div className="p-8 max-w-xl mx-auto text-center space-y-4 my-12 bg-white rounded-3xl border border-rose-100 shadow-sm">
@@ -22,7 +24,7 @@ export default async function AdminPromotionsPage() {
         </div>
         <h2 className="text-xl font-black text-slate-800 tracking-tight">Không có quyền truy cập</h2>
         <p className="text-xs text-slate-500 leading-relaxed">
-          Trang Khuyến mãi & Voucher chỉ dành cho Quản trị viên hoặc nhân sự được cấp quyền MANAGE_PROMOTIONS.
+          Trang Khuyến mãi & Voucher chỉ dành cho Quản trị viên hoặc nhân sự được cấp quyền MANAGE_PROMOTIONS hoặc VIEW_PROMOTIONS.
         </p>
       </div>
     );
@@ -113,6 +115,7 @@ export default async function AdminPromotionsPage() {
         initialVouchers={vouchers}
         initialEvents={events}
         isSuperAdmin={isSuperAdmin}
+        canManage={canManagePromotions}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { getDashboardMetrics } from '@/lib/dashboardMetrics';
+import { getDashboardMetrics, maskPhonesForStaff } from '@/lib/dashboardMetrics';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,19 +15,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Không có quyền truy cập.' }, { status: 403 });
     }
 
-    const metrics = await getDashboardMetrics();
-
-    // N18: Ẩn số điện thoại khách hàng (masking PII) đối với nhân viên không phải SUPER_ADMIN hoặc không có quyền MANAGE_CUSTOMERS
-    const isSuperAdmin = user.role === 'SUPER_ADMIN';
-    const canViewCustomerDetails = isSuperAdmin || user.permissions?.includes('MANAGE_CUSTOMERS');
-    if (!canViewCustomerDetails && metrics.recentOrders) {
-      metrics.recentOrders = metrics.recentOrders.map((o) => ({
-        ...o,
-        customerPhone: o.customerPhone
-          ? o.customerPhone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2')
-          : '***',
-      }));
-    }
+    const rawMetrics = await getDashboardMetrics();
+    const metrics = maskPhonesForStaff(rawMetrics, user);
 
     return NextResponse.json({
       success: true,

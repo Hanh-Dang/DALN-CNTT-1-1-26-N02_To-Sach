@@ -15,9 +15,12 @@ export async function PATCH(
 ) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== UserRole.SUPER_ADMIN) {
+    const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+    const hasManagePerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+
+    if (!user || (!isSuperAdmin && !hasManagePerm)) {
       return NextResponse.json(
-        { error: 'Chỉ Super Admin mới có quyền cập nhật Voucher.' },
+        { error: 'Bạn không có quyền cập nhật Voucher (cần quyền MANAGE_PROMOTIONS hoặc Quản trị viên).' },
         { status: 403 }
       );
     }
@@ -106,9 +109,12 @@ export async function DELETE(
 ) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== UserRole.SUPER_ADMIN) {
+    const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+    const hasManagePerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+
+    if (!user || (!isSuperAdmin && !hasManagePerm)) {
       return NextResponse.json(
-        { error: 'Chỉ Super Admin mới có quyền xóa Voucher.' },
+        { error: 'Bạn không có quyền xóa Voucher (cần quyền MANAGE_PROMOTIONS hoặc Quản trị viên).' },
         { status: 403 }
       );
     }

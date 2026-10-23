@@ -15,9 +15,12 @@ export async function PATCH(
 ) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== UserRole.SUPER_ADMIN) {
+    const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+    const hasManagePerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+
+    if (!user || (!isSuperAdmin && !hasManagePerm)) {
       return NextResponse.json(
-        { error: 'Chỉ Super Admin mới có quyền chỉnh sửa sự kiện.' },
+        { error: 'Bạn không có quyền chỉnh sửa sự kiện (cần quyền MANAGE_PROMOTIONS hoặc Quản trị viên).' },
         { status: 403 }
       );
     }
@@ -74,9 +77,12 @@ export async function DELETE(
 ) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== UserRole.SUPER_ADMIN) {
+    const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+    const hasManagePerm = user?.permissions?.includes('MANAGE_PROMOTIONS') ?? false;
+
+    if (!user || (!isSuperAdmin && !hasManagePerm)) {
       return NextResponse.json(
-        { error: 'Chỉ Super Admin mới có quyền xóa sự kiện.' },
+        { error: 'Bạn không có quyền xóa sự kiện (cần quyền MANAGE_PROMOTIONS hoặc Quản trị viên).' },
         { status: 403 }
       );
     }

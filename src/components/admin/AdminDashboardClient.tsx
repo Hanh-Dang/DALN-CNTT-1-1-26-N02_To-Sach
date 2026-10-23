@@ -73,10 +73,12 @@ interface AdminDashboardClientProps {
     chartData?: DashboardChartBar[];
     lowStockList: LowStockBookItem[];
     recentOrders: RecentOrderItem[];
+    canViewRevenue?: boolean;
   };
 }
 
 export function AdminDashboardClient({ user, initialData }: AdminDashboardClientProps) {
+  const canViewRevenue = initialData.canViewRevenue !== false;
   // State số liệu thực tế từ Database
   const [revenue, setRevenue] = useState(initialData.revenue);
   const [ordersCount, setOrdersCount] = useState(initialData.ordersCount);
@@ -157,7 +159,9 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
         }
 
         prevOrderCountRef.current = d.ordersCount;
-        setRevenue(d.revenue);
+        if (d.canViewRevenue !== false) {
+          setRevenue(d.revenue);
+        }
         setOrdersCount(d.ordersCount);
         setPendingCount(d.pendingCount);
         setLowStockCount(d.lowStockCount);
@@ -380,31 +384,39 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
         </div>
       </div>
 
-      {/* 2. BỐN THẺ CHỈ SỐ CỐT LÕI (SỐ NHẢY MƯỢT MÀ TỪ 0) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
-        {/* CARD 1: DOANH THU */}
-        <div className="relative overflow-hidden bg-white p-5 rounded-2xl shadow-[0_4px_20px_-2px_rgba(11,31,58,0.06)] border border-slate-100 flex flex-col justify-between group hover:shadow-lg transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">
-                Doanh thu tháng này
-              </span>
-              <p className="mt-1 text-2xl font-black text-[#0B1F3A] tracking-tight">
-                <CountUpNumber value={revenue} duration={1500} formatType="currency" />
-              </p>
+      {/* 2. CÁC THẺ CHỈ SỐ CỐT LÕI (4 THẺ CHO ADMIN, 3 THẺ CHO NHÂN VIÊN) */}
+      <div
+        className={`grid gap-4 sm:gap-5 ${
+          canViewRevenue
+            ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4'
+            : 'grid-cols-1 md:grid-cols-3'
+        }`}
+      >
+        {/* CARD 1: DOANH THU (CHỈ HIỂN THỊ VỚI ADMIN / NGƯỜI CÓ QUYỀN VIEW_REVENUE, BỎ HẲN Ở NHÂN VIÊN) */}
+        {canViewRevenue && (
+          <div className="relative overflow-hidden bg-white p-5 rounded-2xl shadow-[0_4px_20px_-2px_rgba(11,31,58,0.06)] border border-slate-100 flex flex-col justify-between group hover:shadow-lg transition-shadow">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">
+                  Doanh thu tháng này
+                </span>
+                <p className="mt-1 text-2xl font-black text-[#0B1F3A] tracking-tight">
+                  <CountUpNumber value={revenue} duration={1500} formatType="currency" />
+                </p>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-[#F0F3FF] flex items-center justify-center text-[#0B1F3A] group-hover:scale-110 transition-transform shadow-2xs">
+                <CreditCard className="w-5 h-5 stroke-[2.2]" />
+              </div>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-[#F0F3FF] flex items-center justify-center text-[#0B1F3A] group-hover:scale-110 transition-transform shadow-2xs">
-              <CreditCard className="w-5 h-5 stroke-[2.2]" />
+            <div className="mt-4 pt-2.5 flex items-center justify-between border-t border-slate-50 text-xs">
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#6FFBBE]/40 text-[#005236] text-[11px] font-bold">
+                <TrendingUp className="w-3.5 h-3.5" />
+                +18.4%
+              </div>
+              <span className="text-slate-500 text-xs font-medium">so với tháng 09</span>
             </div>
           </div>
-          <div className="mt-4 pt-2.5 flex items-center justify-between border-t border-slate-50 text-xs">
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#6FFBBE]/40 text-[#005236] text-[11px] font-bold">
-              <TrendingUp className="w-3.5 h-3.5" />
-              +18.4%
-            </div>
-            <span className="text-slate-500 text-xs font-medium">so với tháng 09</span>
-          </div>
-        </div>
+        )}
 
         {/* CARD 2: ĐƠN HÀNG HOÀN TẤT */}
         <div className="relative overflow-hidden bg-white p-5 rounded-2xl shadow-[0_4px_20px_-2px_rgba(11,31,58,0.06)] border border-slate-100 flex flex-col justify-between group hover:shadow-lg transition-shadow">
@@ -491,7 +503,11 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <h2 className="text-base font-bold text-[#111C2D] flex items-center gap-2">
-                  <span>Biểu đồ Doanh thu & Lượng sách bán ra (30 ngày qua)</span>
+                  <span>
+                    {canViewRevenue
+                      ? 'Biểu đồ Doanh thu & Lượng sách bán ra (30 ngày qua)'
+                      : 'Biểu đồ Lượng sách bán ra (30 ngày qua)'}
+                  </span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/60">
                     Live Wave
                   </span>
@@ -502,10 +518,12 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
               </div>
 
               <div className="flex items-center gap-4 text-xs">
-                <span className="flex items-center gap-1.5 text-[#111C2D] font-medium">
-                  <span className="w-3 h-3 rounded-full bg-[#0B1F3A] inline-block shadow-2xs"></span>
-                  Doanh thu (triệu đồng)
-                </span>
+                {canViewRevenue && (
+                  <span className="flex items-center gap-1.5 text-[#111C2D] font-medium">
+                    <span className="w-3 h-3 rounded-full bg-[#0B1F3A] inline-block shadow-2xs"></span>
+                    Doanh thu (triệu đồng)
+                  </span>
+                )}
                 <span className="flex items-center gap-1.5 text-[#111C2D] font-medium">
                   <span className="w-3 h-3 rounded-full bg-[#FEAE2C] inline-block shadow-2xs"></span>
                   Lượng bán (cuốn)
@@ -527,18 +545,20 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
                     >
                       {/* Tooltip khi rê chuột vào cột */}
                       <div className="absolute -top-12 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-30 bg-[#0B1F3A] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-xl whitespace-nowrap">
-                        <div>Doanh thu: {bar.revVal}</div>
+                        {canViewRevenue && <div>Doanh thu: {bar.revVal}</div>}
                         <div className="text-amber-300">Bán: {bar.qtyVal}</div>
                       </div>
 
                       {/* Cột Doanh thu (Màu Xanh Hải Quân #0B1F3A) */}
-                      <div
-                        className={`w-full max-w-[14px] bg-[#0B1F3A] rounded-t transition-all duration-1000 ease-out group-hover:brightness-125 shadow-xs`}
-                        style={{
-                          height: targetRevHeight,
-                          transitionDelay: `${idx * 100}ms`,
-                        }}
-                      ></div>
+                      {canViewRevenue && (
+                        <div
+                          className={`w-full max-w-[14px] bg-[#0B1F3A] rounded-t transition-all duration-1000 ease-out group-hover:brightness-125 shadow-xs`}
+                          style={{
+                            height: targetRevHeight,
+                            transitionDelay: `${idx * 100}ms`,
+                          }}
+                        ></div>
+                      )}
 
                       {/* Cột Số lượng (Màu Vàng Cam #FEAE2C) */}
                       <div

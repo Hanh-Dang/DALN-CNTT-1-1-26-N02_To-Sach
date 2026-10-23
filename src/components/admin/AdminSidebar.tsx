@@ -131,7 +131,7 @@ export function AdminSidebar({
           href: '/admin/promotions',
           label: 'Khuyến mãi & Voucher',
           icon: Ticket,
-          allowed: true,
+          allowed: isSuperAdmin || perms.includes('MANAGE_PROMOTIONS') || perms.includes('VIEW_PROMOTIONS'),
           badge: null,
           badgeColor: '',
         },

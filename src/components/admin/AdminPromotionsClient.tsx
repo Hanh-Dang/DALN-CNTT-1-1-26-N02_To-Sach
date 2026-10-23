@@ -60,9 +60,15 @@ interface Props {
   initialVouchers: SerializedVoucher[];
   initialEvents: SerializedEvent[];
   isSuperAdmin: boolean;
+  canManage?: boolean;
 }
 
-export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperAdmin }: Props) {
+export function AdminPromotionsClient({
+  initialVouchers,
+  initialEvents,
+  isSuperAdmin,
+  canManage = isSuperAdmin,
+}: Props) {
   const [activeTab, setActiveTab] = useState<'vouchers' | 'events' | 'policies'>('vouchers');
   const [vouchers, setVouchers] = useState<SerializedVoucher[]>(initialVouchers);
   const [events, setEvents] = useState<SerializedEvent[]>(initialEvents);
@@ -177,8 +183,8 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
 
   // Xử lý bật/tắt voucher
   const handleToggleVoucher = async (id: string, currentActive: boolean) => {
-    if (!isSuperAdmin) {
-      showToast('Chỉ Super Admin mới có quyền bật/tắt Voucher.', 'error');
+    if (!canManage) {
+      showToast('Bạn chỉ có quyền xem, không thể bật/tắt Voucher.', 'error');
       return;
     }
 
@@ -211,8 +217,8 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
 
   // Xử lý xóa voucher
   const handleDeleteVoucher = async (v: SerializedVoucher) => {
-    if (!isSuperAdmin) {
-      showToast('Chỉ Super Admin mới có quyền xóa Voucher.', 'error');
+    if (!canManage) {
+      showToast('Bạn chỉ có quyền xem, không thể xóa Voucher.', 'error');
       return;
     }
 
@@ -240,8 +246,8 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
 
   // Xử lý bật/tắt sự kiện
   const handleToggleEvent = async (id: string, currentActive: boolean) => {
-    if (!isSuperAdmin) {
-      showToast('Chỉ Super Admin mới có quyền sửa sự kiện.', 'error');
+    if (!canManage) {
+      showToast('Bạn chỉ có quyền xem, không thể sửa sự kiện.', 'error');
       return;
     }
 
@@ -428,7 +434,7 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
           </div>
         </div>
 
-        {isSuperAdmin && (
+        {canManage ? (
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
               onClick={() => setIsEventModalOpen(true)}
@@ -447,6 +453,11 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
               <Plus className="w-4 h-4 text-[#F5A623]" />
               <span>+ Tạo Mã Voucher</span>
             </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-bold">
+            <Eye className="w-4 h-4 text-amber-600" />
+            <span>Chế độ chỉ xem (VIEW_PROMOTIONS)</span>
           </div>
         )}
       </div>
@@ -555,13 +566,13 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
                     <th className="py-3.5 px-3">Tiến Độ Sử Dụng</th>
                     <th className="py-3.5 px-3">Sự Kiện & Thời Hạn</th>
                     <th className="py-3.5 px-3">Trạng Thái</th>
-                    <th className="py-3.5 px-4 text-right">Thao Tác</th>
+                    {canManage && <th className="py-3.5 px-4 text-right">Thao Tác</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredVouchers.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400">
+                      <td colSpan={canManage ? 7 : 6} className="py-12 text-center text-slate-400">
                         Không tìm thấy mã Voucher nào phù hợp với bộ lọc.
                       </td>
                     </tr>
@@ -659,31 +670,33 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
                           </td>
 
                           {/* Thao tác */}
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {/* Nút Toggle Bật/Tắt */}
-                              <button
-                                onClick={() => handleToggleVoucher(v.id, v.isActive)}
-                                title={v.isActive ? 'Tắt voucher' : 'Kích hoạt voucher'}
-                                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                                  v.isActive
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                    : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
-                                }`}
-                              >
-                                <Power className="w-3.5 h-3.5" />
-                              </button>
+                          {canManage && (
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {/* Nút Toggle Bật/Tắt */}
+                                <button
+                                  onClick={() => handleToggleVoucher(v.id, v.isActive)}
+                                  title={v.isActive ? 'Tắt voucher' : 'Kích hoạt voucher'}
+                                  className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                    v.isActive
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                      : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                                  }`}
+                                >
+                                  <Power className="w-3.5 h-3.5" />
+                                </button>
 
-                              {/* Nút Xóa */}
-                              <button
-                                onClick={() => handleDeleteVoucher(v)}
-                                title="Xóa voucher"
-                                className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
+                                {/* Nút Xóa */}
+                                <button
+                                  onClick={() => handleDeleteVoucher(v)}
+                                  title="Xóa voucher"
+                                  className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       );
                     })
@@ -738,19 +751,22 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
                 </div>
               </div>
 
-              {isSuperAdmin && (
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <button
-                    onClick={() => handleToggleEvent(ev.id, ev.isActive)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                      ev.isActive
-                        ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                    }`}
-                  >
-                    <Power className="w-3 h-3" />
-                    <span>{ev.isActive ? 'Tắt sự kiện' : 'Bật lại'}</span>
-                  </button>
+                  {canManage ? (
+                    <button
+                      onClick={() => handleToggleEvent(ev.id, ev.isActive)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        ev.isActive
+                          ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                          : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      }`}
+                    >
+                      <Power className="w-3 h-3" />
+                      <span>{ev.isActive ? 'Tắt sự kiện' : 'Bật lại'}</span>
+                    </button>
+                  ) : (
+                    <div></div>
+                  )}
 
                   <button
                     onClick={() => {
@@ -763,7 +779,6 @@ export function AdminPromotionsClient({ initialVouchers, initialEvents, isSuperA
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
-              )}
             </div>
           ))}
         </div>

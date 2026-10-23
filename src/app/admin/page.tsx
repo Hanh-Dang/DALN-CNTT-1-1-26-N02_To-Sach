@@ -1,6 +1,6 @@
 import React from 'react';
 import { getCurrentUser } from '@/lib/auth';
-import { getDashboardMetrics } from '@/lib/dashboardMetrics';
+import { getDashboardMetrics, maskPhonesForStaff } from '@/lib/dashboardMetrics';
 import { AdminDashboardClient } from '@/components/admin/AdminDashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export default async function AdminDashboardPage() {
   return (
     <AdminDashboardClient
       user={user ? { fullName: user.fullName, role: user.role } : null}
-      initialData={metrics}
+      initialData={maskPhonesForStaff(metrics, user)}
     />
   );
 }

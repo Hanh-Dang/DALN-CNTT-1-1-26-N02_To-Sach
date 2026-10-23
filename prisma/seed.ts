@@ -37,6 +37,9 @@ async function main() {
     { code: 'MANAGE_USERS', name: 'Quản lý người dùng & phân quyền', description: 'Xem danh sách khách hàng và cấp quyền cho nhân viên' },
     { code: 'VIEW_AUDIT_LOG', name: 'Xem nhật ký kiểm toán', description: 'Xem lịch sử truy vết mọi thao tác quản trị' },
     { code: 'MANAGE_REVIEWS', name: 'Kiểm duyệt đánh giá', description: 'Phê duyệt hoặc ẩn bình luận, đánh giá của độc giả' },
+    { code: 'VIEW_PROMOTIONS', name: 'Xem khuyến mãi & voucher', description: 'Xem danh sách sự kiện và voucher. Không có nút Thêm, Sửa, Tắt, Xóa' },
+    { code: 'MANAGE_PROMOTIONS', name: 'Quản trị khuyến mãi & voucher', description: 'Toàn quyền tạo sự kiện, tạo mã voucher, bật tắt và xóa' },
+    { code: 'VIEW_REVENUE', name: 'Xem tổng doanh thu shop', description: 'Xem tổng doanh thu bán hàng và biểu đồ tài chính trên Dashboard' },
   ];
 
   const createdPerms: Record<string, string> = {};
@@ -145,6 +148,7 @@ async function main() {
       { staffId: staffKho.id, permissionId: createdPerms['MANAGE_CATEGORIES'], assignedById: adminUser.id },
       { staffId: staffOrder.id, permissionId: createdPerms['MANAGE_ORDERS'], assignedById: adminUser.id },
       { staffId: staffOrder.id, permissionId: createdPerms['MANAGE_REVIEWS'], assignedById: adminUser.id },
+      { staffId: staffOrder.id, permissionId: createdPerms['VIEW_PROMOTIONS'], assignedById: adminUser.id },
     ],
   });
 

@@ -37,6 +37,7 @@ export interface CalculatedDashboardMetrics {
     timeAgo: string;
     isNew?: boolean;
   }[];
+  canViewRevenue?: boolean;
 }
 
 export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics> {
@@ -220,5 +221,49 @@ export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics>
     chartData,
     lowStockList,
     recentOrders: formattedRecentOrders,
+    canViewRevenue: true,
+  };
+}
+
+/**
+ * Che các thông tin nhạy cảm đối với nhân viên (Staff):
+ * 1. Số điện thoại khách hàng (chỉ SUPER_ADMIN hoặc người có quyền MANAGE_CUSTOMERS mới được xem) (R5)
+ * 2. Tổng doanh thu cửa hàng & chi tiết biểu đồ doanh số (chỉ SUPER_ADMIN hoặc người có quyền VIEW_REVENUE mới được xem)
+ */
+export function maskPhonesForStaff<T extends CalculatedDashboardMetrics>(
+  metrics: T,
+  user: { role: string; permissions?: string[] } | null
+): T {
+  const canViewPhone = user?.role === 'SUPER_ADMIN' || user?.permissions?.includes('MANAGE_CUSTOMERS');
+  const canViewRevenue = user?.role === 'SUPER_ADMIN' || user?.permissions?.includes('VIEW_REVENUE');
+
+  let updatedRecentOrders = metrics.recentOrders;
+  if (!canViewPhone && updatedRecentOrders) {
+    updatedRecentOrders = updatedRecentOrders.map((o) => ({
+      ...o,
+      customerPhone: o.customerPhone ? o.customerPhone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : '***',
+    }));
+  }
+
+  let updatedRevenue = metrics.revenue;
+  let updatedChartData = metrics.chartData;
+
+  if (!canViewRevenue) {
+    updatedRevenue = 0;
+    if (updatedChartData) {
+      updatedChartData = updatedChartData.map((bar) => ({
+        ...bar,
+        revVal: '••••',
+        revTarget: '0%',
+      }));
+    }
+  }
+
+  return {
+    ...metrics,
+    revenue: updatedRevenue,
+    chartData: updatedChartData,
+    recentOrders: updatedRecentOrders,
+    canViewRevenue,
   };
 }
