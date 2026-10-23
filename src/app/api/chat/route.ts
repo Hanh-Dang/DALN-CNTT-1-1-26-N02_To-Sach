@@ -102,13 +102,37 @@ export async function POST(req: NextRequest) {
       currentCartItems: cartItems,
     };
 
-    // 3. Kiểm tra API Key Gemini (Nếu thiếu -> Tự động Fallback sang tra cứu CSDL cục bộ)
-    const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-    if (!geminiApiKey) {
+    // Helper tách từ khóa và khoảng giá thay vì truyền cả câu (N14)
+    const STOP_WORDS = new Set([
+      'tìm', 'sách', 'cuốn', 'cho', 'mình', 'tôi', 'có', 'không',
+      'muốn', 'mua', 'về', 'giá', 'nào', 'hay', 'các', 'những',
+      'một', 'với', 'được', 'gợi', 'ý', 'dưới', 'trên', 'khoảng'
+    ]);
+
+    function extractSearchArgs(message: string): { keywords: string[]; maxPrice?: number } {
+      const text = message.toLowerCase().normalize('NFC');
+      let maxPrice: number | undefined;
+      const m = text.match(/(?:dưới|tối đa|không quá|<)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn)?/);
+      if (m) {
+        const n = Number(m[1].replace(/[.,]/g, ''));
+        maxPrice = m[2] ? n * 1000 : n;
+      }
+      const words = text.replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
+        .filter((w) => w && !STOP_WORDS.has(w) && !/^\d/.test(w));
+      const keywords: string[] = [];
+      for (let i = 0; i < words.length; i += 2) keywords.push(words.slice(i, i + 2).join(' '));
+      return { keywords: keywords.slice(0, 5), maxPrice };
+    }
+
+    async function localFallback() {
       try {
         const searchTool = AI_TOOLS_REGISTRY['search_books'];
         const voucherTool = AI_TOOLS_REGISTRY['recommend_best_voucher'];
-        const searchRes = await searchTool.execute({ keywords: [userMessage] }, ctx);
+        const { keywords, maxPrice } = extractSearchArgs(userMessage);
+        const searchRes = await searchTool.execute(
+          { keywords: keywords.length > 0 ? keywords : [userMessage], maxPrice },
+          ctx
+        );
         const books = (searchRes?.books || []).slice(0, 5);
         let bestVoucher = null;
         if (books.length > 0) {
@@ -116,25 +140,37 @@ export async function POST(req: NextRequest) {
           bestVoucher = vRes?.bestVoucher || null;
         }
 
-        const reply = books.length > 0
-          ? `Chào bạn! Mình đã tra cứu trực tiếp trong kho sách Tổ Sách theo yêu cầu "${userMessage}" và tìm thấy các cuốn sách phù hợp nhất dưới đây. Bạn có thể bấm xem chi tiết hoặc đặt mua ngay nhé!`
-          : 'Tổ Sách luôn sẵn sàng tư vấn cho bạn các tựa sách hay cùng các chương trình ưu đãi hấp dẫn. Bạn đang quan tâm đến cuốn sách hay thể loại nào hôm nay?';
+        const allSuggestions = books.length > 0 && books.every((b: any) => b.isSuggestion);
+        const reply = books.length === 0
+          ? 'Tổ Sách luôn sẵn sàng tư vấn cho bạn các tựa sách hay cùng các chương trình ưu đãi hấp dẫn. Bạn đang quan tâm đến cuốn sách hay thể loại nào hôm nay?'
+          : allSuggestions
+          ? 'Mình chưa tìm thấy sách khớp đúng yêu cầu, dưới đây là các cuốn đang bán chạy bạn có thể tham khảo:'
+          : 'Mình đã tìm thấy các cuốn sách phù hợp trong kho Tổ Sách:';
 
-        return NextResponse.json({
+        return {
           reply,
           suggestedBooks: books,
           bestVoucher,
           actions: [],
           source: 'local-db-fallback',
-        });
+        };
       } catch (err) {
-        console.error('Lỗi fallback local:', err);
-        return NextResponse.json({
+        console.error('Lỗi local search fallback:', err);
+        return {
           reply: 'Tổ Sách luôn sẵn sàng tư vấn cho bạn các tựa sách hay. Bạn đang tìm cuốn sách nào hôm nay?',
           suggestedBooks: [],
+          bestVoucher: null,
           actions: [],
-        });
+          source: 'local-db-fallback',
+        };
       }
+    }
+
+    // 3. Kiểm tra API Key Gemini (Nếu thiếu -> Tự động Fallback sang tra cứu CSDL cục bộ)
+    const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!geminiApiKey) {
+      const fallbackResult = await localFallback();
+      return NextResponse.json(fallbackResult);
     }
 
     // 4. Lấy danh mục động từ CSDL thật để nhúng vào Prompt
@@ -217,16 +253,16 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
     let accumulatedActions: any[] = [];
     let bestVoucherInfo: any = null;
     let finalReply = '';
+    let successfulModel = '';
 
-    // Danh sách các model fallback theo thứ tự ưu tiên (N14 resilience)
+    // Danh sách các model fallback theo thứ tự ưu tiên (R13: Bỏ gemini-1.5-flash đã ngừng phục vụ)
     const GEMINI_MODELS = [
       'gemini-3.1-flash-lite',
       'gemini-2.5-flash',
-      'gemini-1.5-flash',
     ];
 
     // Hàm gọi Gemini có cơ chế thử các model fallback, timeout 20s và retry khi gặp 503 / 429
-    const callGeminiApi = async (payload: any, retries = 2): Promise<Response> => {
+    const callGeminiApi = async (payload: any, retries = 2): Promise<{ response: Response; model: string }> => {
       let lastRes: Response | null = null;
       for (const modelName of GEMINI_MODELS) {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
@@ -249,12 +285,15 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
             await new Promise((r) => setTimeout(r, 1200));
             return callGeminiApi(payload, retries - 1);
           }
-          return res;
+          return { response: res, model: modelName };
         } catch (fetchErr: any) {
           console.warn(`Lỗi kết nối tới model ${modelName}:`, fetchErr?.message);
         }
       }
-      return lastRes || new Response(JSON.stringify({ error: 'All Gemini models unreachable' }), { status: 502 });
+      return {
+        response: lastRes || new Response(JSON.stringify({ error: 'All Gemini models unreachable' }), { status: 502 }),
+        model: '',
+      };
     };
 
     // 7. Vòng Lặp Điều Phối Tool Calling (Agent Loop, tối đa 5 vòng an toàn)
@@ -264,7 +303,7 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
     while (iteration < MAX_ITERATIONS) {
       iteration++;
 
-      const geminiRes = await callGeminiApi({
+      const { response: geminiRes, model: usedModel } = await callGeminiApi({
         systemInstruction: {
           parts: [{ text: systemPromptText }],
         },
@@ -277,38 +316,20 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
       });
 
       if (geminiRes.status === 429 || geminiRes.status === 503) {
-        return NextResponse.json({
-          reply:
-            'Hệ thống trợ lý đang tiếp nhận rất nhiều yêu cầu tư vấn cùng lúc. Bạn vui lòng thử lại sau giây lát hoặc liên hệ hotline 0988.123.456 để được hỗ trợ tức thì nhé!',
-          suggestedBooks: accumulatedBooks,
-          actions: accumulatedActions,
-          source: 'google-gemini-resilience-fallback',
-        });
+        // N14: Fallback sang CSDL cục bộ khi Gemini bị giới hạn hạn ngạch hoặc quá tải
+        const fallbackRes = await localFallback();
+        return NextResponse.json(fallbackRes);
       }
 
       if (!geminiRes.ok) {
         const errorText = await geminiRes.text();
         console.error(`Gemini API Error (Status ${geminiRes.status}):`, errorText);
         // Fallback tra cứu CSDL cục bộ khi Gemini gặp lỗi (N14)
-        if (accumulatedBooks.length === 0) {
-          try {
-            const searchTool = AI_TOOLS_REGISTRY['search_books'];
-            const voucherTool = AI_TOOLS_REGISTRY['recommend_best_voucher'];
-            const searchRes = await searchTool.execute({ keywords: [userMessage] }, ctx);
-            if (searchRes?.books && searchRes.books.length > 0) {
-              accumulatedBooks = searchRes.books.slice(0, 5);
-              const vRes = await voucherTool.execute({ orderAmount: accumulatedBooks[0].price }, ctx);
-              if (vRes?.bestVoucher) {
-                bestVoucherInfo = vRes.bestVoucher;
-              }
-              finalReply = `Chào bạn! Mình đã tra cứu trực tiếp trong kho sách Tổ Sách theo yêu cầu "${userMessage}" và tìm thấy các cuốn sách phù hợp dưới đây. Bạn có thể bấm xem chi tiết hoặc đặt mua ngay nhé!`;
-            }
-          } catch (localErr) {
-            console.error('Lỗi local search fallback:', localErr);
-          }
-        }
-        break;
+        const fallbackRes = await localFallback();
+        return NextResponse.json(fallbackRes);
       }
+
+      successfulModel = usedModel;
 
       const geminiData = await geminiRes.json();
       const candidate = geminiData?.candidates?.[0];
@@ -437,9 +458,9 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
         });
       }
 
-      // Gửi functionResponse về cho Gemini
+      // Gửi functionResponse về cho Gemini (R13: REST API dùng role 'user' chứa functionResponse)
       contents.push({
-        role: 'function',
+        role: 'user',
         parts: functionResponseParts,
       });
     }
@@ -459,7 +480,7 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
       suggestedBooks: accumulatedBooks.slice(0, 5),
       bestVoucher: bestVoucherInfo,
       actions: accumulatedActions,
-      source: 'google-gemini-3.1-flash-lite',
+      source: successfulModel ? `google-${successfulModel}` : 'local-db-fallback',
     });
   } catch (error: any) {
     console.error('Lỗi API Chat:', error);

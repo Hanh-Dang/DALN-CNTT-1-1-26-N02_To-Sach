@@ -307,22 +307,15 @@ function ChatBookCard({ book, index, bestVoucher, onAddToCart, onBuyNow }: ChatB
             </span>
           )}
         </span>
-
-        {/* Tình trạng tồn kho */}
-        {isOutOfStock ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60">
-            Hết hàng
-          </span>
-        ) : typeof book.stockQty === 'number' && book.stockQty < 10 ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 animate-pulse">
-            Chỉ còn {book.stockQty} cuốn
-          </span>
-        ) : (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-            Còn hàng ({book.stockQty || 'Sẵn kho'})
-          </span>
-        )}
       </div>
+
+      {/* 1. Thông điệp cuốn sách (lời giới thiệu / điểm nổi bật - N15) */}
+      {book.description && (
+        <div className="bg-amber-50/60 border-l-3 border-[#F5A623] pl-2.5 pr-2 py-2 rounded-r-xl text-[11px] text-slate-700 leading-relaxed italic">
+          <span className="font-bold not-italic text-[#0B1F3A] mr-1">Thông điệp:</span>
+          <span>{book.description}</span>
+        </div>
+      )}
 
       {/* 2. Tên cuốn sách (nổi bật, link) */}
       <div>
@@ -335,15 +328,7 @@ function ChatBookCard({ book, index, bestVoucher, onAddToCart, onBuyNow }: ChatB
         </Link>
       </div>
 
-      {/* 3. Thông điệp cuốn sách (lời giới thiệu / điểm nổi bật) */}
-      {book.description && (
-        <div className="bg-amber-50/60 border-l-3 border-[#F5A623] pl-2.5 pr-2 py-2 rounded-r-xl text-[11px] text-slate-700 leading-relaxed italic">
-          <span className="font-bold not-italic text-[#0B1F3A] mr-1">Thông điệp:</span>
-          <span>{book.description}</span>
-        </div>
-      )}
-
-      {/* 4. Thông tin chi tiết: Tác giả, NXB, Giá bán, Voucher có thể áp */}
+      {/* 3. Thông tin chi tiết: Tác giả, NXB, Giá bán, Voucher có thể áp & Tồn kho */}
       <div className="bg-slate-50/80 rounded-xl p-2.5 space-y-1.5 text-[11px] border border-slate-100">
         <div className="grid grid-cols-2 gap-2 text-slate-600">
           <div className="truncate">
@@ -380,6 +365,24 @@ function ChatBookCard({ book, index, bestVoucher, onAddToCart, onBuyNow }: ChatB
           <span className="font-medium truncate">
             {voucherNote}
           </span>
+        </div>
+
+        {/* Tình trạng tồn kho (chuyển xuống sau Voucher - N15) */}
+        <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[10px]">
+          <span className="text-slate-400 font-medium">Kho hàng:</span>
+          {isOutOfStock ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60">
+              Hết hàng
+            </span>
+          ) : typeof book.stockQty === 'number' && book.stockQty < 10 ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 animate-pulse">
+              Chỉ còn {book.stockQty} cuốn
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              Còn hàng ({book.stockQty || 'Sẵn kho'})
+            </span>
+          )}
         </div>
       </div>
 

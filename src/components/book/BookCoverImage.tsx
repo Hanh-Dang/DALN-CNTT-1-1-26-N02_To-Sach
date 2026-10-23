@@ -19,14 +19,21 @@ export const BookCoverImage: React.FC<BookCoverImageProps> = ({
 }) => {
   const [imgSrc, setImgSrc] = useState<string>(src || fallbackSrc);
   const [hasError, setHasError] = useState(false);
+  const imgRef = React.useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     setImgSrc(src || fallbackSrc);
     setHasError(false);
+
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth === 0) {
+      setHasError(true);
+      setImgSrc(fallbackSrc);
+    }
   }, [src, fallbackSrc]);
 
   return (
     <img
+      ref={imgRef}
       src={imgSrc}
       alt={alt}
       className={className}
