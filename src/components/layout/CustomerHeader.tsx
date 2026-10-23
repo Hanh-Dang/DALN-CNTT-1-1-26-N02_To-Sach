@@ -817,14 +817,14 @@ export const CustomerHeader: React.FC = () => {
             </Link>
 
             <Link
-              href="/catalog?category=ky-nang-song"
+              href="/catalog?category=kinh-te-ky-nang"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Kỹ năng sống
+              Kinh tế & Kỹ năng
             </Link>
 
             <Link
-              href="/catalog?category=cong-nghe-thong-tin"
+              href="/catalog?category=cong-nghe-lap-trinh"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
               Công nghệ & Lập trình
@@ -838,17 +838,17 @@ export const CustomerHeader: React.FC = () => {
             </Link>
 
             <Link
-              href="/catalog?category=truyen-ngan"
+              href="/catalog?category=tieu-thuyet-vn"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Truyện ngắn
+              Truyện ngắn & Tiểu thuyết VN
             </Link>
 
             <Link
-              href="/catalog?category=giao-tiep"
+              href="/catalog?category=tam-ly-triet-hoc"
               className="text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100/80 rounded-xl px-3.5 py-1.5 whitespace-nowrap transition-colors shrink-0"
             >
-              Kỹ năng giao tiếp
+              Tâm lý & Giao tiếp
             </Link>
 
             <Link

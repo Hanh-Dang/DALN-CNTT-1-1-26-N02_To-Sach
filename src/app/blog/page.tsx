@@ -18,7 +18,7 @@ export default function BlogPage() {
       category: 'Kinh tế & Khởi nghiệp',
       date: '16/10/2026',
       readTime: '5 phút đọc',
-      link: '/catalog?category=kinh-te-khoi-nghiep',
+      link: '/catalog?category=kinh-te-ky-nang',
     },
     {
       id: '2',
@@ -27,7 +27,7 @@ export default function BlogPage() {
       category: 'Kỹ năng sống',
       date: '14/10/2026',
       readTime: '4 phút đọc',
-      link: '/catalog?category=ky-nang-song',
+      link: '/catalog?category=kinh-te-ky-nang',
     },
     {
       id: '3',

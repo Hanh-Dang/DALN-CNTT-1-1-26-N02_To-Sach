@@ -48,12 +48,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
   // A. Lọc theo danh mục (hỗ trợ alias kinh-te-ky-nang & chuyên mục con - M11)
   if (rawCat) {
-    let targetSlugs = [rawCat];
-    if (rawCat === 'kinh-te-ky-nang' || rawCat === 'kinh-te') {
-      targetSlugs = ['kinh-te-khoi-nghiep', 'ky-nang-song'];
-    } else if (rawCat === 'ky-nang') {
-      targetSlugs = ['ky-nang-song'];
-    }
+    const targetSlugs = [rawCat];
 
     const matchedCats = await prisma.category.findMany({
       where: {
@@ -79,29 +74,35 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     }
   }
 
-  // B. Tìm kiếm từ khóa không dấu / có dấu thông minh qua PostgreSQL unaccent (N4)
+  // B. Tìm kiếm từ khóa không dấu / có dấu thông minh qua PostgreSQL unaccent (R4)
   if (queryText) {
     try {
-      const searchParam = `%${queryText}%`;
-      const matchedIdsRaw: { id: string }[] = await prisma.$queryRaw`
-        SELECT b.id FROM books b
+      // Escape % và _ để người dùng gõ "%" không khớp toàn bộ kho
+      const pattern = `%${queryText.replace(/[\\%_]/g, '\\$&')}%`;
+      const matchedIdsRaw = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT DISTINCT b.id FROM books b
         LEFT JOIN book_authors ba ON ba.book_id = b.id
         LEFT JOIN authors a ON ba.author_id = a.id
         WHERE b.is_active = true AND (
-          unaccent(b.title) ILIKE unaccent(${searchParam})
-          OR unaccent(COALESCE(b.publisher, '')) ILIKE unaccent(${searchParam})
-          OR unaccent(COALESCE(a.name, '')) ILIKE unaccent(${searchParam})
+          unaccent(b.title) ILIKE unaccent(${pattern})
+          OR unaccent(COALESCE(b.publisher, '')) ILIKE unaccent(${pattern})
+          OR unaccent(COALESCE(a.name, '')) ILIKE unaccent(${pattern})
         )
-        LIMIT 500;
       `;
       const matchedIds = matchedIdsRaw.map((r) => r.id);
-      where.id = { in: matchedIds };
+      // Dùng AND thay vì gán đè where.id, để không xoá điều kiện danh mục ở trên
+      where.AND = [...(where.AND ?? []), { id: { in: matchedIds } }];
     } catch {
       // Fallback an toàn nếu môi trường chưa bật extension unaccent
-      where.OR = [
-        { title: { contains: queryText, mode: 'insensitive' } },
-        { publisher: { contains: queryText, mode: 'insensitive' } },
-        { authors: { some: { author: { name: { contains: queryText, mode: 'insensitive' } } } } },
+      where.AND = [
+        ...(where.AND ?? []),
+        {
+          OR: [
+            { title: { contains: queryText, mode: 'insensitive' } },
+            { publisher: { contains: queryText, mode: 'insensitive' } },
+            { authors: { some: { author: { name: { contains: queryText, mode: 'insensitive' } } } } },
+          ],
+        },
       ];
     }
   }
