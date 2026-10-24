@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { normalizePhone } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,16 +59,29 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Họ và tên phải có ít nhất 2 ký tự' }, { status: 400 });
     }
 
-    // Kiểm tra số điện thoại nếu thay đổi xem có bị trùng với user khác không
-    if (phone && phone.trim()) {
-      const existingPhone = await prisma.user.findFirst({
-        where: {
-          phone: phone.trim(),
-          id: { not: user.id },
-        },
-      });
-      if (existingPhone) {
-        return NextResponse.json({ error: 'Số điện thoại này đã được sử dụng bởi tài khoản khác' }, { status: 400 });
+    // Validate và chuẩn hóa số điện thoại nếu được cung cấp (T8)
+    let cleanPhone: string | null = null;
+    if (phone !== undefined) {
+      if (phone && typeof phone === 'string' && phone.trim()) {
+        cleanPhone = normalizePhone(phone);
+        const phoneRegex = /^0(3|5|7|8|9)[0-9]{8}$/;
+        if (!phoneRegex.test(cleanPhone)) {
+          return NextResponse.json(
+            { error: 'Số điện thoại không hợp lệ (chuẩn 10 chữ số di động Việt Nam).' },
+            { status: 400 }
+          );
+        }
+        const existingPhone = await prisma.user.findFirst({
+          where: {
+            phone: cleanPhone,
+            id: { not: user.id },
+          },
+        });
+        if (existingPhone) {
+          return NextResponse.json({ error: 'Số điện thoại này đã được sử dụng bởi tài khoản khác' }, { status: 400 });
+        }
+      } else {
+        cleanPhone = null;
       }
     }
 
@@ -78,7 +92,7 @@ export async function PATCH(req: NextRequest) {
         where: { id: user.id },
         data: {
           ...(fullName !== undefined ? { fullName: fullName.trim() } : {}),
-          ...(phone !== undefined ? { phone: phone ? phone.trim() : null } : {}),
+          ...(phone !== undefined ? { phone: cleanPhone } : {}),
           ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl ? avatarUrl.trim() : null } : {}),
         },
       });

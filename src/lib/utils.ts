@@ -66,3 +66,22 @@ export function removeVietnameseTones(str: string): string {
     .trim();
 }
 
+/**
+ * Chuẩn hóa số điện thoại di động Việt Nam (loại bỏ ký tự đặc biệt, chuyển +84/84 thành 0)
+ */
+export function normalizePhone(raw: string): string {
+  if (!raw) return '';
+  let clean = raw.trim().replace(/^\+/, '').replace(/[\s.\-()]/g, '');
+  clean = clean.replace(/^84/, '0');
+  return clean;
+}
+
+/**
+ * Parse chuỗi ngày tháng sang đối tượng Date cố định theo múi giờ GMT+7 (Asia/Ho_Chi_Minh)
+ */
+export function parseVnDate(raw: string): Date {
+  if (!raw) return new Date(NaN);
+  const hasTimezone = /(Z|[+-]\d{2}:?\d{2})$/.test(raw);
+  return new Date(hasTimezone ? raw : `${raw}+07:00`);
+}
+

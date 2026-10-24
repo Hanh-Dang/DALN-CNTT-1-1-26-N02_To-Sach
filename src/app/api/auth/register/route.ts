@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { hashPassword, signToken } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
 import { verifyOtp } from '@/lib/email';
+import { normalizePhone } from '@/lib/utils';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -62,6 +63,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let cleanPhone: string | null = null;
+    if (phone && typeof phone === 'string' && phone.trim()) {
+      cleanPhone = normalizePhone(phone);
+      const phoneRegex = /^0(3|5|7|8|9)[0-9]{8}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        return NextResponse.json(
+          { error: 'Số điện thoại không hợp lệ (chuẩn 10 chữ số di động Việt Nam).' },
+          { status: 400 }
+        );
+      }
+    }
+
     const passwordHash = await hashPassword(password);
 
     const newUser = await prisma.user.create({
@@ -69,7 +82,7 @@ export async function POST(req: NextRequest) {
         email: normalizedEmail,
         passwordHash,
         fullName: fullName.trim(),
-        phone: phone && typeof phone === 'string' ? phone.trim() : null,
+        phone: cleanPhone,
         role: UserRole.USER,
         emailVerified: true,
         profile: {

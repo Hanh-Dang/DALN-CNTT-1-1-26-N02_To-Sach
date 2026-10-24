@@ -18,7 +18,6 @@ import {
   CheckCircle2,
   Truck,
   Sparkles,
-  Zap,
   Check,
   X,
   Radio,
@@ -34,7 +33,7 @@ export interface RecentOrderItem {
   customerPhone: string;
   firstBookTitle: string;
   extraItemsCount: number;
-  totalAmount: number;
+  totalAmount: number | null;
   status: string;
   createdAt: string | Date;
   timeAgo: string;
@@ -74,6 +73,9 @@ interface AdminDashboardClientProps {
     lowStockList: LowStockBookItem[];
     recentOrders: RecentOrderItem[];
     canViewRevenue?: boolean;
+    deliveryRate?: string;
+    revenueGrowth?: string;
+    lastMonthName?: string;
   };
 }
 
@@ -116,7 +118,6 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
   } | null>(null);
 
   const prevOrderCountRef = useRef(initialData.ordersCount);
-  const isSimulatingRef = useRef(false);
 
   // 1. KÍCH HOẠT HIỆU ỨNG BIỂU ĐỒ MỌC TỪ 0 LÊN KHI VÀO TRANG
   useEffect(() => {
@@ -193,45 +194,7 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
     return () => clearInterval(interval);
   }, [fetchRealtimeData]);
 
-  // 4. HÀM GIẢ LẬP ĐƠN HÀNG MỚI (DÀNH CHO BẢO VỆ ĐỒ ÁN / DEMO TRỰC TIẾP)
-  const handleSimulateNewOrder = async () => {
-    if (isSimulatingRef.current) return;
-    isSimulatingRef.current = true;
-    setIsRefreshing(true);
 
-    try {
-      const res = await fetch('/api/admin/dashboard/realtime', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'simulate_order' }),
-      });
-      const json = await res.json();
-
-      if (json.success && json.order) {
-        // Cập nhật ngay lập tức các chỉ số trên màn hình
-        playNotificationSound();
-        const o = json.order;
-
-        setNewOrderToast({
-          visible: true,
-          orderCode: o.orderCode,
-          customerName: o.customerName,
-          amount: o.totalAmount,
-          bookTitle: o.firstBookTitle,
-        });
-
-        // Kích hoạt đồng bộ lại toàn bộ số liệu
-        await fetchRealtimeData(false);
-      }
-    } catch (error) {
-      console.error('Lỗi giả lập đơn mới:', error);
-    } finally {
-      setTimeout(() => {
-        setIsRefreshing(false);
-        isSimulatingRef.current = false;
-      }, 600);
-    }
-  };
 
   // Helper render trạng thái đơn hàng
   const renderOrderStatusBadge = (status: string, idx: number) => {
@@ -353,17 +316,7 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
             <span>{isRefreshing ? 'Đang tải...' : 'Làm mới'}</span>
           </button>
 
-          {/* NÚT GIẢ LẬP ĐƠN HÀNG MỚI ĐẶC BIỆT CHO BẢO VỆ ĐỒ ÁN */}
-          <button
-            type="button"
-            onClick={handleSimulateNewOrder}
-            disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
-            title="Tạo đơn hàng khách mới vào database để biểu diễn số nhảy & âm thanh realtime"
-          >
-            <Zap className="w-3.5 h-3.5 fill-current" />
-            <span>⚡ Giả lập đơn khách mới (Demo)</span>
-          </button>
+
 
           {/* Xuất báo cáo */}
           <button
@@ -411,9 +364,9 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
             <div className="mt-4 pt-2.5 flex items-center justify-between border-t border-slate-50 text-xs">
               <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#6FFBBE]/40 text-[#005236] text-[11px] font-bold">
                 <TrendingUp className="w-3.5 h-3.5" />
-                +18.4%
+                {initialData.revenueGrowth || '+18.4%'}
               </div>
-              <span className="text-slate-500 text-xs font-medium">so với tháng 09</span>
+              <span className="text-slate-500 text-xs font-medium">so với {initialData.lastMonthName || 'tháng trước'}</span>
             </div>
           </div>
         )}
@@ -439,7 +392,7 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
               <TrendingUp className="w-3.5 h-3.5" />
               +12.6%
             </div>
-            <span className="text-slate-500 text-xs font-medium">tỷ lệ giao đạt 99.1%</span>
+            <span className="text-slate-500 text-xs font-medium">tỷ lệ giao đạt {initialData.deliveryRate || '99.1'}%</span>
           </div>
         </div>
 
@@ -655,7 +608,9 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
                       </td>
 
                       <td className="py-3 px-3 font-extrabold text-[#0B1F3A] whitespace-nowrap">
-                        {formatVND(order.totalAmount)}
+                        {canViewRevenue && typeof order.totalAmount === 'number'
+                          ? formatVND(order.totalAmount)
+                          : '—'}
                       </td>
 
                       <td className="py-3 px-3 whitespace-nowrap">

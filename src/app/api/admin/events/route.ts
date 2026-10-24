@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
+import { parseVnDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,10 +56,6 @@ export async function GET() {
   }
 }
 
-function parseVnDate(raw: string): Date {
-  const hasTimezone = /(Z|[+-]\d{2}:?\d{2})$/.test(raw);
-  return new Date(hasTimezone ? raw : `${raw}+07:00`);
-}
 
 /**
  * POST /api/admin/events

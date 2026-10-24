@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
+import { parseVnDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,8 +41,14 @@ export async function PATCH(
     if (typeof body.isActive === 'boolean') updateData.isActive = body.isActive;
 
     if (body.startsAt || body.endsAt) {
-      const startsAt = body.startsAt ? new Date(body.startsAt) : existing.startsAt;
-      const endsAt = body.endsAt ? new Date(body.endsAt) : existing.endsAt;
+      const startsAt = body.startsAt ? parseVnDate(body.startsAt) : existing.startsAt;
+      const endsAt = body.endsAt ? parseVnDate(body.endsAt) : existing.endsAt;
+      if (isNaN(startsAt.getTime()) || isNaN(endsAt.getTime())) {
+        return NextResponse.json(
+          { error: 'Định dạng ngày bắt đầu hoặc ngày kết thúc sự kiện không hợp lệ.' },
+          { status: 400 }
+        );
+      }
       if (startsAt >= endsAt) {
         return NextResponse.json(
           { error: 'Ngày bắt đầu phải diễn ra trước ngày kết thúc sự kiện.' },

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { PaymentMethod, PaymentStatus, OrderStatus } from '@prisma/client';
 import { validateVoucher } from '@/lib/voucher';
+import { normalizePhone } from '@/lib/utils';
 
 import crypto from 'crypto';
 
@@ -62,9 +63,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Vui lòng cung cấp số điện thoại nhận hàng.' }, { status: 400 });
     }
 
-    // Chuẩn hóa và validate số điện thoại (chấp nhận +84, 84 hoặc 0...) (L-d, R10)
-    let phoneClean = customerPhone.trim().replace(/^\+/, '').replace(/[\s.\-()]/g, '');
-    phoneClean = phoneClean.replace(/^84/, '0');
+    // Chuẩn hóa và validate số điện thoại (chấp nhận +84, 84 hoặc 0...) (L-d, R10, T8)
+    const phoneClean = normalizePhone(customerPhone);
     const phoneRegex = /^0(3|5|7|8|9)[0-9]{8}$/;
     if (!phoneRegex.test(phoneClean)) {
       return NextResponse.json({ error: 'Số điện thoại không hợp lệ (chuẩn 10 chữ số di động Việt Nam hoặc +84).' }, { status: 400 });
