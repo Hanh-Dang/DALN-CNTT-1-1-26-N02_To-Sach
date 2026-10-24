@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, signToken } from '@/lib/auth';
-import { isLoginBlocked, recordLoginFailure, clearLoginFailures, getClientIp } from '@/lib/rateLimit';
+import { isLoginBlocked, recordLoginFailure, clearLoginFailures, getClientIp, hasRealIp } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,13 +16,14 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
     const clientIp = getClientIp(req);
+    const hasIp = hasRealIp(clientIp);
     // N19 & R2: Khóa đăng nhập theo cặp (IP, Email) và ngưỡng phụ theo Email toàn cục chống brute-force đổi IP
     const loginIdentifier = `${clientIp}:${normalizedEmail}`;
     const emailKey = `email:${normalizedEmail}`;
 
     // 1. Kiểm tra tài khoản từ IP này hoặc theo email toàn cục có đang bị khóa không (R2)
     const [lockCheck, emailLock] = await Promise.all([
-      isLoginBlocked(loginIdentifier, 5), // 5 lần / 15 phút theo IP + email
+      hasIp ? isLoginBlocked(loginIdentifier, 5) : Promise.resolve({ blocked: false, retryAfterSeconds: 0 }), // 5 lần / 15 phút theo IP + email
       isLoginBlocked(emailKey, 20), // 20 lần / 15 phút theo email cộng dồn mọi IP
     ]);
 
@@ -50,21 +51,24 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      const [fail] = await Promise.all([
-        recordLoginFailure(loginIdentifier, 900, 5),
+      const [fail, emailFail] = await Promise.all([
+        hasIp ? recordLoginFailure(loginIdentifier, 900, 5) : Promise.resolve({ isNowBlocked: false, remainingAttempts: 20 }),
         recordLoginFailure(emailKey, 900, 20),
       ]);
-      if (fail.isNowBlocked) {
+      const effectiveFail = hasIp ? fail : emailFail;
+      if (effectiveFail.isNowBlocked) {
         return NextResponse.json(
           {
-            error: 'Bạn đã nhập sai thông tin quá 5 lần liên tiếp. Tạm thời khóa đăng nhập 15 phút từ thiết bị này.',
+            error: hasIp
+              ? 'Bạn đã nhập sai thông tin quá 5 lần liên tiếp. Tạm thời khóa đăng nhập 15 phút từ thiết bị này.'
+              : 'Tài khoản này đã nhập sai thông tin quá nhiều lần liên tiếp. Tạm thời khóa đăng nhập 15 phút.',
             retryAfter: 900,
           },
           { status: 429 }
         );
       }
       return NextResponse.json(
-        { error: `Email hoặc mật khẩu không chính xác. Bạn còn ${fail.remainingAttempts} lần thử trước khi bị tạm khóa.` },
+        { error: `Email hoặc mật khẩu không chính xác. Bạn còn ${effectiveFail.remainingAttempts} lần thử trước khi bị tạm khóa.` },
         { status: 401 }
       );
     }
@@ -78,21 +82,24 @@ export async function POST(req: NextRequest) {
 
     const isMatch = await comparePassword(password, user.passwordHash);
     if (!isMatch) {
-      const [fail] = await Promise.all([
-        recordLoginFailure(loginIdentifier, 900, 5),
+      const [fail, emailFail] = await Promise.all([
+        hasIp ? recordLoginFailure(loginIdentifier, 900, 5) : Promise.resolve({ isNowBlocked: false, remainingAttempts: 20 }),
         recordLoginFailure(emailKey, 900, 20),
       ]);
-      if (fail.isNowBlocked) {
+      const effectiveFail = hasIp ? fail : emailFail;
+      if (effectiveFail.isNowBlocked) {
         return NextResponse.json(
           {
-            error: 'Bạn đã nhập sai mật khẩu quá 5 lần liên tiếp. Tạm thời khóa đăng nhập 15 phút từ thiết bị này.',
+            error: hasIp
+              ? 'Bạn đã nhập sai mật khẩu quá 5 lần liên tiếp. Tạm thời khóa đăng nhập 15 phút từ thiết bị này.'
+              : 'Tài khoản này đã nhập sai mật khẩu quá nhiều lần liên tiếp. Tạm thời khóa đăng nhập 15 phút.',
             retryAfter: 900,
           },
           { status: 429 }
         );
       }
       return NextResponse.json(
-        { error: `Email hoặc mật khẩu không chính xác. Bạn còn ${fail.remainingAttempts} lần thử trước khi bị tạm khóa.` },
+        { error: `Email hoặc mật khẩu không chính xác. Bạn còn ${effectiveFail.remainingAttempts} lần thử trước khi bị tạm khóa.` },
         { status: 401 }
       );
     }

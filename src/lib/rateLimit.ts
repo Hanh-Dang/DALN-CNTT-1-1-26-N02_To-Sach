@@ -39,6 +39,10 @@ export function getClientIp(req: NextRequest): string {
   return 'direct';
 }
 
+export function hasRealIp(ip: string): boolean {
+  return ip !== 'direct';
+}
+
 /**
  * Kiểm tra và ghi nhận tần suất request (Token Bucket / Sliding Window)
  * Dùng cho các endpoint thông thường như Send-OTP, Register, Chat, v.v.

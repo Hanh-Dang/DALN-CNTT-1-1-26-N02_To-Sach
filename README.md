@@ -90,6 +90,9 @@ Dự án sử dụng file `.env` để bảo mật chuỗi kết nối cơ sở 
 
    # 4. API Key của Google Gemini dùng cho Trợ lý Bán hàng Agentic AI (Gemini 3.1 Flash-Lite)
    GEMINI_API_KEY="your-gemini-api-key"
+
+   # 5. Cấu hình Reverse Proxy & Rate Limiting (Môn An toàn ứng dụng Web)
+   TRUST_PROXY="false" # Đặt "true" nếu triển khai phía sau Vercel / Nginx / Cloudflare
    ```
 
 ---
@@ -160,7 +163,7 @@ Mở trình duyệt web và truy cập vào địa chỉ:
 | **Khách hàng mẫu** | `customer@gmail.com` | `User@123` | Mua sắm, áp voucher, thanh toán VietQR, gửi đánh giá sao, theo dõi đơn hàng thời gian thực. |
 
 > 🔒 **Nguyên tắc Bảo mật Doanh thu & Quản trị Nhân sự:**  
-> Theo chuẩn mực vận hành TMĐT và bảo mật tài chính, **nhân viên thông thường (Staff) tuyệt đối không được xem tổng doanh thu của shop**. Tại giao diện Dashboard Admin của tài khoản nhân viên, thẻ *"Doanh thu tháng này"* hoàn toàn bị gỡ bỏ khỏi DOM, bố cục lưới tự động co giãn từ 4 cột sang 3 cột cân đối (`grid-cols-1 md:grid-cols-3`), và API `/api/admin/dashboard/metrics` trả về `revenue: 0` cùng cờ `canViewRevenue: false`.
+> Theo chuẩn mực vận hành TMĐT và bảo mật tài chính, **nhân viên thông thường (Staff) tuyệt đối không được xem tổng doanh thu của shop**. Tại giao diện Dashboard Admin của tài khoản nhân viên, thẻ *"Doanh thu tháng này"* hoàn toàn bị gỡ bỏ khỏi DOM, bố cục lưới tự động co giãn từ 4 cột sang 3 cột cân đối (`grid-cols-1 md:grid-cols-3`), và API `/api/admin/dashboard/realtime` trả về `revenue: 0` cùng cờ `canViewRevenue: false`.
 
 ---
 
