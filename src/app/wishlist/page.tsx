@@ -9,6 +9,7 @@ import {
 import { useWishlist, WishlistItem } from '@/context/WishlistContext';
 import { useCart } from '@/context/CartContext';
 import { formatVND, calculateDiscount } from '@/lib/utils';
+import { BookCoverImage } from '@/components/book/BookCoverImage';
 
 export default function WishlistPage() {
   const { items, totalWishlist, removeFromWishlist, clearWishlist, isLoaded } = useWishlist();
@@ -165,8 +166,8 @@ export default function WishlistPage() {
                     {/* Cover image container */}
                     <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-50 mb-3">
                       <Link href={`/book/${book.slug}`} className="block w-full h-full">
-                        <img
-                          src={book.coverUrl || '/placeholder-book.jpg'}
+                        <BookCoverImage
+                          src={book.coverUrl}
                           alt={book.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />

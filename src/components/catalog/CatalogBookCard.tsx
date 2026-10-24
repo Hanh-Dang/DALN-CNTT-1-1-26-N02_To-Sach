@@ -6,6 +6,7 @@ import { Heart, ShoppingBag, Check, Star, PackageCheck } from 'lucide-react';
 import { formatVND, calculateDiscount } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { BookCoverImage } from '@/components/book/BookCoverImage';
 
 export interface CatalogBookItem {
   id: string;
@@ -84,11 +85,10 @@ export const CatalogBookCard: React.FC<CatalogBookCardProps> = ({ book, viewMode
       <article className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 border border-slate-200/80 p-4 flex flex-col sm:flex-row gap-4 group">
         {/* Cover */}
         <div className="relative w-full sm:w-32 aspect-[3/4] sm:aspect-auto rounded-xl overflow-hidden bg-slate-50 shrink-0">
-          <img
+          <BookCoverImage
             src={book.coverUrl}
             alt={book.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
           />
           {book.tag && (
             <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-blue-50 text-[#0B1F3A] font-bold text-[10px] shadow-xs border border-blue-100">
@@ -190,11 +190,10 @@ export const CatalogBookCard: React.FC<CatalogBookCardProps> = ({ book, viewMode
       {/* 1. Cover Image */}
       <div className="relative aspect-[3/4] bg-slate-50 overflow-hidden">
         <Link href={`/book/${book.slug}`} className="block w-full h-full">
-          <img
+          <BookCoverImage
             src={book.coverUrl}
             alt={book.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-            loading="lazy"
           />
         </Link>
 

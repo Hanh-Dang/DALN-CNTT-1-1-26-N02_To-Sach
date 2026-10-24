@@ -13,6 +13,7 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { formatVND, calculateDiscount, formatDateVN } from '@/lib/utils';
 import { BookCard, BookCardData } from './BookCard';
+import { BookCoverImage } from './BookCoverImage';
 
 export interface BookDetailData {
   id: string;
@@ -303,13 +304,10 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
               </button>
 
               {/* Main Image */}
-              <img
-                src={allImages[selectedImageIndex] || book.coverUrl || '/placeholder-book.svg'}
+              <BookCoverImage
+                src={allImages[selectedImageIndex] || book.coverUrl}
                 alt={book.title}
                 className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder-book.svg';
-                }}
               />
 
               {/* Seal Guarantee strip */}
@@ -335,7 +333,7 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
                         : 'border-slate-200 opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt={`Góc nhìn ${idx + 1}`} className="w-full h-full object-cover" />
+                    <BookCoverImage src={img} alt={`Góc nhìn ${idx + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

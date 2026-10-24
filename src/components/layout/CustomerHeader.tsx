@@ -15,6 +15,7 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { formatVND } from '@/lib/utils';
 import { fetchAuthMeShared } from '@/lib/clientAuthDedupe';
+import { BookCoverImage } from '@/components/book/BookCoverImage';
 
 interface CurrentUser {
   id: string;
@@ -548,7 +549,7 @@ export const CustomerHeader: React.FC = () => {
                               className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#F0F3FF] transition-colors group"
                             >
                               <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0 relative bg-slate-100 border border-slate-200 shadow-2xs">
-                                <img
+                                <BookCoverImage
                                   src={book.coverUrl}
                                   alt={book.title}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
@@ -613,7 +614,7 @@ export const CustomerHeader: React.FC = () => {
                             className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-[#F0F3FF] transition-colors group"
                           >
                             <div className="w-9 h-12 rounded-lg overflow-hidden shrink-0 relative bg-slate-100 border border-slate-200">
-                              <img
+                              <BookCoverImage
                                 src={book.coverUrl}
                                 alt={book.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
