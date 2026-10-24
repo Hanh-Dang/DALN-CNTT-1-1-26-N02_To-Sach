@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
-import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { checkRateLimit, getClientIp, hasRealIp } from '@/lib/rateLimit';
 import {
   AI_TOOLS_REGISTRY,
   geminiToolDeclarations,
@@ -24,9 +24,13 @@ interface IncomingCartItem {
 export async function POST(req: NextRequest) {
   try {
     const clientIp = getClientIp(req);
+    const user = await getCurrentUser();
 
     // 1. Rate Limit Bảo Vệ Hệ Thống (Môn Bảo mật: Chống DoS / Brute-force chat)
-    const chatLimit = await checkRateLimit(`chat_ip:${clientIp}`, 30, 60);
+    // Ưu tiên định danh theo user đã đăng nhập, nếu là khách vãng lai và proxy chưa bật thì nới rộng quota dùng chung
+    const rateLimitKey = user ? `chat_user:${user.id}` : `chat_ip:${clientIp}`;
+    const rateLimitQuota = user || hasRealIp(clientIp) ? 30 : 300;
+    const chatLimit = await checkRateLimit(rateLimitKey, rateLimitQuota, 60);
     if (!chatLimit.success) {
       return NextResponse.json(
         {
@@ -90,8 +94,7 @@ export async function POST(req: NextRequest) {
       }));
     const rawCartItems: IncomingCartItem[] = Array.isArray(body.cartItems) ? body.cartItems : [];
 
-    // 2. Lấy Session Người Dùng từ HttpOnly Cookie ở Server (Bảo mật: BOLA/IDOR prevention)
-    const user = await getCurrentUser();
+    // 2. Sử dụng Session Người Dùng từ HttpOnly Cookie ở Server (Bảo mật: BOLA/IDOR prevention)
     const cartItems = rawCartItems.map((item) => ({
       bookId: item.bookId,
       quantity: Math.max(1, Number(item.quantity || item.qty || 1)),
@@ -102,35 +105,112 @@ export async function POST(req: NextRequest) {
       currentCartItems: cartItems,
     };
 
-    // Helper tách từ khóa và khoảng giá thay vì truyền cả câu (N14)
+    // Helper tách từ khóa và khoảng giá thay vì truyền cả câu (N14, T6, 4.4)
     const STOP_WORDS = new Set([
-      'tìm', 'sách', 'cuốn', 'cho', 'mình', 'tôi', 'có', 'không',
-      'muốn', 'mua', 'về', 'giá', 'nào', 'hay', 'các', 'những',
-      'một', 'với', 'được', 'gợi', 'ý', 'dưới', 'trên', 'khoảng'
+      'tìm', 'sách', 'cuốn', 'quyển', 'bộ', 'tập', 'cho', 'mình', 'tôi', 'em', 'bạn', 'có', 'không',
+      'muốn', 'mua', 'về', 'giá', 'nào', 'hay', 'các', 'những', 'top', 'list',
+      'một', 'với', 'được', 'gợi', 'ý', 'dưới', 'trên', 'khoảng', 'tầm',
+      'xin', 'chào', 'hello', 'hi', 'alo', 'shop', 'ơi', 'nha', 'nhé', 'ạ', 'ad', 'admin',
+      'tư', 'vấn', 'giúp', 'hộ', 'xem', 'hỏi', 'cần', 'thử', 'do', 'you', 'have',
+      'can', 'please', 'is', 'there', 'the', 'a', 'an'
     ]);
 
-    function extractSearchArgs(message: string): { keywords: string[]; maxPrice?: number } {
-      const text = message.toLowerCase().normalize('NFC');
-      let maxPrice: number | undefined;
-      const m = text.match(/(?:dưới|tối đa|không quá|<)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn)?/);
-      if (m) {
-        const n = Number(m[1].replace(/[.,]/g, ''));
-        maxPrice = m[2] ? n * 1000 : n;
+    function parsePriceUnit(numStr: string, unitStr?: string): number {
+      const cleanNum = Number(numStr.replace(/[.,]/g, ''));
+      if (!unitStr) {
+        return cleanNum < 1000 ? cleanNum * 1000 : cleanNum;
       }
-      const words = text.replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
-        .filter((w) => w && !STOP_WORDS.has(w) && !/^\d/.test(w));
+      const u = unitStr.toLowerCase();
+      if (u === 'k' || u.startsWith('nghìn') || u.startsWith('ngàn')) return cleanNum * 1000;
+      if (u.startsWith('tr') || u.startsWith('triệu')) return cleanNum * 1000000;
+      return cleanNum;
+    }
+
+    function extractSearchArgs(message: string): {
+      keywords: string[];
+      minPrice?: number;
+      maxPrice?: number;
+      isGreetingOnly: boolean;
+    } {
+      const rawLower = message.toLowerCase().normalize('NFC').trim();
+      let text = rawLower;
+      let minPrice: number | undefined;
+      let maxPrice: number | undefined;
+
+      // 1. Nhận diện dạng khoảng giá "từ X đến Y" hoặc "X - Y"
+      const rangeMatch = text.match(/(?:từ|giá từ)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)?\s*(?:đến|tới|-)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)?/);
+      if (rangeMatch) {
+        minPrice = parsePriceUnit(rangeMatch[1], rangeMatch[2]);
+        maxPrice = parsePriceUnit(rangeMatch[3], rangeMatch[4] || rangeMatch[2]);
+        text = text.replace(rangeMatch[0], ' ');
+      } else {
+        // 2. Nhận diện dạng "dưới X" / "tối đa X" / "< X"
+        const maxMatch = text.match(/(?:dưới|tối đa|không quá|<|nhỏ hơn|ít hơn)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)?/);
+        if (maxMatch) {
+          maxPrice = parsePriceUnit(maxMatch[1], maxMatch[2]);
+          text = text.replace(maxMatch[0], ' ');
+        }
+
+        // 3. Nhận diện dạng "trên X" / "tối thiểu X" / "> X"
+        const minMatch = text.match(/(?:trên|tối thiểu|lớn hơn|>|nhiều hơn)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)?/);
+        if (minMatch) {
+          minPrice = parsePriceUnit(minMatch[1], minMatch[2]);
+          text = text.replace(minMatch[0], ' ');
+        }
+
+        // 4. Nhận diện dạng "tầm X" / "khoảng X"
+        const approxMatch = text.match(/(?:tầm|khoảng|giá)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)/);
+        if (approxMatch && !maxPrice && !minPrice) {
+          const base = parsePriceUnit(approxMatch[1], approxMatch[2]);
+          minPrice = Math.max(0, Math.round(base * 0.7));
+          maxPrice = Math.round(base * 1.3);
+          text = text.replace(approxMatch[0], ' ');
+        }
+      }
+
+      // Tách từ khóa: Giữ lại số có ý nghĩa (ví dụ 1984), loại bỏ từ dừng
+      const tokens = text.replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
+        .filter((w) => w && !STOP_WORDS.has(w));
+
+      // Kiểm tra xem câu có phải chỉ là lời chào không
+      const isGreetingOnly =
+        tokens.length === 0 &&
+        !minPrice &&
+        !maxPrice &&
+        /^(xin\s+)?(chào|chao|hello|hi|helo|alo|hai|hé lô|hey)(\s+(shop|ad|admin|bạn|ơi|cậu))?[\s.!?:;~]*$/i.test(rawLower);
+
       const keywords: string[] = [];
-      for (let i = 0; i < words.length; i += 2) keywords.push(words.slice(i, i + 2).join(' '));
-      return { keywords: keywords.slice(0, 5), maxPrice };
+      for (let i = 0; i < tokens.length; i += 2) {
+        keywords.push(tokens.slice(i, i + 2).join(' '));
+      }
+
+      return {
+        keywords: keywords.slice(0, 5),
+        minPrice,
+        maxPrice,
+        isGreetingOnly: isGreetingOnly || (tokens.length === 0 && !minPrice && !maxPrice),
+      };
     }
 
     async function localFallback() {
       try {
+        const { keywords, minPrice, maxPrice, isGreetingOnly } = extractSearchArgs(userMessage);
+
+        if (isGreetingOnly) {
+          return {
+            reply:
+              'Xin chào bạn! Trợ lý ảo của Nhà sách Tổ Sách rất vui được hỗ trợ bạn. Bạn đang quan tâm đến cuốn sách, tác giả hoặc thể loại nào hôm nay? (Ví dụ: sách trinh thám Nhật Bản, sách lập trình Python, sách dưới 100k...)',
+            suggestedBooks: [],
+            bestVoucher: null,
+            actions: [],
+            source: 'local-db-fallback',
+          };
+        }
+
         const searchTool = AI_TOOLS_REGISTRY['search_books'];
         const voucherTool = AI_TOOLS_REGISTRY['recommend_best_voucher'];
-        const { keywords, maxPrice } = extractSearchArgs(userMessage);
         const searchRes = await searchTool.execute(
-          { keywords: keywords.length > 0 ? keywords : [userMessage], maxPrice },
+          { keywords: keywords.length > 0 ? keywords : [userMessage], minPrice, maxPrice },
           ctx
         );
         const books = (searchRes?.books || []).slice(0, 5);
@@ -261,8 +341,8 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
       'gemini-2.5-flash',
     ];
 
-    // Hàm gọi Gemini có cơ chế thử các model fallback, timeout 20s và retry khi gặp 503 / 429
-    const callGeminiApi = async (payload: any, retries = 2): Promise<{ response: Response; model: string }> => {
+    // Hàm gọi Gemini có cơ chế thử các model fallback, timeout 20s và tự chuyển model khi 404/429/503 (T6)
+    const callGeminiApi = async (payload: any): Promise<{ response: Response; model: string }> => {
       let lastRes: Response | null = null;
       for (const modelName of GEMINI_MODELS) {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
@@ -274,17 +354,13 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
             signal: AbortSignal.timeout(20000), // Timeout 20s chống treo kết nối
           });
 
-          // Nếu model chưa có quyền truy cập hoặc 404, thử model tiếp theo
-          if (res.status === 404) {
-            console.warn(`Model ${modelName} trả về 404, chuyển sang model dự phòng tiếp theo...`);
+          // Nếu model 404 (chưa hỗ trợ), 429 (hết quota) hoặc 503 (quá tải), chuyển sang model dự phòng kế tiếp
+          if (res.status === 404 || res.status === 429 || res.status === 503) {
+            console.warn(`Model ${modelName} trả về mã ${res.status}, chuyển sang model kế tiếp trong danh sách...`);
             lastRes = res;
             continue;
           }
 
-          if ((res.status === 503 || res.status === 429) && retries > 0) {
-            await new Promise((r) => setTimeout(r, 1200));
-            return callGeminiApi(payload, retries - 1);
-          }
           return { response: res, model: modelName };
         } catch (fetchErr: any) {
           console.warn(`Lỗi kết nối tới model ${modelName}:`, fetchErr?.message);
@@ -315,15 +391,13 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
         },
       });
 
-      if (geminiRes.status === 429 || geminiRes.status === 503) {
-        // N14: Fallback sang CSDL cục bộ khi Gemini bị giới hạn hạn ngạch hoặc quá tải
-        const fallbackRes = await localFallback();
-        return NextResponse.json(fallbackRes);
-      }
-
       if (!geminiRes.ok) {
         const errorText = await geminiRes.text();
         console.error(`Gemini API Error (Status ${geminiRes.status}):`, errorText);
+        // Nếu đã có sách hoặc action thu thập được từ vòng trước đó, giữ lại kết quả thay vì ghi đè (T6)
+        if (accumulatedBooks.length > 0 || accumulatedActions.length > 0) {
+          break;
+        }
         // Fallback tra cứu CSDL cục bộ khi Gemini gặp lỗi (N14)
         const fallbackRes = await localFallback();
         return NextResponse.json(fallbackRes);

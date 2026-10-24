@@ -10,6 +10,7 @@ import {
   Check, Zap, Ticket, Tag
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { BookCoverImage } from '@/components/book/BookCoverImage';
 
 interface SuggestedBook {
   id: string;
@@ -31,6 +32,7 @@ interface BestVoucherData {
   name: string;
   discountAmount?: number;
   minOrderValue?: number;
+  maxDiscount?: number | null;
   type?: string;
   value?: number;
   finalPrice?: number;
@@ -257,7 +259,7 @@ interface ChatBookCardProps {
   index: number;
   bestVoucher?: BestVoucherData | null;
   onAddToCart: (book: SuggestedBook, e: React.MouseEvent<HTMLElement>) => void;
-  onBuyNow: (book: SuggestedBook) => void;
+  onBuyNow: (book: SuggestedBook, voucher?: BestVoucherData | null) => void;
 }
 
 function ChatBookCard({ book, index, bestVoucher, onAddToCart, onBuyNow }: ChatBookCardProps) {
@@ -276,13 +278,32 @@ function ChatBookCard({ book, index, bestVoucher, onAddToCart, onBuyNow }: ChatB
       ? Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)
       : 0;
 
-  // Tính voucher có thể áp dụng cho cuốn sách này
+  // Tính voucher riêng cho từng cuốn sách theo giá của chính nó (4.3, T7)
   let voucherNote = '';
   if (bestVoucher?.code) {
-    if (book.price >= (bestVoucher.minOrderValue || 0)) {
-      voucherNote = `Áp mã ${bestVoucher.code} để được giảm ${bestVoucher.discountAmount?.toLocaleString('vi-VN')} đ`;
+    const minVal = bestVoucher.minOrderValue || 0;
+    if (book.price >= minVal) {
+      let perBookDiscount = 0;
+      if (bestVoucher.type === 'PERCENT' && typeof bestVoucher.value === 'number') {
+        const rawDisc = Math.round((book.price * bestVoucher.value) / 100);
+        perBookDiscount =
+          typeof bestVoucher.maxDiscount === 'number' && bestVoucher.maxDiscount > 0
+            ? Math.min(rawDisc, bestVoucher.maxDiscount)
+            : rawDisc;
+      } else if (bestVoucher.type === 'FIXED' && typeof bestVoucher.value === 'number') {
+        perBookDiscount = Math.min(bestVoucher.value, book.price);
+      } else {
+        perBookDiscount = bestVoucher.discountAmount || 0;
+      }
+
+      voucherNote = `Áp mã ${bestVoucher.code} giảm ${perBookDiscount.toLocaleString('vi-VN')} đ`;
+      if (book.price >= 150000) {
+        voucherNote += ' + Freeship';
+      }
     } else {
-      voucherNote = `Mua đơn từ ${(bestVoucher.minOrderValue || 150000).toLocaleString('vi-VN')} đ áp mã ${bestVoucher.code} & Freeship`;
+      const needed = minVal - book.price;
+      const freeshipText = minVal >= 150000 ? ' & Freeship' : '';
+      voucherNote = `Mua thêm ${needed.toLocaleString('vi-VN')} đ áp mã ${bestVoucher.code}${freeshipText}`;
     }
   } else {
     if (book.price >= 150000) {
@@ -394,20 +415,11 @@ function ChatBookCard({ book, index, bestVoucher, onAddToCart, onBuyNow }: ChatB
           className="relative w-16 h-22 shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/70 block group cursor-pointer shadow-2xs hover:border-amber-400 transition-all"
           title={`Xem chi tiết ${book.title}`}
         >
-          {book.coverUrl ? (
-            <img
-              src={book.coverUrl}
-              alt={book.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">
-              Tổ Sách
-            </div>
-          )}
+          <BookCoverImage
+            src={book.coverUrl}
+            alt={book.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
         </Link>
 
         {/* Nút thêm vào giỏ hàng và Mua ngay */}
@@ -439,7 +451,7 @@ function ChatBookCard({ book, index, bestVoucher, onAddToCart, onBuyNow }: ChatB
 
           <button
             type="button"
-            onClick={() => onBuyNow(book)}
+            onClick={() => onBuyNow(book, bestVoucher)}
             disabled={isOutOfStock}
             className={`w-full py-2 px-3 rounded-xl text-[11px] font-black flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer ${isOutOfStock
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -638,35 +650,39 @@ export function FloatingChatbot() {
   };
 
   // 7. Mua ngay trực tiếp từ thẻ sách (1 chạm chuyển tới /checkout)
-  const handleBuyNowFromCard = (book: SuggestedBook) => {
+  const handleBuyNowFromCard = (book: SuggestedBook, voucher?: BestVoucherData | null) => {
     if (typeof book.stockQty === 'number' && book.stockQty <= 0) {
       setToastNotification(`Sách "${book.title}" hiện tại đã hết hàng.`);
       return;
     }
 
-    // 1. Đảm bảo sách có mặt trong giỏ hàng
-    addToCart(
-      {
-        bookId: book.id,
-        title: book.title,
-        slug: book.slug,
-        price: book.price,
-        originalPrice: book.originalPrice || book.price,
-        coverUrl: book.coverUrl || '',
-        authorName: book.authorName,
-        stockQty: book.stockQty ?? 50,
-      },
-      1
-    );
+    // 1. Chỉ thêm vào giỏ nếu chưa có trong giỏ hàng (không làm tăng gấp đôi số lượng - T7)
+    const alreadyInCart = cartItems.some((item) => item.bookId === book.id);
+    if (!alreadyInCart) {
+      addToCart(
+        {
+          bookId: book.id,
+          title: book.title,
+          slug: book.slug,
+          price: book.price,
+          originalPrice: book.originalPrice || book.price,
+          coverUrl: book.coverUrl || '',
+          authorName: book.authorName,
+          stockQty: book.stockQty ?? 50,
+        },
+        1
+      );
+    }
 
     // 2. Ghi đè chỉ chọn duy nhất cuốn sách này để checkout
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.setItem('tosach_checkout_selected_ids', JSON.stringify([book.id]));
 
-        // 3. Nếu đang có voucher tốt nhất được tư vấn VÀ giá sách đủ điều kiện minOrderValue (N13)
-        if (currentBestVoucher && book.price >= (currentBestVoucher.minOrderValue || 0)) {
-          sessionStorage.setItem('tosach_checkout_voucher', JSON.stringify(currentBestVoucher));
+        // 3. Ưu tiên voucher đính kèm thẻ sách được bấm (T7)
+        const effectiveVoucher = voucher || currentBestVoucher;
+        if (effectiveVoucher && book.price >= (effectiveVoucher.minOrderValue || 0)) {
+          sessionStorage.setItem('tosach_checkout_voucher', JSON.stringify(effectiveVoucher));
         } else {
           sessionStorage.removeItem('tosach_checkout_voucher');
         }

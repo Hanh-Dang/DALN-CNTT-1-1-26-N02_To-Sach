@@ -203,7 +203,7 @@ export const searchBooksTool: ToolDefinition = {
         SELECT *
         FROM book_matches
         WHERE matched_count > 0
-        ORDER BY matched_count DESC, total_score DESC, "soldCount" DESC
+        ORDER BY ("stockQty" > 0) DESC, matched_count DESC, total_score DESC, "soldCount" DESC
         LIMIT 5;
       `;
 
@@ -229,12 +229,14 @@ export const searchBooksTool: ToolDefinition = {
         }));
       } else {
         // KHI 0 KẾT QUẢ KHỚP TRỰC TIẾP:
-        // Lấy sách bán chạy CÒN HÀNG của danh mục gần nhất hoặc toàn kho
+        // Lấy sách bán chạy CÒN HÀNG của danh mục gần nhất hoặc toàn kho, tôn trọng khoảng giá khách yêu cầu
         isSuggestion = true;
         const fallbackBooks = await prisma.book.findMany({
           where: {
             isActive: true,
             stockQty: { gt: 0 },
+            ...(minPrice ? { price: { gte: minPrice } } : {}),
+            ...(maxPrice ? { price: { lte: maxPrice } } : {}),
             ...(validCategorySlug
               ? { categories: { some: { category: { slug: validCategorySlug } } } }
               : {}),
@@ -359,6 +361,7 @@ export const recommendBestVoucherTool: ToolDefinition = {
               name: v.name,
               discountAmount: discount,
               minOrderValue: v.minOrderValue,
+              maxDiscount: v.maxDiscount,
               type: v.type,
               value: v.value,
               finalPrice: Math.max(0, amount - discount),
