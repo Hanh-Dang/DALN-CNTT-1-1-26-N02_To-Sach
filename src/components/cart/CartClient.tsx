@@ -11,6 +11,7 @@ import {
 import { useCart, CartItem } from '@/context/CartContext';
 import { formatVND, calculateDiscount } from '@/lib/utils';
 import { BookCard, BookCardData } from '@/components/book/BookCard';
+import { BookCoverImage } from '@/components/book/BookCoverImage';
 
 const FREESHIP_THRESHOLD = 150000;
 const STANDARD_SHIPPING_FEE = 25000;
@@ -223,13 +224,6 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
     revalidate();
     return () => { isMounted = false; };
   }, [selectedSubtotal, appliedVoucher?.code]);
-
-  // R8: Tự động xóa thông báo lỗi voucher cũ khi người dùng thay đổi sản phẩm / số lượng
-  useEffect(() => {
-    if (!appliedVoucher) {
-      setVoucherError('');
-    }
-  }, [selectedSubtotal, appliedVoucher]);
 
   // Trạng thái chọn tất cả (chỉ dựa trên danh sách sách còn hàng)
   const allSelected = inStockItems.length > 0 && selectedItems.length === inStockItems.length;
@@ -486,7 +480,7 @@ export const CartClient: React.FC<CartClientProps> = ({ recommendedBooks = [] })
 
                     {/* Book Thumbnail */}
                     <Link href={`/book/${item.slug}`} className="shrink-0 group">
-                      <img
+                      <BookCoverImage
                         src={item.coverUrl}
                         alt={item.title}
                         className={`w-16 h-22 sm:w-20 sm:h-28 object-cover rounded-xl border border-slate-200 shadow-xs group-hover:scale-105 transition-transform ${
