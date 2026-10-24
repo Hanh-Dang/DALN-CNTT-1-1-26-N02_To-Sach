@@ -107,29 +107,47 @@ async function main() {
     data: { name: 'Văn Học Tuyển Chọn', slug: 'van-hoc-tuyen-chon', level: 1 }
   })).id;
 
-  // 3. Batch insert Authors in chunks of 500
+  // 3. Batch insert Authors in chunks of 500 (tránh tạo trùng lặp với seed.ts - T5)
   console.log('👥 Inserting authors in chunks...');
   const authorMap = new Map<string, string>();
   const CHUNK_SIZE = 500;
 
+  // Lấy trước các tác giả đã có trong DB từ seed.ts
+  const existingAuthors = await prisma.author.findMany({ select: { id: true, name: true } });
+  const existingAuthorNames = new Set(existingAuthors.map(a => a.name.trim().toLowerCase()));
+
   for (let i = 0; i < authorsData.length; i += CHUNK_SIZE) {
     const chunk = authorsData.slice(i, i + CHUNK_SIZE);
-    const authorCreateData = chunk.map(a => ({
-      name: a.name.trim(),
-      slug: (a.slug || a.name.toLowerCase().replace(/[^a-z0-9]/g, '-')).slice(0, 100) + `-${Math.random().toString(36).substring(2, 6)}`,
-      bio: a.bio || null,
-      avatarUrl: a.photoUrl || null
-    }));
+    const authorCreateData: { name: string; slug: string; bio: string | null; avatarUrl: string | null }[] = [];
 
-    await prisma.author.createMany({
-      data: authorCreateData,
-      skipDuplicates: true
-    });
+    for (const a of chunk) {
+      const cleanName = a.name.trim();
+      const lower = cleanName.toLowerCase();
+      if (!existingAuthorNames.has(lower)) {
+        existingAuthorNames.add(lower);
+        authorCreateData.push({
+          name: cleanName,
+          slug: (a.slug || cleanName.toLowerCase().replace(/[^a-z0-9]/g, '-')).slice(0, 100) + `-${Math.random().toString(36).substring(2, 6)}`,
+          bio: a.bio || null,
+          avatarUrl: a.photoUrl || null
+        });
+      }
+    }
+
+    if (authorCreateData.length > 0) {
+      await prisma.author.createMany({
+        data: authorCreateData,
+        skipDuplicates: true
+      });
+    }
   }
 
-  const allAuthors = await prisma.author.findMany({ select: { id: true, name: true } });
+  const allAuthors = await prisma.author.findMany({ select: { id: true, name: true }, orderBy: { createdAt: 'asc' } });
   for (const a of allAuthors) {
-    authorMap.set(a.name.toLowerCase(), a.id);
+    const lower = a.name.toLowerCase();
+    if (!authorMap.has(lower)) {
+      authorMap.set(lower, a.id);
+    }
   }
   console.log(`✅ Database now has ${allAuthors.length} authors.`);
 

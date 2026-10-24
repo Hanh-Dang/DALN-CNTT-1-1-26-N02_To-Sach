@@ -18,6 +18,7 @@ const sampleCustomers = [
   { name: 'Lý Quang Minh', phone: '0944332211', email: 'minh.ly@gmail.com', address: '5 Tôn Đức Thắng, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh' },
   { name: 'Trịnh Khánh Vy', phone: '0977889900', email: 'vy.trinh@gmail.com', address: '18 Bạch Đằng, Phường 24, Quận Bình Thạnh, TP. Hồ Chí Minh' },
   { name: 'Dương Đình Trọng', phone: '0911223344', email: 'trong.duong@gmail.com', address: '209 Đội Cấn, Phường Liễu Giai, Quận Ba Đình, Hà Nội' },
+  { name: 'Khách Hàng Mẫu', phone: '0903888999', email: 'customer@gmail.com', address: 'Số 1 Đại Cồ Việt, Phường Bách Khoa, Quận Hai Bà Trưng, Hà Nội' },
 ];
 
 function getRandomItem<T>(arr: T[]): T {
@@ -63,15 +64,13 @@ async function seedHistoricalOrders() {
     });
   }
 
-  // Tăng tồn kho an toàn cho các sách còn lại bằng 1 câu updateMany
-  await prisma.book.updateMany({
-    where: {
-      id: { notIn: lowStockIds },
-      stockQty: { lt: 50 },
-    },
-    data: { stockQty: 180 },
+  // 2. Dọn dẹp đơn lịch sử cũ có mã -H (bảo vệ tuyệt đối 100% đơn thật do khách đặt)
+  const deletedOld = await prisma.order.deleteMany({
+    where: { orderCode: { contains: '-H' } },
   });
-  console.log('✅ Đã chuẩn hóa số liệu tồn kho (bao gồm sách cảnh báo tồn kho thấp).');
+  if (deletedOld.count > 0) {
+    console.log(`🧹 Đã dọn dẹp ${deletedOld.count} đơn hàng lịch sử cũ (-H) để tái tạo mới.`);
+  }
 
   // Lấy User liên kết
   const customerUser = await prisma.user.findUnique({ where: { email: 'customer@gmail.com' } });
@@ -79,24 +78,45 @@ async function seedHistoricalOrders() {
   const adminUser = await prisma.user.findFirst({ where: { role: 'SUPER_ADMIN' } });
   const actorId = staffKho?.id || adminUser?.id;
 
-  // 2. Dọn dẹp đơn lịch sử cũ nếu đã từng tạo (tránh trùng lặp mã đơn TS-2026)
-  const deletedOld = await prisma.order.deleteMany({
-    where: { orderCode: { startsWith: 'TS-2026' } },
-  });
-  if (deletedOld.count > 0) {
-    console.log(`🧹 Đã dọn dẹp ${deletedOld.count} đơn hàng lịch sử cũ để tái tạo mới.`);
-  }
-
-  // 3. Phân bổ các giai đoạn đơn hàng
-  const now = new Date('2026-10-22T21:00:00+07:00');
+  // 3. Phân bổ các giai đoạn đơn hàng (tính lùi động từ ngày hiện tại để biểu đồ luôn tươi mới)
+  const now = new Date();
   const periods = [
-    { name: 'Tháng 6/2026 (Khởi động sàn)', start: new Date('2026-06-01T08:00:00+07:00'), end: new Date('2026-06-30T21:00:00+07:00'), count: 14 },
-    { name: 'Tháng 7/2026 (Chiến dịch Hè)', start: new Date('2026-07-01T08:00:00+07:00'), end: new Date('2026-07-31T21:00:00+07:00'), count: 22 },
-    { name: 'Tháng 8/2026 (Tiền Tựu Trường)', start: new Date('2026-08-01T08:00:00+07:00'), end: new Date('2026-08-31T21:00:00+07:00'), count: 32 },
-    { name: 'Tháng 9/2026 (Hội Sách Khai Trường)', start: new Date('2026-09-01T08:00:00+07:00'), end: new Date('2026-09-30T21:00:00+07:00'), count: 48 },
-    // Tháng 10: trải dài từ 01/10 đến hôm nay (22/10), có cả đơn mới cho hôm nay để biểu đồ 7 ngày hiển thị trọn vẹn
-    { name: 'Tháng 10/2026 (Hiện tại)', start: new Date('2026-10-01T08:00:00+07:00'), end: new Date('2026-10-21T23:59:59+07:00'), count: 28 },
-    { name: 'Ngày 22/10/2026 (Hôm nay)', start: new Date('2026-10-22T08:00:00+07:00'), end: new Date('2026-10-22T20:30:00+07:00'), count: 6 },
+    {
+      name: `Tháng ${new Date(now.getFullYear(), now.getMonth() - 4, 1).getMonth() + 1}/${new Date(now.getFullYear(), now.getMonth() - 4, 1).getFullYear()}`,
+      start: new Date(now.getFullYear(), now.getMonth() - 4, 1, 8, 0, 0),
+      end: new Date(now.getFullYear(), now.getMonth() - 3, 0, 21, 0, 0),
+      count: 14,
+    },
+    {
+      name: `Tháng ${new Date(now.getFullYear(), now.getMonth() - 3, 1).getMonth() + 1}/${new Date(now.getFullYear(), now.getMonth() - 3, 1).getFullYear()}`,
+      start: new Date(now.getFullYear(), now.getMonth() - 3, 1, 8, 0, 0),
+      end: new Date(now.getFullYear(), now.getMonth() - 2, 0, 21, 0, 0),
+      count: 22,
+    },
+    {
+      name: `Tháng ${new Date(now.getFullYear(), now.getMonth() - 2, 1).getMonth() + 1}/${new Date(now.getFullYear(), now.getMonth() - 2, 1).getFullYear()}`,
+      start: new Date(now.getFullYear(), now.getMonth() - 2, 1, 8, 0, 0),
+      end: new Date(now.getFullYear(), now.getMonth() - 1, 0, 21, 0, 0),
+      count: 32,
+    },
+    {
+      name: `Tháng ${new Date(now.getFullYear(), now.getMonth() - 1, 1).getMonth() + 1}/${new Date(now.getFullYear(), now.getMonth() - 1, 1).getFullYear()}`,
+      start: new Date(now.getFullYear(), now.getMonth() - 1, 1, 8, 0, 0),
+      end: new Date(now.getFullYear(), now.getMonth(), 0, 21, 0, 0),
+      count: 48,
+    },
+    {
+      name: `Tháng này (${now.getMonth() + 1}/${now.getFullYear()})`,
+      start: new Date(now.getFullYear(), now.getMonth(), 1, 8, 0, 0),
+      end: new Date(now.getTime() - 2 * 3600 * 1000),
+      count: 28,
+    },
+    {
+      name: 'Hôm nay',
+      start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0),
+      end: now,
+      count: 6,
+    },
   ];
 
   let orderSeq = 1000;
@@ -112,8 +132,11 @@ async function seedHistoricalOrders() {
       const orderDate = getRandomDate(p.start, p.end);
       const customer = getRandomItem(sampleCustomers);
 
-      const yyyymmdd = orderDate.toISOString().slice(0, 10).replace(/-/g, '');
-      const orderCode = `TS-${yyyymmdd}-${orderSeq}`;
+      // Mã đơn theo giờ Việt Nam GMT+7 và gắn hậu tố -H định danh đơn lịch sử
+      const yyyymmdd = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
+        .format(orderDate)
+        .replace(/-/g, '');
+      const orderCode = `TS-${yyyymmdd}-H${orderSeq}`;
 
       // Chọn ngẫu nhiên 1 - 3 cuốn sách
       const numBooks = getRandomInt(1, 3);
@@ -140,9 +163,10 @@ async function seedHistoricalOrders() {
         };
       });
 
-      const shippingFee = subtotal >= 200000 ? 0 : 30000;
-      const discountAmount = Math.random() > 0.75 ? getRandomInt(15000, 40000) : 0;
-      const totalAmount = Math.max(subtotal + shippingFee - discountAmount, subtotal);
+      // Chính sách phí ship chuẩn app: Freeship từ 150.000đ, dưới 150k phí 25.000đ
+      const shippingFee = subtotal >= 150000 ? 0 : 25000;
+      const discountAmount = 0;
+      const totalAmount = subtotal - discountAmount + shippingFee;
 
       let status: OrderStatus = OrderStatus.DELIVERED;
       let paymentStatus: PaymentStatus = PaymentStatus.PAID;
@@ -152,44 +176,44 @@ async function seedHistoricalOrders() {
         // Hôm nay: đa dạng trạng thái để demo quy trình xử lý đơn
         if (i === 0 || i === 1) {
           status = OrderStatus.PENDING;
-          paymentStatus = paymentMethod === PaymentMethod.COD ? PaymentStatus.PENDING : PaymentStatus.PAID;
         } else if (i === 2) {
           status = OrderStatus.CONFIRMED;
-          paymentStatus = PaymentStatus.PAID;
         } else if (i === 3 || i === 4) {
           status = OrderStatus.SHIPPING;
-          paymentStatus = PaymentStatus.PAID;
         } else {
           status = OrderStatus.DELIVERED;
-          paymentStatus = PaymentStatus.PAID;
         }
-      } else if (p.name.includes('Tháng 10')) {
+      } else if (p.name.includes('Tháng này')) {
         const rand = Math.random();
         if (rand < 0.1) {
           status = OrderStatus.PENDING;
-          paymentStatus = paymentMethod === PaymentMethod.COD ? PaymentStatus.PENDING : PaymentStatus.PAID;
         } else if (rand < 0.2) {
           status = OrderStatus.CONFIRMED;
-          paymentStatus = PaymentStatus.PAID;
         } else if (rand < 0.35) {
           status = OrderStatus.SHIPPING;
-          paymentStatus = PaymentStatus.PAID;
         } else if (rand < 0.9) {
           status = OrderStatus.DELIVERED;
-          paymentStatus = PaymentStatus.PAID;
         } else {
           status = OrderStatus.CANCELLED;
-          paymentStatus = PaymentStatus.REFUNDED;
         }
       } else {
         // Các tháng cũ: hầu hết đã giao thành công, 4% huỷ
         if (Math.random() < 0.04) {
           status = OrderStatus.CANCELLED;
-          paymentStatus = PaymentStatus.REFUNDED;
         } else {
           status = OrderStatus.DELIVERED;
-          paymentStatus = PaymentStatus.PAID;
         }
+      }
+
+      // Xác định trạng thái thanh toán chuẩn xác theo nghiệp vụ
+      if (status === OrderStatus.CANCELLED) {
+        paymentStatus = PaymentStatus.REFUNDED;
+      } else if (paymentMethod === PaymentMethod.COD) {
+        // Với COD: Chỉ chuyển PAID khi đơn đã DELIVERED thực tế
+        paymentStatus = status === OrderStatus.DELIVERED ? PaymentStatus.PAID : PaymentStatus.PENDING;
+      } else {
+        // Với Chuyển khoản ngân hàng (VietQR): Đã thanh toán khi duyệt
+        paymentStatus = PaymentStatus.PAID;
       }
 
       // Timeline tương thích giao diện Admin lẫn Khách hàng
@@ -247,7 +271,7 @@ async function seedHistoricalOrders() {
       await prisma.order.create({
         data: {
           orderCode,
-          userId: Math.random() > 0.45 && customerUser ? customerUser.id : null,
+          userId: customer.email === 'customer@gmail.com' && customerUser ? customerUser.id : null,
           customerName: customer.name,
           customerPhone: customer.phone,
           customerEmail: customer.email,

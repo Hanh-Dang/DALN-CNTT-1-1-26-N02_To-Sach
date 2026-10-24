@@ -517,7 +517,7 @@ async function main() {
       orderCode: 'TS-2024-00101',
       userId: customerUser.id,
       customerName: 'Nguyễn Hoàng Dũng',
-      customerPhone: '0912 345 678',
+      customerPhone: '0912345678',
       customerEmail: 'customer@gmail.com',
       shippingAddress: '72 Lê Thánh Tôn, Tòa nhà Vincom Center, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
       subtotal: 254000,
