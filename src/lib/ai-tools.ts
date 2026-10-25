@@ -71,6 +71,67 @@ export const searchBooksTool: ToolDefinition = {
             .filter((k) => k.length >= 2 && k.length <= 40)
         )
       ).slice(0, 5);
+      // 4.1: Nếu không có từ khóa nhưng có lọc khoảng giá hoặc thể loại, tìm trực tiếp sách phù hợp
+      if (cleanKeywords.length === 0 && (args.minPrice !== undefined || args.maxPrice !== undefined || args.categorySlug)) {
+        const minP = typeof args.minPrice === 'number' && args.minPrice >= 0 ? args.minPrice : null;
+        const maxP = typeof args.maxPrice === 'number' && args.maxPrice > 0 ? args.maxPrice : null;
+        let validCatSlug: string | null = null;
+        if (args.categorySlug) {
+          const catExists = await prisma.category.findUnique({
+            where: { slug: args.categorySlug.trim() },
+            select: { slug: true },
+          });
+          if (catExists) validCatSlug = catExists.slug;
+        }
+
+        const directBooks = await prisma.book.findMany({
+          where: {
+            isActive: true,
+            stockQty: { gt: 0 },
+            ...(minP !== null || maxP !== null
+              ? {
+                  price: {
+                    ...(minP !== null ? { gte: minP } : {}),
+                    ...(maxP !== null ? { lte: maxP } : {}),
+                  },
+                }
+              : {}),
+            ...(validCatSlug
+              ? { categories: { some: { category: { slug: validCatSlug } } } }
+              : {}),
+          },
+          take: 5,
+          orderBy: [{ isBestseller: 'desc' }, { soldCount: 'desc' }],
+          include: {
+            authors: { include: { author: { select: { name: true } } } },
+            categories: { include: { category: { select: { name: true, slug: true } } } },
+          },
+        });
+
+        if (directBooks.length > 0) {
+          return {
+            success: true,
+            totalFound: directBooks.length,
+            isSuggestion: false,
+            books: directBooks.map((b) => ({
+              id: b.id,
+              title: b.title,
+              slug: b.slug,
+              price: b.price,
+              originalPrice: b.originalPrice || b.price,
+              stockQty: b.stockQty,
+              inStock: true,
+              coverUrl: b.coverUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
+              authorName: b.authors.map((ba) => ba.author.name).join(', ') || 'Tổ Sách Tuyển Chọn',
+              publisher: b.publisher || 'Nhà Xuất Bản Trẻ',
+              categoryName: b.categories[0]?.category.name || 'Sách Hay',
+              catSlug: b.categories[0]?.category.slug || 'van-hoc',
+              description: b.description || '',
+              isSuggestion: false,
+            })),
+          };
+        }
+      }
 
       if (cleanKeywords.length === 0) {
         cleanKeywords.push('sách');
@@ -235,8 +296,14 @@ export const searchBooksTool: ToolDefinition = {
           where: {
             isActive: true,
             stockQty: { gt: 0 },
-            ...(minPrice ? { price: { gte: minPrice } } : {}),
-            ...(maxPrice ? { price: { lte: maxPrice } } : {}),
+            ...(minPrice !== null || maxPrice !== null
+              ? {
+                  price: {
+                    ...(minPrice !== null ? { gte: minPrice } : {}),
+                    ...(maxPrice !== null ? { lte: maxPrice } : {}),
+                  },
+                }
+              : {}),
             ...(validCategorySlug
               ? { categories: { some: { category: { slug: validCategorySlug } } } }
               : {}),
@@ -456,6 +523,7 @@ export const applyVoucherTool: ToolDefinition = {
           type: validation.voucher.type,
           value: validation.voucher.value,
           minOrderValue: validation.voucher.minOrderValue,
+          maxDiscount: validation.voucher.maxDiscount,
         },
         message: `Đã áp dụng mã "${validation.voucher.code}" thành công! Bạn được giảm ${discount.toLocaleString('vi-VN')} đ.`,
       };

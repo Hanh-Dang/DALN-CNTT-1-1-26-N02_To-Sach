@@ -105,25 +105,33 @@ export async function POST(req: NextRequest) {
       currentCartItems: cartItems,
     };
 
-    // Helper tách từ khóa và khoảng giá thay vì truyền cả câu (N14, T6, 4.4)
+    // Helper tách từ khóa và khoảng giá thay vì truyền cả câu (N14, T6, 4.4, 4.1)
     const STOP_WORDS = new Set([
       'tìm', 'sách', 'cuốn', 'quyển', 'bộ', 'tập', 'cho', 'mình', 'tôi', 'em', 'bạn', 'có', 'không',
       'muốn', 'mua', 'về', 'giá', 'nào', 'hay', 'các', 'những', 'top', 'list',
-      'một', 'với', 'được', 'gợi', 'ý', 'dưới', 'trên', 'khoảng', 'tầm',
+      'một', 'với', 'được', 'gợi', 'ý', 'dưới', 'trên', 'khoảng', 'tầm', 'của',
       'xin', 'chào', 'hello', 'hi', 'alo', 'shop', 'ơi', 'nha', 'nhé', 'ạ', 'ad', 'admin',
       'tư', 'vấn', 'giúp', 'hộ', 'xem', 'hỏi', 'cần', 'thử', 'do', 'you', 'have',
-      'can', 'please', 'is', 'there', 'the', 'a', 'an'
+      'can', 'please', 'is', 'there', 'the', 'a', 'an', 'book', 'books'
     ]);
 
     function parsePriceUnit(numStr: string, unitStr?: string): number {
-      const cleanNum = Number(numStr.replace(/[.,]/g, ''));
-      if (!unitStr) {
-        return cleanNum < 1000 ? cleanNum * 1000 : cleanNum;
+      const u = unitStr?.toLowerCase() || '';
+      const isMillion = u.startsWith('tr') || u.startsWith('triệu');
+      const isThousand = u === 'k' || u.startsWith('nghìn') || u.startsWith('ngàn');
+
+      if (isMillion) {
+        // Hỗ trợ số thập phân tiếng Việt như "1,5tr" hoặc "1.5 triệu" (4.1)
+        const parsed = parseFloat(numStr.includes(',') && !numStr.includes('.') ? numStr.replace(',', '.') : numStr.replace(/,/g, ''));
+        return isNaN(parsed) ? 0 : Math.round(parsed * 1000000);
       }
-      const u = unitStr.toLowerCase();
-      if (u === 'k' || u.startsWith('nghìn') || u.startsWith('ngàn')) return cleanNum * 1000;
-      if (u.startsWith('tr') || u.startsWith('triệu')) return cleanNum * 1000000;
-      return cleanNum;
+      if (isThousand) {
+        const parsed = parseFloat(numStr.includes(',') && !numStr.includes('.') ? numStr.replace(',', '.') : numStr.replace(/,/g, ''));
+        return isNaN(parsed) ? 0 : Math.round(parsed * 1000);
+      }
+      const cleanNum = Number(numStr.replace(/[.,]/g, ''));
+      if (isNaN(cleanNum)) return 0;
+      return cleanNum < 1000 ? cleanNum * 1000 : cleanNum;
     }
 
     function extractSearchArgs(message: string): {
@@ -137,29 +145,29 @@ export async function POST(req: NextRequest) {
       let minPrice: number | undefined;
       let maxPrice: number | undefined;
 
-      // 1. Nhận diện dạng khoảng giá "từ X đến Y" hoặc "X - Y"
-      const rangeMatch = text.match(/(?:từ|giá từ)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)?\s*(?:đến|tới|-)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)?/);
+      // 1. Nhận diện dạng khoảng giá "từ X đến Y" hoặc "X - Y" (hỗ trợ số thập phân 4.1)
+      const rangeMatch = text.match(/(?:từ|giá từ)\s*(\d+(?:[.,]\d+)*)\s*(k|nghìn|ngàn|triệu|tr)?\s*(?:đến|tới|-)\s*(\d+(?:[.,]\d+)*)\s*(k|nghìn|ngàn|triệu|tr)?/);
       if (rangeMatch) {
         minPrice = parsePriceUnit(rangeMatch[1], rangeMatch[2]);
         maxPrice = parsePriceUnit(rangeMatch[3], rangeMatch[4] || rangeMatch[2]);
         text = text.replace(rangeMatch[0], ' ');
       } else {
         // 2. Nhận diện dạng "dưới X" / "tối đa X" / "< X"
-        const maxMatch = text.match(/(?:dưới|tối đa|không quá|<|nhỏ hơn|ít hơn)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)?/);
+        const maxMatch = text.match(/(?:dưới|tối đa|không quá|<|nhỏ hơn|ít hơn)\s*(\d+(?:[.,]\d+)*)\s*(k|nghìn|ngàn|triệu|tr)?/);
         if (maxMatch) {
           maxPrice = parsePriceUnit(maxMatch[1], maxMatch[2]);
           text = text.replace(maxMatch[0], ' ');
         }
 
         // 3. Nhận diện dạng "trên X" / "tối thiểu X" / "> X"
-        const minMatch = text.match(/(?:trên|tối thiểu|lớn hơn|>|nhiều hơn)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)?/);
+        const minMatch = text.match(/(?:trên|tối thiểu|lớn hơn|>|nhiều hơn)\s*(\d+(?:[.,]\d+)*)\s*(k|nghìn|ngàn|triệu|tr)?/);
         if (minMatch) {
           minPrice = parsePriceUnit(minMatch[1], minMatch[2]);
           text = text.replace(minMatch[0], ' ');
         }
 
         // 4. Nhận diện dạng "tầm X" / "khoảng X"
-        const approxMatch = text.match(/(?:tầm|khoảng|giá)\s*(\d+(?:[.,]\d{3})*)\s*(k|nghìn|ngàn|triệu|tr)/);
+        const approxMatch = text.match(/(?:tầm|khoảng|giá)\s*(\d+(?:[.,]\d+)*)\s*(k|nghìn|ngàn|triệu|tr)/);
         if (approxMatch && !maxPrice && !minPrice) {
           const base = parsePriceUnit(approxMatch[1], approxMatch[2]);
           minPrice = Math.max(0, Math.round(base * 0.7));
@@ -209,8 +217,10 @@ export async function POST(req: NextRequest) {
 
         const searchTool = AI_TOOLS_REGISTRY['search_books'];
         const voucherTool = AI_TOOLS_REGISTRY['recommend_best_voucher'];
+        // 4.1: Nếu câu hỏi chỉ có tầm giá (keywords rỗng), không truyền cả câu vào title search mà lọc theo khoảng giá
+        const effectiveKeywords = keywords.length > 0 ? keywords : (minPrice !== undefined || maxPrice !== undefined ? [] : [userMessage]);
         const searchRes = await searchTool.execute(
-          { keywords: keywords.length > 0 ? keywords : [userMessage], minPrice, maxPrice },
+          { keywords: effectiveKeywords, minPrice, maxPrice },
           ctx
         );
         const books = (searchRes?.books || []).slice(0, 5);

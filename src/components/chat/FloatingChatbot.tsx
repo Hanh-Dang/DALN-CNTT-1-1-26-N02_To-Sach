@@ -729,7 +729,12 @@ export function FloatingChatbot() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          history: messages.map((m) => ({ role: m.role, content: m.content })),
+          history: messages.map((m) => ({
+            role: m.role,
+            content: m.suggestedBooks && m.suggestedBooks.length > 0
+              ? `${m.content}\n[Sách đã hiển thị: ${m.suggestedBooks.map((b, i) => `${i + 1}. ${b.title} (${b.price}đ, slug: ${b.slug})`).join('; ')}]`
+              : m.content,
+          })),
           cartItems: cartItems.map((i) => ({ bookId: i.bookId, quantity: i.quantity })),
         }),
       });
