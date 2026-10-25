@@ -191,12 +191,18 @@ export const BookCard: React.FC<BookCardProps> = ({ book }) => {
         <div>
           {/* Rating & Sold count */}
           <div className="flex items-center gap-2 mb-2">
-            <div className="flex items-center gap-1 text-amber-500">
-              <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
-              <span className="text-xs font-bold text-slate-700">
-                {book.avgRating > 0 ? book.avgRating.toFixed(1) : '5.0'}
+            {book.avgRating > 0 && book.ratingCount > 0 ? (
+              <div className="flex items-center gap-1 text-amber-500">
+                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" />
+                <span className="text-xs font-bold text-slate-700">
+                  {book.avgRating.toFixed(1)}
+                </span>
+              </div>
+            ) : (
+              <span className="text-[11px] text-slate-400 italic">
+                Chưa có đánh giá
               </span>
-            </div>
+            )}
             <span className="text-slate-300 text-xs">•</span>
             <span className="text-[11px] text-slate-400">
               {book.soldCount && book.soldCount > 0 ? `Đã bán ${book.soldCount}` : 'Mới phát hành'}

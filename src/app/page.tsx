@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { BookCard } from '@/components/book/BookCard';
+import { BookCoverImage } from '@/components/book/BookCoverImage';
 import { RecentlyViewedCarousel } from '@/components/book/RecentlyViewedCarousel';
 import { RecommendedForYou } from '@/components/book/RecommendedForYou';
 import { formatVND } from '@/lib/utils';
@@ -167,7 +168,7 @@ export default async function HomePage() {
                 className="bg-white/10 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-white/20 max-w-sm w-full hover:bg-white/15 transition-all group block shadow-2xl"
               >
                 <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-4 shadow-xl">
-                  <img
+                  <BookCoverImage
                     src={spotlightBook.coverUrl}
                     alt={spotlightBook.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

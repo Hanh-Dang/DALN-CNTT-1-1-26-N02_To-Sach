@@ -216,11 +216,15 @@ export default async function BookDetailPage({ params }: PageProps) {
       availability: rawBook.stockQty > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       itemCondition: 'https://schema.org/NewCondition',
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: rawBook.avgRating || 5,
-      reviewCount: Math.max(rawBook.ratingCount, 1),
-    },
+    ...(rawBook.ratingCount > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: rawBook.avgRating,
+            reviewCount: rawBook.ratingCount,
+          },
+        }
+      : {}),
   };
 
   return (

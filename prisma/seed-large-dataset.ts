@@ -112,16 +112,16 @@ async function main() {
   const authorMap = new Map<string, string>();
   const CHUNK_SIZE = 500;
 
-  // Lấy trước các tác giả đã có trong DB từ seed.ts
+  // Lấy trước các tác giả đã có trong DB từ seed.ts (T5: Chuẩn hóa NFC chống trùng Unicode)
   const existingAuthors = await prisma.author.findMany({ select: { id: true, name: true } });
-  const existingAuthorNames = new Set(existingAuthors.map(a => a.name.trim().toLowerCase()));
+  const existingAuthorNames = new Set(existingAuthors.map(a => a.name.trim().normalize('NFC').toLowerCase()));
 
   for (let i = 0; i < authorsData.length; i += CHUNK_SIZE) {
     const chunk = authorsData.slice(i, i + CHUNK_SIZE);
     const authorCreateData: { name: string; slug: string; bio: string | null; avatarUrl: string | null }[] = [];
 
     for (const a of chunk) {
-      const cleanName = a.name.trim();
+      const cleanName = a.name.trim().normalize('NFC');
       const lower = cleanName.toLowerCase();
       if (!existingAuthorNames.has(lower)) {
         existingAuthorNames.add(lower);

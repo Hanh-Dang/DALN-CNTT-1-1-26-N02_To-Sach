@@ -100,7 +100,7 @@ export function AdminReviewsClient({
     const approved = reviews.filter((r) => r.status === 'APPROVED').length;
     const rejected = reviews.filter((r) => r.status === 'REJECTED').length;
     const totalRatingSum = reviews.reduce((sum, r) => sum + r.rating, 0);
-    const avg = total > 0 ? (totalRatingSum / total).toFixed(1) : '5.0';
+    const avg = total > 0 ? (totalRatingSum / total).toFixed(1) : '0.0';
     return { total, pending, approved, rejected, avg };
   }, [reviews]);
 
