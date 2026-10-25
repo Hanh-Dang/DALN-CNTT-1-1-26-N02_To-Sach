@@ -365,6 +365,8 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
         });
         const data = await res.json();
         if (!isMounted) return;
+        // 4.2: Nếu gặp HTTP 429 (Rate Limit do bấm nhanh), không tự động gỡ voucher của khách
+        if (res.status === 429) return;
         if (res.ok && data.voucher) {
           setAppliedVoucher((prev) => (prev ? { ...prev, discountAmount: data.discountAmount } : null));
           setVoucherError('');
