@@ -335,10 +335,12 @@ QUY TẮC BÁN HÀNG & NGHIỆP VỤ BẮT BUỘC (TUÂN THỦ 100%):
     let finalReply = '';
     let successfulModel = '';
 
-    // Danh sách các model fallback theo thứ tự ưu tiên (R13: Bỏ gemini-1.5-flash đã ngừng phục vụ)
+    // Danh sách các model fallback theo thứ tự ưu tiên (R13 & P2: Dùng các model flash-lite đang hoạt động)
     const GEMINI_MODELS = [
       'gemini-3.1-flash-lite',
-      'gemini-2.5-flash',
+      'gemini-3.1-flash-lite-preview',
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
     ];
 
     // Hàm gọi Gemini có cơ chế thử các model fallback, timeout 20s và tự chuyển model khi 404/429/503 (T6)
