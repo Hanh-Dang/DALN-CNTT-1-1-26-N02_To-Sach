@@ -42,16 +42,7 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Xác minh mã OTP bắt buộc (giới hạn 5 lần thử sai & TTL 5 phút - H5, H6)
-    const isValidOtp = await verifyOtp(normalizedEmail, otp.trim());
-    if (!isValidOtp) {
-      return NextResponse.json(
-        { error: 'Mã xác minh không chính xác, đã hết hạn hoặc bị hủy do nhập sai quá 5 lần' },
-        { status: 400 }
-      );
-    }
-
-    // Check existing email
+    // 1. Kiểm tra tài khoản đã tồn tại chưa trước khi xác thực OTP (T8)
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
@@ -63,6 +54,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 2. Kiểm tra định dạng số điện thoại trước khi xác thực OTP (T8: Tránh xóa mất OTP khi gõ sai định dạng SĐT)
     let cleanPhone: string | null = null;
     if (phone && typeof phone === 'string' && phone.trim()) {
       cleanPhone = normalizePhone(phone);
@@ -73,6 +65,15 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    // 3. Xác minh mã OTP bắt buộc (giới hạn 5 lần thử sai & TTL 5 phút - H5, H6)
+    const isValidOtp = await verifyOtp(normalizedEmail, otp.trim());
+    if (!isValidOtp) {
+      return NextResponse.json(
+        { error: 'Mã xác minh không chính xác, đã hết hạn hoặc bị hủy do nhập sai quá 5 lần' },
+        { status: 400 }
+      );
     }
 
     const passwordHash = await hashPassword(password);

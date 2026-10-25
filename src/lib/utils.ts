@@ -81,7 +81,12 @@ export function normalizePhone(raw: string): string {
  */
 export function parseVnDate(raw: string): Date {
   if (!raw) return new Date(NaN);
-  const hasTimezone = /(Z|[+-]\d{2}:?\d{2})$/.test(raw);
-  return new Date(hasTimezone ? raw : `${raw}+07:00`);
+  const trimmed = raw.trim();
+  // Nếu chỉ có ngày YYYY-MM-DD, thêm giờ bắt đầu T00:00:00 trước khi nối múi giờ +07:00 (T9)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return new Date(`${trimmed}T00:00:00+07:00`);
+  }
+  const hasTimezone = /(Z|[+-]\d{2}:?\d{2})$/.test(trimmed);
+  return new Date(hasTimezone ? trimmed : `${trimmed}+07:00`);
 }
 

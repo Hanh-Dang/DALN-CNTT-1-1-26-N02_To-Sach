@@ -21,10 +21,11 @@ export async function POST(req: NextRequest) {
     const loginIdentifier = `${clientIp}:${normalizedEmail}`;
     const emailKey = `email:${normalizedEmail}`;
 
-    // 1. Kiểm tra tài khoản từ IP này hoặc theo email toàn cục có đang bị khóa không (R2)
+    // 1. Kiểm tra tài khoản từ IP này hoặc theo email toàn cục có đang bị khóa không (R2, 4.4)
+    // 4.4: Khi hasIp=false (TRUST_PROXY=false), chỉ theo dõi theo IP/phiên cục bộ, không khóa emailKey toàn cục để tránh kẻ xấu gửi 20 request phá hoại khóa Admin
     const [lockCheck, emailLock] = await Promise.all([
       hasIp ? isLoginBlocked(loginIdentifier, 5) : Promise.resolve({ blocked: false, retryAfterSeconds: 0 }), // 5 lần / 15 phút theo IP + email
-      isLoginBlocked(emailKey, 20), // 20 lần / 15 phút theo email cộng dồn mọi IP
+      hasIp ? isLoginBlocked(emailKey, 20) : Promise.resolve({ blocked: false, retryAfterSeconds: 0 }), // 20 lần / 15 phút theo email khi có IP xác thực
     ]);
 
     if (lockCheck.blocked || emailLock.blocked) {
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     if (!user) {
       const [fail, emailFail] = await Promise.all([
         hasIp ? recordLoginFailure(loginIdentifier, 900, 5) : Promise.resolve({ isNowBlocked: false, remainingAttempts: 20 }),
-        recordLoginFailure(emailKey, 900, 20),
+        hasIp ? recordLoginFailure(emailKey, 900, 20) : Promise.resolve({ isNowBlocked: false, remainingAttempts: 20 }),
       ]);
       const effectiveFail = hasIp ? fail : emailFail;
       if (effectiveFail.isNowBlocked) {
@@ -80,24 +81,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // T14: Tăng bộ đếm thử trước khi gọi comparePassword (~100ms) để chống tấn công gửi request song song vượt ngưỡng
+    const [fail, emailFail] = await Promise.all([
+      hasIp ? recordLoginFailure(loginIdentifier, 900, 5) : Promise.resolve({ isNowBlocked: false, remainingAttempts: 20 }),
+      hasIp ? recordLoginFailure(emailKey, 900, 20) : Promise.resolve({ isNowBlocked: false, remainingAttempts: 20 }),
+    ]);
+    const effectiveFail = hasIp ? fail : emailFail;
+
+    if (effectiveFail.isNowBlocked) {
+      return NextResponse.json(
+        {
+          error: hasIp
+            ? 'Bạn đã nhập sai mật khẩu quá 5 lần liên tiếp. Tạm thời khóa đăng nhập 15 phút từ thiết bị này.'
+            : 'Tài khoản này đã nhập sai mật khẩu quá nhiều lần liên tiếp. Tạm thời khóa đăng nhập 15 phút.',
+          retryAfter: 900,
+        },
+        { status: 429 }
+      );
+    }
+
     const isMatch = await comparePassword(password, user.passwordHash);
     if (!isMatch) {
-      const [fail, emailFail] = await Promise.all([
-        hasIp ? recordLoginFailure(loginIdentifier, 900, 5) : Promise.resolve({ isNowBlocked: false, remainingAttempts: 20 }),
-        recordLoginFailure(emailKey, 900, 20),
-      ]);
-      const effectiveFail = hasIp ? fail : emailFail;
-      if (effectiveFail.isNowBlocked) {
-        return NextResponse.json(
-          {
-            error: hasIp
-              ? 'Bạn đã nhập sai mật khẩu quá 5 lần liên tiếp. Tạm thời khóa đăng nhập 15 phút từ thiết bị này.'
-              : 'Tài khoản này đã nhập sai mật khẩu quá nhiều lần liên tiếp. Tạm thời khóa đăng nhập 15 phút.',
-            retryAfter: 900,
-          },
-          { status: 429 }
-        );
-      }
       return NextResponse.json(
         { error: `Email hoặc mật khẩu không chính xác. Bạn còn ${effectiveFail.remainingAttempts} lần thử trước khi bị tạm khóa.` },
         { status: 401 }

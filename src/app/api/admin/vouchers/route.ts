@@ -2,13 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { UserRole, VoucherType } from '@prisma/client';
-import { formatDateTimeVN } from '@/lib/utils';
+import { formatDateTimeVN, parseVnDate } from '@/lib/utils';
 import { getVoucherDisplayStatus } from '@/lib/voucher';
-
-function parseVnDate(raw: string): Date {
-  const hasTimezone = /(Z|[+-]\d{2}:?\d{2})$/.test(raw);
-  return new Date(hasTimezone ? raw : `${raw}+07:00`);
-}
 
 export const dynamic = 'force-dynamic';
 
