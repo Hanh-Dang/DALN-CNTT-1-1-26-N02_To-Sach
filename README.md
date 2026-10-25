@@ -11,12 +11,35 @@
 
 ---
 
-### 🖼️ Giao diện Nền tảng (Storefront & Admin Preview)
+### 🖼️ Giao diện Nền tảng & Tính Năng Cốt Lõi (Screenshots & Showcase)
 
 | Cửa hàng Khách hàng (Storefront) | Dashboard Quản trị & Phân quyền (Admin) |
 | :---: | :---: |
 | ![Trang chủ Tổ Sách](public/screenshots/storefront_home.png) | ![Admin Dashboard](public/screenshots/admin_dashboard.png) |
 | *Giao diện mua sắm B2C, tìm kiếm chuyên sâu, Zero CLS* | *Báo cáo thời gian thực, ẩn doanh thu theo phân quyền nhân viên* |
+
+<details>
+<summary><b>📸 Xem thêm ảnh chụp các tính năng cốt lõi (Click để mở rộng)</b></summary>
+<br />
+
+> 💡 **Hướng dẫn:** Bạn hãy lưu ảnh chụp màn hình vào thư mục `public/screenshots/` rồi dán link tương ứng vào các ô bên dưới:
+
+| 1. Quy trình Thanh toán VietQR Động | 2. Ma trận Phân quyền Vai trò (RBAC) |
+| :---: | :---: |
+| ![Thanh toán VietQR](public/screenshots/checkout_vietqr.png) | ![Ma trận Phân quyền RBAC](public/screenshots/admin_rbac.png) |
+| *Tự sinh mã VietQR Napas chuẩn theo từng đơn hàng* | *Phân quyền 4 vai trò, bảo mật doanh thu với Staff* |
+
+| 3. Giỏ hàng Thông minh & Áp Mã Voucher | 4. Trợ lý Bán hàng Agentic AI (Gemini Loop) |
+| :---: | :---: |
+| ![Giỏ hàng & Voucher](public/screenshots/cart_voucher.png) | ![Trợ lý AI Chatbot](public/screenshots/ai_chatbot.png) |
+| *Kiểm tra hạn mức voucher, gộp giỏ hàng vãng lai* | *Tư vấn sách thời gian thực, ReAct Tool Calling 5 công cụ* |
+
+| 5. Cây Danh mục & Bộ lọc Tìm kiếm Đa chiều | 6. Trang Chi tiết Sách Chuẩn SEO |
+| :---: | :---: |
+| ![Bộ lọc Catalog](public/screenshots/catalog_filter.png) | ![Chi tiết Sách](public/screenshots/book_detail.png) |
+| *Bộ lọc 3 cấp, lọc theo giá, đánh giá và NXB* | *Giao diện tối ưu độ đọc, thông số xuất bản chi tiết* |
+
+</details>
 
 ---
 
