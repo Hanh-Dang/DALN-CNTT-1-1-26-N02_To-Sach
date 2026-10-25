@@ -34,8 +34,8 @@ export interface AdminOrderItem {
   bookTitle?: string;
   coverUrl?: string;
   quantity: number;
-  unitPrice: number;
-  totalPrice: number;
+  unitPrice: number | null;
+  totalPrice: number | null;
   book?: {
     id: string;
     title: string;
@@ -61,9 +61,9 @@ export interface AdminOrderData {
   customerPhone: string;
   customerEmail?: string | null;
   shippingAddress: string;
-  subtotal: number;
-  shippingFee: number;
-  totalAmount: number;
+  subtotal: number | null;
+  shippingFee: number | null;
+  totalAmount: number | null;
   paymentMethod: 'COD' | 'BANK_TRANSFER';
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
   status: 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
@@ -634,7 +634,7 @@ export function AdminOrdersClient({
                       {/* Cột 4: Tổng tiền */}
                       <td className="py-3.5 px-3">
                         <span className="font-extrabold text-[#0B1F3A] text-xs">
-                          {formatVND(order.totalAmount)}
+                          {order.totalAmount != null ? formatVND(order.totalAmount) : '—'}
                         </span>
                       </td>
 
@@ -932,14 +932,14 @@ export function AdminOrdersClient({
                             {title}
                           </p>
                           <span className="text-[11px] text-slate-400">
-                            {formatVND(item.unitPrice)} ×{' '}
+                            {item.unitPrice != null ? formatVND(item.unitPrice) : '••••'} ×{' '}
                             <strong className="text-[#0B1F3A]">{item.quantity}</strong>
                           </span>
                         </div>
                       </div>
 
                       <strong className="font-bold text-[#0B1F3A] shrink-0">
-                        {formatVND(item.totalPrice)}
+                        {item.totalPrice != null ? formatVND(item.totalPrice) : '••••'}
                       </strong>
                     </div>
                   );
@@ -950,16 +950,16 @@ export function AdminOrdersClient({
               <div className="p-3 bg-slate-50 rounded-2xl space-y-1.5 text-xs text-slate-600">
                 <div className="flex justify-between">
                   <span>Tạm tính tiền sách:</span>
-                  <span>{formatVND(selectedOrder.subtotal)}</span>
+                  <span>{selectedOrder.subtotal != null ? formatVND(selectedOrder.subtotal) : '••••'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Phí giao hàng:</span>
-                  <span>{formatVND(selectedOrder.shippingFee)}</span>
+                  <span>{selectedOrder.shippingFee != null ? formatVND(selectedOrder.shippingFee) : '••••'}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-black text-[#0B1F3A]">
                   <span>Tổng thanh toán:</span>
                   <span className="text-[#F5A623]">
-                    {formatVND(selectedOrder.totalAmount)}
+                    {selectedOrder.totalAmount != null ? formatVND(selectedOrder.totalAmount) : '••••'}
                   </span>
                 </div>
               </div>

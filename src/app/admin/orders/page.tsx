@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { OrderStatus } from '@prisma/client';
 import { AdminOrdersClient, AdminOrderData } from '@/components/admin/AdminOrdersClient';
+import { maskCustomerPhone } from '@/lib/dashboardMetrics';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,9 @@ export default async function AdminOrdersPage({
   if (!canManageOrders) {
     redirect('/admin');
   }
+
+  const canViewRevenue = isSuperAdmin || (user.permissions?.includes('VIEW_REVENUE') ?? false);
+  const canManageUsers = isSuperAdmin || (user.permissions?.includes('MANAGE_USERS') ?? false);
 
   // 1. Đếm số lượng theo từng trạng thái trên toàn bộ database (M14)
   const [
@@ -90,12 +94,12 @@ export default async function AdminOrdersPage({
     id: o.id,
     orderCode: o.orderCode,
     customerName: o.customerName,
-    customerPhone: o.customerPhone,
+    customerPhone: canManageUsers ? o.customerPhone : maskCustomerPhone(o.customerPhone),
     customerEmail: o.customerEmail,
     shippingAddress: o.shippingAddress,
-    subtotal: o.subtotal,
-    shippingFee: o.shippingFee,
-    totalAmount: o.totalAmount,
+    subtotal: canViewRevenue ? o.subtotal : null,
+    shippingFee: canViewRevenue ? o.shippingFee : null,
+    totalAmount: canViewRevenue ? o.totalAmount : null,
     paymentMethod: o.paymentMethod,
     paymentStatus: o.paymentStatus,
     status: o.status,
@@ -109,8 +113,8 @@ export default async function AdminOrdersPage({
       bookTitle: item.bookTitle,
       coverUrl: item.coverUrl,
       quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice: item.totalPrice,
+      unitPrice: canViewRevenue ? item.unitPrice : null,
+      totalPrice: canViewRevenue ? item.totalPrice : null,
       book: item.book
         ? {
             id: item.book.id,
@@ -125,7 +129,7 @@ export default async function AdminOrdersPage({
           id: o.user.id,
           email: o.user.email,
           fullName: o.user.fullName,
-          phone: o.user.phone,
+          phone: canManageUsers ? o.user.phone : maskCustomerPhone(o.user.phone),
         }
       : null,
   }));

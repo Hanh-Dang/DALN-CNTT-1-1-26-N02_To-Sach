@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
+import { maskCustomerPhone } from '@/lib/dashboardMetrics';
 
 /**
  * GET /api/admin/orders
@@ -22,6 +23,9 @@ export async function GET(request: Request) {
     if (!isSuperAdmin && !hasOrderPerm) {
       return NextResponse.json({ error: 'Không có quyền quản lý đơn hàng' }, { status: 403 });
     }
+
+    const canViewRevenue = isSuperAdmin || (user.permissions?.includes('VIEW_REVENUE') ?? false);
+    const canManageUsers = isSuperAdmin || (user.permissions?.includes('MANAGE_USERS') ?? false);
 
     const { searchParams } = new URL(request.url);
     const search = (searchParams.get('search') || searchParams.get('q') || '').trim();
@@ -127,17 +131,17 @@ export async function GET(request: Request) {
       CANCELLED: cancelledCount,
     };
 
-    // Định dạng response
+    // Định dạng response có kiểm soát quyền hạn (4.3, T1)
     const formattedOrders = orders.map((o) => ({
       id: o.id,
       orderCode: o.orderCode,
       customerName: o.customerName,
-      customerPhone: o.customerPhone,
+      customerPhone: canManageUsers ? o.customerPhone : maskCustomerPhone(o.customerPhone),
       customerEmail: o.customerEmail,
       shippingAddress: o.shippingAddress,
-      subtotal: o.subtotal,
-      shippingFee: o.shippingFee,
-      totalAmount: o.totalAmount,
+      subtotal: canViewRevenue ? o.subtotal : null,
+      shippingFee: canViewRevenue ? o.shippingFee : null,
+      totalAmount: canViewRevenue ? o.totalAmount : null,
       paymentMethod: o.paymentMethod,
       paymentStatus: o.paymentStatus,
       status: o.status,
@@ -151,8 +155,8 @@ export async function GET(request: Request) {
         bookTitle: item.bookTitle,
         coverUrl: item.coverUrl,
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
+        unitPrice: canViewRevenue ? item.unitPrice : null,
+        totalPrice: canViewRevenue ? item.totalPrice : null,
         book: item.book
           ? {
               id: item.book.id,
@@ -167,7 +171,7 @@ export async function GET(request: Request) {
             id: o.user.id,
             email: o.user.email,
             fullName: o.user.fullName,
-            phone: o.user.phone,
+            phone: canManageUsers ? o.user.phone : maskCustomerPhone(o.user.phone),
           }
         : null,
     }));

@@ -75,6 +75,7 @@ interface AdminDashboardClientProps {
     canViewRevenue?: boolean;
     deliveryRate?: string;
     revenueGrowth?: string;
+    ordersGrowth?: string;
     lastMonthName?: string;
   };
 }
@@ -390,7 +391,7 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
           <div className="mt-4 pt-2.5 flex items-center justify-between border-t border-slate-50 text-xs">
             <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#6FFBBE]/40 text-[#005236] text-[11px] font-bold">
               <TrendingUp className="w-3.5 h-3.5" />
-              +12.6%
+              {initialData.ordersGrowth || '+12.6%'}
             </div>
             <span className="text-slate-500 text-xs font-medium">tỷ lệ giao đạt {initialData.deliveryRate || '99.1'}%</span>
           </div>

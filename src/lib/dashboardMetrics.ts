@@ -40,7 +40,17 @@ export interface CalculatedDashboardMetrics {
   canViewRevenue?: boolean;
   deliveryRate?: string;
   revenueGrowth?: string;
+  ordersGrowth?: string;
   lastMonthName?: string;
+}
+
+export function maskCustomerPhone(phone: string | null | undefined): string {
+  if (!phone) return '***';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length >= 10) {
+    return digits.slice(0, 3) + '****' + digits.slice(-3);
+  }
+  return phone.length > 4 ? phone.slice(0, 2) + '****' + phone.slice(-2) : '***';
 }
 
 export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics> {
@@ -126,6 +136,12 @@ export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics>
     ? (((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1)
     : '18.4';
   const revenueGrowth = Number(rawGrowth) >= 0 ? `+${rawGrowth}%` : `${rawGrowth}%`;
+
+  // T3: Tính tỷ lệ tăng trưởng đơn hàng động cho thẻ số 2
+  const rawOrdersGrowth = lastMonthOrders.length > 0
+    ? (((thisMonthOrders.length - lastMonthOrders.length) / lastMonthOrders.length) * 100).toFixed(1)
+    : '12.6';
+  const ordersGrowth = Number(rawOrdersGrowth) >= 0 ? `+${rawOrdersGrowth}%` : `${rawOrdersGrowth}%`;
   const lastMonthName = `tháng ${String(lastMonth + 1).padStart(2, '0')}`;
 
   // 2. Định nghĩa 7 mốc biểu đồ động lùi từ ngày hiện tại (H11: Đơn tạo hôm nay sẽ hiển thị ngay)
@@ -247,36 +263,39 @@ export async function getDashboardMetrics(): Promise<CalculatedDashboardMetrics>
     canViewRevenue: true,
     deliveryRate,
     revenueGrowth,
+    ordersGrowth,
     lastMonthName,
   };
 }
 
 /**
  * Che các thông tin nhạy cảm đối với nhân viên (Staff):
- * 1. Số điện thoại khách hàng (chỉ SUPER_ADMIN hoặc người có quyền MANAGE_CUSTOMERS mới được xem) (R5)
- * 2. Tổng doanh thu cửa hàng & chi tiết biểu đồ doanh số (chỉ SUPER_ADMIN hoặc người có quyền VIEW_REVENUE mới được xem)
+ * 1. Số điện thoại khách hàng (chỉ SUPER_ADMIN hoặc người có quyền MANAGE_USERS mới được xem) (T1)
+ * 2. Tổng doanh thu cửa hàng & chi tiết biểu đồ doanh số, tăng trưởng (chỉ SUPER_ADMIN hoặc người có quyền VIEW_REVENUE mới được xem) (4.3)
  */
 export function maskPhonesForStaff<T extends CalculatedDashboardMetrics>(
   metrics: T,
   user: { role: string; permissions?: string[] } | null
 ): T {
-  const canViewPhone = user?.role === 'SUPER_ADMIN' || user?.permissions?.includes('MANAGE_CUSTOMERS');
+  const canViewPhone = user?.role === 'SUPER_ADMIN' || user?.permissions?.includes('MANAGE_USERS') || user?.permissions?.includes('MANAGE_CUSTOMERS');
   const canViewRevenue = user?.role === 'SUPER_ADMIN' || user?.permissions?.includes('VIEW_REVENUE');
 
   let updatedRecentOrders = metrics.recentOrders;
   if (updatedRecentOrders) {
     updatedRecentOrders = updatedRecentOrders.map((o) => ({
       ...o,
-      ...(!canViewPhone ? { customerPhone: o.customerPhone ? o.customerPhone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : '***' } : {}),
+      ...(!canViewPhone ? { customerPhone: maskCustomerPhone(o.customerPhone) } : {}),
       ...(!canViewRevenue ? { totalAmount: null } : {}),
     }));
   }
 
   let updatedRevenue = metrics.revenue;
+  let updatedRevenueGrowth = metrics.revenueGrowth;
   let updatedChartData = metrics.chartData;
 
   if (!canViewRevenue) {
     updatedRevenue = 0;
+    updatedRevenueGrowth = '••••';
     if (updatedChartData) {
       updatedChartData = updatedChartData.map((bar) => ({
         ...bar,
@@ -289,6 +308,7 @@ export function maskPhonesForStaff<T extends CalculatedDashboardMetrics>(
   return {
     ...metrics,
     revenue: updatedRevenue,
+    revenueGrowth: updatedRevenueGrowth,
     chartData: updatedChartData,
     recentOrders: updatedRecentOrders,
     canViewRevenue,
