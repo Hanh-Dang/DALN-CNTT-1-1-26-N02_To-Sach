@@ -54,23 +54,29 @@ async function seedHistoricalOrders() {
     return;
   }
 
-  // Cập nhật nhanh tồn kho theo batch để không bị nghẽn DB
-  // Giữ lại 4 cuốn tồn kho thấp (3-8 cuốn) để widget "Cảnh báo tồn kho" trên Dashboard hiển thị đẹp
-  const lowStockIds = sampleBooks.slice(0, 4).map((b) => b.id);
-  for (let i = 0; i < lowStockIds.length; i++) {
-    await prisma.book.update({
-      where: { id: lowStockIds[i] },
-      data: { stockQty: 3 + i * 2 },
-    });
-  }
-
-  // 2. Dọn dẹp đơn lịch sử cũ có mã -H (bảo vệ tuyệt đối 100% đơn thật do khách đặt)
+  // 2. Dọn dẹp đơn lịch sử cũ: xóa cả đơn -H lẫn 150 đơn mẫu 4 chữ số cũ (P3)
   const deletedOld = await prisma.order.deleteMany({
-    where: { orderCode: { contains: '-H' } },
+    where: {
+      OR: [
+        { orderCode: { contains: '-H' } },
+        // Dọn cả 150 đơn mẫu cũ (TS-2026xxxx-1000..1149) chưa có hậu tố -H
+        { orderCode: { startsWith: 'TS-2026' }, NOT: { orderCode: { contains: '-H' } } },
+      ],
+    },
   });
   if (deletedOld.count > 0) {
-    console.log(`🧹 Đã dọn dẹp ${deletedOld.count} đơn hàng lịch sử cũ (-H) để tái tạo mới.`);
+    console.log(`🧹 Đã dọn dẹp ${deletedOld.count} đơn hàng lịch sử cũ để tái tạo mới.`);
   }
+
+  // Chuẩn hóa đơn TS-2024-00101 (P3)
+  await prisma.order.updateMany({
+    where: { orderCode: 'TS-2024-00101' },
+    data: {
+      customerPhone: '0912345678',
+      shippingFee: 25000,
+      totalAmount: 279000,
+    },
+  });
 
   // Lấy User liên kết
   const customerUser = await prisma.user.findUnique({ where: { email: 'customer@gmail.com' } });
@@ -308,13 +314,19 @@ async function seedHistoricalOrders() {
     }
   }
 
-  // Cập nhật soldCount một lượt cho các sách đã bán
-  console.log(`📈 Đang cập nhật số lượng đã bán cho ${soldIncrements.size} tựa sách...`);
-  for (const [bookId, inc] of soldIncrements.entries()) {
-    await prisma.book.update({
-      where: { id: bookId },
-      data: { soldCount: { increment: inc } },
-    });
+  // Cập nhật soldCount một lượt chuẩn xác từ toàn bộ các OrderItem trong DB (S1-b: Idempotent)
+  console.log('📈 Đang đồng bộ lại số lượng đã bán (soldCount) cho toàn bộ sách...');
+  const allSoldAgg = await prisma.orderItem.groupBy({
+    by: ['bookId'],
+    _sum: { quantity: true },
+  });
+  for (const agg of allSoldAgg) {
+    if (agg.bookId && agg._sum.quantity !== null) {
+      await prisma.book.update({
+        where: { id: agg.bookId },
+        data: { soldCount: agg._sum.quantity },
+      });
+    }
   }
 
   console.log(`✅ Hoàn tất tạo ${totalCreated} đơn hàng lịch sử.`);
