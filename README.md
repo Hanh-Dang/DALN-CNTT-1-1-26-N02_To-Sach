@@ -11,12 +11,15 @@
 
 ---
 
-### 🖼️ Giao diện Nền tảng (Storefront & Admin Preview)
+### 🖼️ Giao diện Nền tảng & Điểm Nhấn Công Nghệ (Showcase)
 
-| Cửa hàng Khách hàng (Storefront) | Dashboard Quản trị & Phân quyền (Admin) |
+| 🌐 Cửa hàng Khách hàng (Storefront B2C) | ⚙️ Dashboard Quản trị & Phân quyền (Admin) |
 | :---: | :---: |
 | ![Trang chủ Tổ Sách](public/screenshots/storefront_home.png) | ![Admin Dashboard](public/screenshots/admin_dashboard.png) |
-| *Giao diện mua sắm B2C, tìm kiếm chuyên sâu, Zero CLS* | *Báo cáo thời gian thực, ẩn doanh thu theo phân quyền nhân viên* |
+| *Giao diện mua sắm B2C, danh mục đa chiều, Zero CLS* | *Báo cáo doanh thu thời gian thực, ẩn số liệu với Staff* |
+| 🤖 **Trợ lý Bán Hàng Agentic AI (Gemini ReAct)** | 💳 **Thanh Toán VietQR MBBank Tự Động** |
+| ![Trợ lý Bán Hàng AI](public/screenshots/ai_chatbot.png) | ![Thanh toán VietQR](public/screenshots/checkout_vietqr.png) |
+| *Chatbot tư vấn sách, ReAct Tool Calling 5 công cụ* | *Tự sinh mã QR Napas đúng số tiền và nội dung chuyển khoản* |
 
 ---
 
