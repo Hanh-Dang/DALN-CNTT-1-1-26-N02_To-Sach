@@ -15,7 +15,7 @@
 
 | Cửa hàng Khách hàng (Storefront) | Dashboard Quản trị & Phân quyền (Admin) |
 | :---: | :---: |
-| ![Trang chủ Tổ Sách](UI/trang_ch_marketplace_t_s_ch/screen.png) | ![Admin Dashboard](UI/admin_dashboard_t_s_ch/screen.png) |
+| ![Trang chủ Tổ Sách](public/screenshots/storefront_home.png) | ![Admin Dashboard](public/screenshots/admin_dashboard.png) |
 | *Giao diện mua sắm B2C, tìm kiếm chuyên sâu, Zero CLS* | *Báo cáo thời gian thực, ẩn doanh thu theo phân quyền nhân viên* |
 
 ---
