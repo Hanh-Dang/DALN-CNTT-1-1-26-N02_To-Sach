@@ -31,14 +31,16 @@ interface ProfileClientProps {
   initialUser: UserProfileData;
 }
 
-// Bộ sưu tập Avatar tuyển chọn cho độc giả Tổ Sách
+// Bộ sưu tập Avatar tuyển chọn phong cách Chibi cho độc giả Tổ Sách
 const PRESET_AVATARS = [
-  { id: 'av1', label: 'Cú Mèo Tri Thức', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
-  { id: 'av2', label: 'Độc Giả Trầm Tư', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
-  { id: 'av3', label: 'Mọt Sách Năng Động', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80' },
-  { id: 'av4', label: 'Nhà Văn Hướng Ngoại', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
-  { id: 'av5', label: 'Họa Sĩ Minh Họa', url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&auto=format&fit=crop&q=80' },
-  { id: 'av6', label: 'Độc Giả Thanh Lịch', url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80' },
+  { id: 'av1', label: 'Dora Gấu Nhỏ', url: '/images/avatars/avatar-dora-bear.png' },
+  { id: 'av2', label: 'Mèo Tam Thể', url: '/images/avatars/avatar-dora-cat.png' },
+  { id: 'av3', label: 'Dora Chuột Con', url: '/images/avatars/avatar-dora-mouse.png' },
+  { id: 'av4', label: 'Dora Tai Thỏ', url: '/images/avatars/avatar-dora-rabbit.png' },
+  { id: 'av5', label: 'Thủy Thủ Nơ Đỏ', url: '/images/avatars/avatar-dora-sailor-1.png' },
+  { id: 'av6', label: 'Thủy Thủ Cầm Cờ', url: '/images/avatars/avatar-dora-sailor-2.png' },
+  { id: 'av7', label: 'Thủy Thủ Nhí Nhảnh', url: '/images/avatars/avatar-dora-sailor-3.png' },
+  { id: 'av8', label: 'Thủy Thủ Nháy Mắt', url: '/images/avatars/avatar-dora-sailor-4.png' },
 ];
 
 /**
@@ -479,7 +481,7 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                 <span className="text-[11px] font-bold text-slate-700 block mb-2">
                   2. Hoặc chọn avatar minh họa độc giả:
                 </span>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-4 gap-2">
                   {PRESET_AVATARS.map((preset) => {
                     const isSelected = avatarUrl === preset.url;
                     return (
