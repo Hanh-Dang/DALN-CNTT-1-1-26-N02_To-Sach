@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
   User, Package, Camera, Check, ShieldCheck, Mail, Phone, 
-  MapPin, Calendar, Sparkles, AlertCircle, Save, Loader2 
+  MapPin, Calendar, Sparkles, AlertCircle, Save, Loader2, Upload, Trash2 
 } from 'lucide-react';
 import { formatDateVN } from '@/lib/utils';
 
@@ -41,6 +41,48 @@ const PRESET_AVATARS = [
   { id: 'av6', label: 'Độc Giả Thanh Lịch', url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80' },
 ];
 
+/**
+ * Xử lý file ảnh tải từ máy: Tự động crop vuông và nén kích thước sang Data URL tối ưu (~30-50KB)
+ */
+function processImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      reject(new Error('Vui lòng chỉ chọn file hình ảnh (JPG, PNG, WebP)'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const minDim = Math.min(img.width, img.height);
+        const startX = (img.width - minDim) / 2;
+        const startY = (img.height - minDim) / 2;
+
+        const targetSize = Math.min(400, minDim);
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, targetSize, targetSize);
+        // Xuất ra JPEG chất lượng cao 88%, dung lượng nhẹ bảo đảm truyền tải và lưu trữ mượt mà
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('Không thể xử lý hình ảnh đã chọn'));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Lỗi khi đọc file từ thiết bị'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function ProfileClient({ initialUser }: ProfileClientProps) {
   const [user, setUser] = useState<UserProfileData>(initialUser);
   const [fullName, setFullName] = useState(initialUser.fullName || '');
@@ -48,6 +90,8 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
   const [avatarUrl, setAvatarUrl] = useState(initialUser.avatarUrl || PRESET_AVATARS[0].url);
   const [customAvatarInput, setCustomAvatarInput] = useState('');
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [gender, setGender] = useState(initialUser.profile?.gender || 'OTHER');
   const [birthday, setBirthday] = useState(
@@ -92,6 +136,7 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
 
       setUser(data.user);
       setSuccessMessage('Cập nhật thông tin hồ sơ thành công!');
+      window.dispatchEvent(new Event('auth-change'));
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       setErrorMessage(err.message || 'Lỗi kết nối máy chủ');
@@ -100,8 +145,39 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input để người dùng có thể chọn lại cùng file nếu muốn
+    e.target.value = '';
+
+    setIsProcessingImage(true);
+    setErrorMessage(null);
+    try {
+      const optimizedDataUrl = await processImageFile(file);
+      setAvatarUrl(optimizedDataUrl);
+      setShowAvatarModal(false);
+      setSuccessMessage('Đã tải ảnh đại diện từ thiết bị! Hãy bấm "Lưu Thay Đổi" để cập nhật.');
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Không thể đọc file ảnh từ thiết bị');
+    } finally {
+      setIsProcessingImage(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Hidden file input để chọn ảnh từ thư viện máy */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/png, image/jpeg, image/jpg, image/webp"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* THÔNG BÁO TRẠNG THÁI */}
       {successMessage && (
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center gap-3 animate-in fade-in">
@@ -125,12 +201,10 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
             <div className="relative inline-block mx-auto group">
               <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-amber-100 shadow-md bg-slate-100 relative">
                 {avatarUrl ? (
-                  <Image
+                  <img
                     src={avatarUrl}
                     alt={fullName || 'Avatar'}
-                    fill
-                    className="object-cover"
-                    sizes="128px"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-[#0B1F3A] text-white text-3xl font-black">
@@ -153,6 +227,14 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
             <div>
               <h2 className="text-lg font-black text-[#0B1F3A]">{fullName || 'Độc giả Tổ Sách'}</h2>
               <p className="text-xs text-slate-500 mt-0.5">{user.email}</p>
+              <button
+                type="button"
+                onClick={() => setShowAvatarModal(true)}
+                className="mt-1 text-xs font-bold text-[#F5A623] hover:text-[#0B1F3A] transition-colors inline-flex items-center gap-1 cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Đổi ảnh đại diện</span>
+              </button>
             </div>
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-amber-50 text-amber-800 border border-amber-200">
@@ -346,68 +428,100 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
         </div>
       </form>
 
-      {/* 4. MODAL CHỌN AVATAR */}
+      {/* 4. MODAL THAY ĐỔI ẢNH ĐẠI DIỆN */}
       {showAvatarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2">
                 <Camera className="w-5 h-5 text-[#F5A623]" />
-                <h3 className="text-base font-black text-[#0B1F3A]">Chọn Ảnh Đại Diện Tuyển Chọn</h3>
+                <h3 className="text-base font-black text-[#0B1F3A]">Thay Đổi Ảnh Đại Diện</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAvatarModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1"
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <div className="space-y-4">
-              <p className="text-xs text-slate-500">
-                Chọn một trong các avatar minh họa độc giả hoặc dán liên kết URL ảnh cá nhân:
-              </p>
-
-              {/* Grid Preset */}
-              <div className="grid grid-cols-3 gap-3">
-                {PRESET_AVATARS.map((preset) => {
-                  const isSelected = avatarUrl === preset.url;
-                  return (
-                    <button
-                      type="button"
-                      key={preset.id}
-                      onClick={() => {
-                        setAvatarUrl(preset.url);
-                        setShowAvatarModal(false);
-                      }}
-                      className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-[#F5A623] bg-amber-50/50 shadow-xs ring-2 ring-[#F5A623]/20'
-                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="w-16 h-16 rounded-full overflow-hidden relative shadow-2xs">
-                        <Image src={preset.url} alt={preset.label} fill className="object-cover" sizes="64px" />
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-700 truncate w-full text-center">
-                        {preset.label}
-                      </span>
-                    </button>
-                  );
-                })}
+              {/* TÙY CHỌN 1: TẢI ẢNH TỪ THIẾT BỊ / THƯ VIỆN MÁY */}
+              <div>
+                <span className="text-[11px] font-bold text-slate-700 block mb-2">
+                  1. Tải ảnh từ thư viện máy tính hoặc điện thoại:
+                </span>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-amber-300 hover:border-[#F5A623] bg-amber-50/40 hover:bg-amber-100/60 rounded-2xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#0B1F3A] text-[#F5A623] flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+                    {isProcessingImage ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Upload className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#0B1F3A]">
+                      {isProcessingImage ? 'Đang nén & tối ưu ảnh...' : 'Nhấp để chọn ảnh từ thư viện thiết bị'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Hỗ trợ JPG, PNG, WebP (Tự động căn chỉnh & tối ưu dung lượng)
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Nhập custom URL */}
-              <div className="pt-3 border-t border-slate-100 space-y-2">
-                <label className="text-[11px] font-bold text-slate-700">Hoặc dán liên kết ảnh (URL tùy chỉnh):</label>
+              {/* TÙY CHỌN 2: CHỌN AVATAR MINH HỌA CÓ SẴN */}
+              <div className="pt-2 border-t border-slate-100">
+                <span className="text-[11px] font-bold text-slate-700 block mb-2">
+                  2. Hoặc chọn avatar minh họa độc giả:
+                </span>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {PRESET_AVATARS.map((preset) => {
+                    const isSelected = avatarUrl === preset.url;
+                    return (
+                      <button
+                        type="button"
+                        key={preset.id}
+                        onClick={() => {
+                          setAvatarUrl(preset.url);
+                          setShowAvatarModal(false);
+                          setSuccessMessage('Đã chọn avatar! Hãy bấm "Lưu Thay Đổi" để hoàn tất.');
+                          setTimeout(() => setSuccessMessage(null), 4000);
+                        }}
+                        className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-[#F5A623] bg-amber-50/50 shadow-xs ring-2 ring-[#F5A623]/20'
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="w-14 h-14 rounded-full overflow-hidden relative shadow-2xs">
+                          <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-700 truncate w-full text-center">
+                          {preset.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* TÙY CHỌN 3: NHẬP URL TÙY CHỈNH */}
+              <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-700 block">
+                  3. Hoặc dán liên kết ảnh trực tiếp (URL):
+                </label>
                 <div className="flex gap-2">
                   <input
                     type="url"
                     value={customAvatarInput}
                     onChange={(e) => setCustomAvatarInput(e.target.value)}
                     placeholder="https://example.com/avatar.jpg"
-                    className="flex-1 px-3 py-2 rounded-xl text-xs border border-slate-200 focus:outline-none focus:border-[#F5A623]"
+                    className="flex-1 px-3 py-2 rounded-xl text-xs border border-slate-200 focus:outline-none focus:border-[#F5A623] bg-slate-50/50"
                   />
                   <button
                     type="button"
@@ -416,9 +530,11 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                         setAvatarUrl(customAvatarInput.trim());
                         setCustomAvatarInput('');
                         setShowAvatarModal(false);
+                        setSuccessMessage('Đã áp dụng liên kết ảnh! Hãy bấm "Lưu Thay Đổi" để hoàn tất.');
+                        setTimeout(() => setSuccessMessage(null), 4000);
                       }
                     }}
-                    className="px-4 py-2 bg-[#0B1F3A] hover:bg-[#163156] text-white text-xs font-bold rounded-xl transition-colors"
+                    className="px-4 py-2 bg-[#0B1F3A] hover:bg-[#163156] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
                   >
                     Áp dụng
                   </button>

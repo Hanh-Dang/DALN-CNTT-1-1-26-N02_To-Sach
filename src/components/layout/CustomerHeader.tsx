@@ -702,8 +702,12 @@ export const CustomerHeader: React.FC = () => {
                     className="flex items-center gap-1.5 py-1 px-1 sm:px-1.5 rounded-full hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
                   >
                     {/* Avatar bo tròn viền vàng #F5A623 */}
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F5A623] text-[#0B1F3A] flex items-center justify-center text-xs font-black ring-2 ring-[#F5A623]/80 shadow-xs shrink-0">
-                      {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F5A623] text-[#0B1F3A] flex items-center justify-center text-xs font-black ring-2 ring-[#F5A623]/80 shadow-xs shrink-0 overflow-hidden">
+                      {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'
+                      )}
                     </div>
                     <span className="hidden sm:inline text-xs font-bold text-white max-w-[70px] truncate leading-none">
                       {user.fullName}
@@ -716,12 +720,21 @@ export const CustomerHeader: React.FC = () => {
                     <div 
                       className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 text-slate-800 animate-in fade-in zoom-in-95 duration-150"
                     >
-                      <div className="px-4 py-2 border-b border-slate-100">
-                        <p className="text-[11px] text-slate-400 font-medium">Đăng nhập với tư cách</p>
-                        <p className="text-xs font-bold text-slate-800 truncate mt-0.5">{user.fullName}</p>
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-slate-100 text-[10px] font-bold text-slate-600 rounded-md">
-                          {user.role === 'SUPER_ADMIN' ? '👑 Quản Trị Viên' : user.role === 'STAFF' ? '📦 Nhân Viên' : '👤 Khách Hàng'}
-                        </span>
+                      <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-full bg-[#F5A623] text-[#0B1F3A] flex items-center justify-center text-xs font-black ring-2 ring-[#F5A623]/40 shadow-xs shrink-0 overflow-hidden">
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
+                          ) : (
+                            user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] text-slate-400 font-medium">Đăng nhập với tư cách</p>
+                          <p className="text-xs font-bold text-slate-800 truncate">{user.fullName}</p>
+                          <span className="inline-block mt-0.5 px-2 py-0.5 bg-slate-100 text-[10px] font-bold text-slate-600 rounded-md">
+                            {user.role === 'SUPER_ADMIN' ? '👑 Quản Trị Viên' : user.role === 'STAFF' ? '📦 Nhân Viên' : '👤 Khách Hàng'}
+                          </span>
+                        </div>
                       </div>
 
                       {isStaffOrAdmin && (
