@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!password || typeof password !== 'string' || password.length < 8) {
+    if (!password || typeof password !== 'string' || password.length < 6) {
       return NextResponse.json(
-        { error: 'Mật khẩu phải có độ dài tối thiểu 8 ký tự' },
+        { error: 'Mật khẩu phải có độ dài tối thiểu 6 ký tự' },
         { status: 400 }
       );
     }

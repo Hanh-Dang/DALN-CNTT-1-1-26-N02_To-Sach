@@ -114,6 +114,9 @@ function AuthContent() {
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
   // OTP Verification state
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -192,8 +195,18 @@ function AuthContent() {
   // Bước 1: Gửi mã OTP xác minh về hòm thư Gmail
   const handleInitiateRegister = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!regName.trim() || !regEmail.trim() || !regPassword) {
-      setErrorMsg('Vui lòng điền đầy đủ họ tên, email và mật khẩu');
+    if (!regName.trim() || !regEmail.trim() || !regPassword || !regConfirmPassword) {
+      setErrorMsg('Vui lòng điền đầy đủ họ tên, email, mật khẩu và xác nhận mật khẩu');
+      return;
+    }
+
+    if (regPassword.length < 6) {
+      setErrorMsg('Mật khẩu phải có độ dài tối thiểu 6 ký tự');
+      return;
+    }
+
+    if (regPassword !== regConfirmPassword) {
+      setErrorMsg('Mật khẩu xác nhận không trùng khớp với mật khẩu mới. Vui lòng kiểm tra lại!');
       return;
     }
 
@@ -479,14 +492,59 @@ function AuthContent() {
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showRegPassword ? 'text' : 'password'}
                     required
                     minLength={6}
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="Tối thiểu 6 ký tự"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-[#0B1F3A] focus:outline-hidden focus:border-[#0B1F3A] focus:bg-white transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-10 py-2.5 text-[#0B1F3A] focus:outline-hidden focus:border-[#0B1F3A] focus:bg-white transition-colors"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPassword(!showRegPassword)}
+                    className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    tabIndex={-1}
+                    aria-label={showRegPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  >
+                    {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-700">Xác nhận mật khẩu</label>
+                  {regConfirmPassword && (
+                    <span className={`text-[10px] font-semibold ${regPassword === regConfirmPassword ? 'text-emerald-600' : 'text-rose-500'}`}>
+                      {regPassword === regConfirmPassword ? '✓ Mật khẩu khớp' : 'Mật khẩu chưa khớp'}
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type={showRegConfirmPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    placeholder="Nhập lại mật khẩu vừa đặt"
+                    className={`w-full bg-slate-50 border rounded-xl pl-10 pr-10 py-2.5 text-[#0B1F3A] focus:outline-hidden focus:bg-white transition-colors ${
+                      regConfirmPassword && regPassword !== regConfirmPassword
+                        ? 'border-rose-300 focus:border-rose-500'
+                        : 'border-slate-200 focus:border-[#0B1F3A]'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
+                    className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    tabIndex={-1}
+                    aria-label={showRegConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  >
+                    {showRegConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
