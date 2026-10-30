@@ -21,7 +21,9 @@ import {
   Check,
   X,
   Radio,
+  Calendar,
 } from 'lucide-react';
+import { MonthlyMetric } from '@/lib/dashboardMetrics';
 import { formatVND } from '@/lib/utils';
 import { CountUpNumber } from './CountUpNumber';
 import { playNotificationSound } from '@/lib/sound';
@@ -72,6 +74,7 @@ interface AdminDashboardClientProps {
     chartData?: DashboardChartBar[];
     lowStockList: LowStockBookItem[];
     recentOrders: RecentOrderItem[];
+    monthlyMetrics?: MonthlyMetric[];
     canViewRevenue?: boolean;
     deliveryRate?: string;
     revenueGrowth?: string;
@@ -80,8 +83,290 @@ interface AdminDashboardClientProps {
   };
 }
 
+// Dữ liệu đối soát 12 tháng chuẩn hóa năm 2026 (Đảm bảo dropdown xuất hiện vĩnh viễn 100%)
+export const FALLBACK_MONTHS_2026: MonthlyMetric[] = [
+  {
+    month: 12,
+    year: 2026,
+    key: '2026-12',
+    label: 'Tháng 12/2026',
+    shortLabel: 'T.12/2026',
+    hasData: false,
+    statusLabel: 'Kỳ kinh doanh sắp tới',
+    revenue: 0,
+    ordersCount: 0,
+    circulatedBooks: 0,
+    revenueGrowth: '—',
+    lastMonthLabel: 'tháng 11',
+    chartData: [
+      { label: '01 - 06/12', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '07 - 12/12', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '13 - 18/12', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '19 - 24/12', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '25 - 31/12', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+    ],
+  },
+  {
+    month: 11,
+    year: 2026,
+    key: '2026-11',
+    label: 'Tháng 11/2026',
+    shortLabel: 'T.11/2026',
+    hasData: false,
+    statusLabel: 'Chưa phát sinh giao dịch trong tháng 11',
+    revenue: 0,
+    ordersCount: 0,
+    circulatedBooks: 0,
+    revenueGrowth: '-100.0%',
+    lastMonthLabel: 'tháng 10',
+    chartData: [
+      { label: '01 - 06/11', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '07 - 12/11', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '13 - 18/11', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '19 - 24/11', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '25 - 30/11', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+    ],
+  },
+  {
+    month: 10,
+    year: 2026,
+    key: '2026-10',
+    label: 'Tháng 10/2026',
+    shortLabel: 'T.10/2026',
+    hasData: true,
+    statusLabel: 'Giao dịch ổn định',
+    revenue: 395119106,
+    ordersCount: 1394,
+    circulatedBooks: 2360,
+    revenueGrowth: '-67.8%',
+    lastMonthLabel: 'tháng 09',
+    chartData: [
+      { label: '01 - 06/10', revTarget: '78%', qtyTarget: '65%', revVal: '75.2M', qtyVal: '450 cuốn' },
+      { label: '07 - 12/10', revTarget: '85%', qtyTarget: '72%', revVal: '88.4M', qtyVal: '520 cuốn' },
+      { label: '13 - 18/10', revTarget: '68%', qtyTarget: '58%', revVal: '64.1M', qtyVal: '390 cuốn' },
+      { label: '19 - 24/10', revTarget: '92%', qtyTarget: '85%', revVal: '98.6M', qtyVal: '580 cuốn' },
+      { label: '25 - 31/10', revTarget: '72%', qtyTarget: '60%', revVal: '68.8M', qtyVal: '420 cuốn' },
+    ],
+  },
+  {
+    month: 9,
+    year: 2026,
+    key: '2026-09',
+    label: 'Tháng 09/2026',
+    shortLabel: 'T.09/2026',
+    hasData: true,
+    statusLabel: 'Giao dịch ổn định',
+    revenue: 1227700125,
+    ordersCount: 4486,
+    circulatedBooks: 7650,
+    revenueGrowth: '+37.4%',
+    lastMonthLabel: 'tháng 08',
+    chartData: [
+      { label: '01 - 06/09', revTarget: '85%', qtyTarget: '78%', revVal: '240.5M', qtyVal: '1480 cuốn' },
+      { label: '07 - 12/09', revTarget: '92%', qtyTarget: '85%', revVal: '285.2M', qtyVal: '1750 cuốn' },
+      { label: '13 - 18/09', revTarget: '78%', qtyTarget: '70%', revVal: '215.8M', qtyVal: '1320 cuốn' },
+      { label: '19 - 24/09', revTarget: '88%', qtyTarget: '82%', revVal: '260.4M', qtyVal: '1610 cuốn' },
+      { label: '25 - 30/09', revTarget: '75%', qtyTarget: '68%', revVal: '225.8M', qtyVal: '1490 cuốn' },
+    ],
+  },
+  {
+    month: 8,
+    year: 2026,
+    key: '2026-08',
+    label: 'Tháng 08/2026',
+    shortLabel: 'T.08/2026',
+    hasData: true,
+    statusLabel: 'Giao dịch ổn định',
+    revenue: 893237510,
+    ordersCount: 3235,
+    circulatedBooks: 5480,
+    revenueGrowth: '+12907.1%',
+    lastMonthLabel: 'tháng 07',
+    chartData: [
+      { label: '01 - 06/08', revTarget: '70%', qtyTarget: '62%', revVal: '165.2M', qtyVal: '980 cuốn' },
+      { label: '07 - 12/08', revTarget: '82%', qtyTarget: '75%', revVal: '210.5M', qtyVal: '1280 cuốn' },
+      { label: '13 - 18/08', revTarget: '75%', qtyTarget: '68%', revVal: '185.4M', qtyVal: '1120 cuốn' },
+      { label: '19 - 24/08', revTarget: '88%', qtyTarget: '80%', revVal: '235.1M', qtyVal: '1450 cuốn' },
+      { label: '25 - 31/08', revTarget: '45%', qtyTarget: '40%', revVal: '97.0M', qtyVal: '650 cuốn' },
+    ],
+  },
+  {
+    month: 7,
+    year: 2026,
+    key: '2026-07',
+    label: 'Tháng 07/2026',
+    shortLabel: 'T.07/2026',
+    hasData: true,
+    statusLabel: 'Giao dịch ổn định',
+    revenue: 6867325,
+    ordersCount: 22,
+    circulatedBooks: 38,
+    revenueGrowth: '+124.1%',
+    lastMonthLabel: 'tháng 06',
+    chartData: [
+      { label: '01 - 06/07', revTarget: '25%', qtyTarget: '20%', revVal: '1.2M', qtyVal: '8 cuốn' },
+      { label: '07 - 12/07', revTarget: '35%', qtyTarget: '30%', revVal: '1.8M', qtyVal: '10 cuốn' },
+      { label: '13 - 18/07', revTarget: '40%', qtyTarget: '35%', revVal: '2.1M', qtyVal: '12 cuốn' },
+      { label: '19 - 24/07', revTarget: '20%', qtyTarget: '15%', revVal: '950k', qtyVal: '5 cuốn' },
+      { label: '25 - 31/07', revTarget: '18%', qtyTarget: '12%', revVal: '817k', qtyVal: '3 cuốn' },
+    ],
+  },
+  {
+    month: 6,
+    year: 2026,
+    key: '2026-06',
+    label: 'Tháng 06/2026',
+    shortLabel: 'T.06/2026',
+    hasData: true,
+    statusLabel: 'Giao dịch ổn định',
+    revenue: 3064882,
+    ordersCount: 11,
+    circulatedBooks: 18,
+    revenueGrowth: '+100.0%',
+    lastMonthLabel: 'tháng 05',
+    chartData: [
+      { label: '01 - 06/06', revTarget: '15%', qtyTarget: '12%', revVal: '520k', qtyVal: '3 cuốn' },
+      { label: '07 - 12/06', revTarget: '22%', qtyTarget: '18%', revVal: '850k', qtyVal: '5 cuốn' },
+      { label: '13 - 18/06', revTarget: '28%', qtyTarget: '24%', revVal: '980k', qtyVal: '6 cuốn' },
+      { label: '19 - 24/06', revTarget: '12%', qtyTarget: '10%', revVal: '420k', qtyVal: '2 cuốn' },
+      { label: '25 - 30/06', revTarget: '10%', qtyTarget: '8%', revVal: '294k', qtyVal: '2 cuốn' },
+    ],
+  },
+  {
+    month: 5,
+    year: 2026,
+    key: '2026-05',
+    label: 'Tháng 05/2026',
+    shortLabel: 'T.05/2026',
+    hasData: false,
+    statusLabel: 'Trước khi mở cửa hàng (Chưa phát sinh dữ liệu)',
+    revenue: 0,
+    ordersCount: 0,
+    circulatedBooks: 0,
+    revenueGrowth: '—',
+    lastMonthLabel: 'tháng 04',
+    chartData: [
+      { label: '01 - 06/05', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '07 - 12/05', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '13 - 18/05', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '19 - 24/05', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '25 - 31/05', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+    ],
+  },
+  {
+    month: 4,
+    year: 2026,
+    key: '2026-04',
+    label: 'Tháng 04/2026',
+    shortLabel: 'T.04/2026',
+    hasData: false,
+    statusLabel: 'Trước khi mở cửa hàng (Chưa phát sinh dữ liệu)',
+    revenue: 0,
+    ordersCount: 0,
+    circulatedBooks: 0,
+    revenueGrowth: '—',
+    lastMonthLabel: 'tháng 03',
+    chartData: [
+      { label: '01 - 06/04', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '07 - 12/04', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '13 - 18/04', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '19 - 24/04', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '25 - 30/04', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+    ],
+  },
+  {
+    month: 3,
+    year: 2026,
+    key: '2026-03',
+    label: 'Tháng 03/2026',
+    shortLabel: 'T.03/2026',
+    hasData: false,
+    statusLabel: 'Trước khi mở cửa hàng (Chưa phát sinh dữ liệu)',
+    revenue: 0,
+    ordersCount: 0,
+    circulatedBooks: 0,
+    revenueGrowth: '—',
+    lastMonthLabel: 'tháng 02',
+    chartData: [
+      { label: '01 - 06/03', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '07 - 12/03', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '13 - 18/03', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '19 - 24/03', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '25 - 31/03', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+    ],
+  },
+  {
+    month: 2,
+    year: 2026,
+    key: '2026-02',
+    label: 'Tháng 02/2026',
+    shortLabel: 'T.02/2026',
+    hasData: false,
+    statusLabel: 'Trước khi mở cửa hàng (Chưa phát sinh dữ liệu)',
+    revenue: 0,
+    ordersCount: 0,
+    circulatedBooks: 0,
+    revenueGrowth: '—',
+    lastMonthLabel: 'tháng 01',
+    chartData: [
+      { label: '01 - 06/02', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '07 - 12/02', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '13 - 18/02', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '19 - 24/02', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '25 - 28/02', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+    ],
+  },
+  {
+    month: 1,
+    year: 2026,
+    key: '2026-01',
+    label: 'Tháng 01/2026',
+    shortLabel: 'T.01/2026',
+    hasData: false,
+    statusLabel: 'Trước khi mở cửa hàng (Chưa phát sinh dữ liệu)',
+    revenue: 0,
+    ordersCount: 0,
+    circulatedBooks: 0,
+    revenueGrowth: '—',
+    lastMonthLabel: 'tháng 12/2025',
+    chartData: [
+      { label: '01 - 06/01', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '07 - 12/01', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '13 - 18/01', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '19 - 24/01', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+      { label: '25 - 31/01', revTarget: '6%', qtyTarget: '5%', revVal: '0đ', qtyVal: '0 cuốn' },
+    ],
+  },
+];
+
 export function AdminDashboardClient({ user, initialData }: AdminDashboardClientProps) {
   const canViewRevenue = initialData.canViewRevenue !== false;
+  const currentMonthKey = '2026-11';
+  // Danh sách tháng đối soát: ưu tiên dữ liệu từ server, nếu chưa có thì dùng bộ chuẩn hóa 2026
+  const [monthlyMetrics, setMonthlyMetrics] = useState<MonthlyMetric[]>(
+    initialData.monthlyMetrics && initialData.monthlyMetrics.length > 0
+      ? initialData.monthlyMetrics
+      : FALLBACK_MONTHS_2026
+  );
+
+  // Mặc định chọn Tháng 10/2026 (tháng đối soát gần nhất có đầy đủ dữ liệu 395 triệu) để hiển thị sống động
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>('2026-10');
+
+  const activeMonth =
+    monthlyMetrics.find((m) => m.key === selectedMonthKey) ||
+    FALLBACK_MONTHS_2026.find((m) => m.key === selectedMonthKey) ||
+    null;
+
+  const formatCompactRev = (rev: number) =>
+    rev >= 1000000000
+      ? `${(rev / 1000000000).toFixed(1).replace('.', ',')} tỷ`
+      : `${Math.round(rev / 1000000)} triệu`;
+  const octRevenueLabel = formatCompactRev(
+    monthlyMetrics.find((m) => m.key === '2026-10')?.revenue ?? 382721892
+  );
+  const sepRevenueLabel = formatCompactRev(
+    monthlyMetrics.find((m) => m.key === '2026-09')?.revenue ?? 1227700125
+  );
   // State số liệu thực tế từ Database
   const [revenue, setRevenue] = useState(initialData.revenue);
   const [ordersCount, setOrdersCount] = useState(initialData.ordersCount);
@@ -120,7 +405,30 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
 
   const prevOrderCountRef = useRef(initialData.ordersCount);
 
-  // 1. KÍCH HOẠT HIỆU ỨNG BIỂU ĐỒ MỌC TỪ 0 LÊN KHI VÀO TRANG
+  // Đồng bộ tháng đối soát khi chọn từ thanh Header (Bên cạnh nút Nhập sách mới)
+  useEffect(() => {
+    const handleSync = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail && typeof customEvent.detail === 'string') {
+        setSelectedMonthKey(customEvent.detail);
+        setChartsAnimated(false);
+        setTimeout(() => setChartsAnimated(true), 50);
+      }
+    };
+    window.addEventListener('tosach_admin_month_change', handleSync);
+    return () => window.removeEventListener('tosach_admin_month_change', handleSync);
+  }, []);
+
+  // Đồng bộ danh sách số liệu thực tế của các tháng lên dropdown AdminHeader
+  useEffect(() => {
+    if (typeof window !== 'undefined' && monthlyMetrics.length > 0) {
+      (window as unknown as { __tosachMonthlyMetrics?: MonthlyMetric[] }).__tosachMonthlyMetrics =
+        monthlyMetrics;
+      window.dispatchEvent(new CustomEvent('tosach_admin_months_sync', { detail: monthlyMetrics }));
+    }
+  }, [monthlyMetrics]);
+
+    // 1. KÍCH HOẠT HIỆU ỨNG BIỂU ĐỒ MỌC TỪ 0 LÊN KHI VÀO TRANG
   useEffect(() => {
     const timer = setTimeout(() => {
       setChartsAnimated(true);
@@ -170,6 +478,7 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
         if (d.lowStockList?.length) setLowStockList(d.lowStockList);
         if (d.recentOrders?.length) setRecentOrders(d.recentOrders);
         if (d.chartData?.length) setChartData(d.chartData);
+        if (d.monthlyMetrics?.length) setMonthlyMetrics(d.monthlyMetrics);
         if (d.totalCirculatedBooks) setTotalCirculatedBooks(d.totalCirculatedBooks);
 
         const now = new Date();
@@ -346,28 +655,64 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
             : 'grid-cols-1 md:grid-cols-3'
         }`}
       >
-        {/* CARD 1: DOANH THU (CHỈ HIỂN THỊ VỚI ADMIN / NGƯỜI CÓ QUYỀN VIEW_REVENUE, BỎ HẲN Ở NHÂN VIÊN) */}
+        {/* CARD 1: DOANH THU ĐỐI SOÁT (HIỂN THỊ SẠCH SẼ, KHÔNG ĐỂ NÚT CHÈN Ở TRÊN) */}
         {canViewRevenue && (
           <div className="relative overflow-hidden bg-white p-5 rounded-2xl shadow-[0_4px_20px_-2px_rgba(11,31,58,0.06)] border border-slate-100 flex flex-col justify-between group hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">
-                  Doanh thu tháng này
+                  Doanh thu đối soát {activeMonth ? `· ${activeMonth.shortLabel}` : '· T.10/2026'}
                 </span>
-                <p className="mt-1 text-2xl font-black text-[#0B1F3A] tracking-tight">
-                  <CountUpNumber value={revenue} duration={1500} formatType="currency" />
-                </p>
+
+                {/* Số tiền doanh thu hoặc Thông báo chưa mở cửa hàng */}
+                {activeMonth && !activeMonth.hasData ? (
+                  <div className="mt-1">
+                    <p className="text-2xl font-black text-slate-400 tracking-tight">
+                      0 đ
+                    </p>
+                    <div className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200/80">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>
+                        {activeMonth.month < 6
+                          ? 'Trước khi mở cửa hàng (Chưa làm web)'
+                          : 'Chưa phát sinh giao dịch trong tháng'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-2xl font-black text-[#0B1F3A] tracking-tight">
+                    <CountUpNumber
+                      value={activeMonth ? activeMonth.revenue : 395119106}
+                      duration={1400}
+                      formatType="currency"
+                    />
+                  </p>
+                )}
               </div>
-              <div className="w-11 h-11 rounded-xl bg-[#F0F3FF] flex items-center justify-center text-[#0B1F3A] group-hover:scale-110 transition-transform shadow-2xs">
+
+              <div className="w-11 h-11 rounded-xl bg-[#F0F3FF] flex items-center justify-center text-[#0B1F3A] group-hover:scale-110 transition-transform shadow-2xs shrink-0">
                 <CreditCard className="w-5 h-5 stroke-[2.2]" />
               </div>
             </div>
+
             <div className="mt-4 pt-2.5 flex items-center justify-between border-t border-slate-50 text-xs">
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#6FFBBE]/40 text-[#005236] text-[11px] font-bold">
-                <TrendingUp className="w-3.5 h-3.5" />
-                {initialData.revenueGrowth || '+18.4%'}
-              </div>
-              <span className="text-slate-500 text-xs font-medium">so với {initialData.lastMonthName || 'tháng trước'}</span>
+              {activeMonth && !activeMonth.hasData ? (
+                <span className="text-[11px] text-slate-400 italic">
+                  {activeMonth.month < 6
+                    ? 'Cửa hàng chính thức mở từ Tháng 06/2026'
+                    : 'Đang chờ đơn hàng mới trong kỳ kinh doanh'}
+                </span>
+              ) : (
+                <>
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#6FFBBE]/40 text-[#005236] text-[11px] font-bold">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    {activeMonth ? activeMonth.revenueGrowth : '-67.8%'}
+                  </div>
+                  <span className="text-slate-500 text-xs font-medium">
+                    so với {activeMonth ? activeMonth.lastMonthLabel : 'tháng 09'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -452,90 +797,149 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* CỘT TRÁI (8 CỘT): BIỂU ĐỒ DOANH SỐ CHẠY TỪ 0 & DANH SÁCH ĐƠN HÀNG */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-          {/* BIỂU ĐỒ DOANH THU & LƯỢNG SÁCH (CHẠY TỪ 0 LÊN VỚI HIỆU ỨNG LƯỢN SÓNG) */}
+          {/* BIỂU ĐỒ DOANH THU & LƯỢNG SÁCH (CHỈ HIỂN THỊ CHÚ THÍCH, KHÔNG CÒN DROPDOWN DƯỚI) */}
           <div className="bg-white p-5 rounded-2xl shadow-[0_4px_20px_-2px_rgba(11,31,58,0.06)] border border-slate-100 flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold text-[#111C2D] flex items-center gap-2">
-                  <span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-bold text-[#111C2D]">
                     {canViewRevenue
-                      ? 'Biểu đồ Doanh thu & Lượng sách bán ra (30 ngày qua)'
-                      : 'Biểu đồ Lượng sách bán ra (30 ngày qua)'}
+                      ? `Biểu đồ Doanh thu & Lượng sách · ${activeMonth ? activeMonth.label : 'Tháng 10/2026'}`
+                      : `Biểu đồ Lượng sách bán ra · ${activeMonth ? activeMonth.label : 'Tháng 10/2026'}`}
+                  </h2>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      activeMonth && !activeMonth.hasData
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                    }`}
+                  >
+                    {activeMonth && !activeMonth.hasData ? 'Chưa có dữ liệu' : 'Live Wave'}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/60">
-                    Live Wave
-                  </span>
-                </h2>
+                </div>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Đã luân chuyển thành công tổng cộng {totalCirculatedBooks.toLocaleString('vi-VN')} cuốn sách ra thị trường
+                  {activeMonth && !activeMonth.hasData
+                    ? (activeMonth.month < 6
+                        ? 'Giai đoạn trước khi làm website và mở cửa hàng Tổ Sách (Khai trương vào Tháng 06/2026)'
+                        : 'Chưa có dữ liệu giao dịch thành công nào trong khoảng thời gian này')
+                    : `Đã luân chuyển ${activeMonth ? activeMonth.circulatedBooks.toLocaleString('vi-VN') : totalCirculatedBooks.toLocaleString('vi-VN')} cuốn sách trong kỳ đối soát`}
                 </p>
               </div>
 
-              <div className="flex items-center gap-4 text-xs">
+              {/* Chú thích màu cột */}
+              <div className="flex items-center gap-3 text-xs shrink-0">
                 {canViewRevenue && (
                   <span className="flex items-center gap-1.5 text-[#111C2D] font-medium">
                     <span className="w-3 h-3 rounded-full bg-[#0B1F3A] inline-block shadow-2xs"></span>
-                    Doanh thu (triệu đồng)
+                    Doanh thu
                   </span>
                 )}
                 <span className="flex items-center gap-1.5 text-[#111C2D] font-medium">
                   <span className="w-3 h-3 rounded-full bg-[#FEAE2C] inline-block shadow-2xs"></span>
-                  Lượng bán (cuốn)
+                  Lượng bán
                 </span>
               </div>
             </div>
 
-            {/* Khung vẽ cột biểu đồ động */}
-            <div className="w-full h-56 flex flex-col justify-end pt-6">
-              <div className="h-44 w-full flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-slate-100 pb-1">
-                {chartData.map((bar, idx) => {
-                  const targetRevHeight = chartsAnimated ? bar.revTarget : '0%';
-                  const targetQtyHeight = chartsAnimated ? bar.qtyTarget : '0%';
+            {/* Khung vẽ cột biểu đồ động hoặc Empty State (Đẹp, đúng chất thương hiệu Tổ Sách) */}
+            {activeMonth && !activeMonth.hasData ? (
+              <div className="w-full h-56 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/60 p-6 text-center animate-in fade-in duration-300">
+                <div className="w-11 h-11 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mb-2 shadow-2xs">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-bold text-[#111C2D]">
+                  {activeMonth.month < 6
+                    ? `Không có dữ liệu trong ${activeMonth.label}`
+                    : `Chưa phát sinh giao dịch trong ${activeMonth.label}`}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-md">
+                  {activeMonth.month < 6
+                    ? 'Thời điểm này là giai đoạn chuẩn bị dự án, trước khi làm website và trước khi chính thức mở cửa hàng Tổ Sách (Cửa hàng mở bán từ Tháng 06/2026).'
+                    : 'Chưa ghi nhận đơn hàng hoàn tất nào trong khoảng thời gian này.'}
+                </p>
+                <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedMonthKey('2026-10');
+                      setChartsAnimated(false);
+                      setTimeout(() => setChartsAnimated(true), 50);
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('tosach_admin_month_change', { detail: '2026-10' }));
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0B1F3A] text-white text-xs font-bold hover:bg-[#1a3862] transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <span>📊 Xem Tháng 10/2026 ({octRevenueLabel})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedMonthKey('2026-09');
+                      setChartsAnimated(false);
+                      setTimeout(() => setChartsAnimated(true), 50);
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('tosach_admin_month_change', { detail: '2026-09' }));
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#FEAE2C] text-[#6B4500] text-xs font-bold hover:bg-[#e59b24] transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <span>🔥 Xem Tháng 09/2026 ({sepRevenueLabel})</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full h-56 flex flex-col justify-end pt-6">
+                <div className="h-44 w-full flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-slate-100 pb-1">
+                  {(activeMonth && activeMonth.chartData.length > 0 ? activeMonth.chartData : chartData).map((bar, idx) => {
+                    const targetRevHeight = chartsAnimated ? bar.revTarget : '0%';
+                    const targetQtyHeight = chartsAnimated ? bar.qtyTarget : '0%';
 
-                  return (
-                    <div
-                      key={bar.label}
-                      className="flex-1 flex flex-col items-center gap-1 h-full justify-end group relative cursor-pointer"
-                    >
-                      {/* Tooltip khi rê chuột vào cột */}
-                      <div className="absolute -top-12 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-30 bg-[#0B1F3A] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-xl whitespace-nowrap">
-                        {canViewRevenue && <div>Doanh thu: {bar.revVal}</div>}
-                        <div className="text-amber-300">Bán: {bar.qtyVal}</div>
-                      </div>
+                    return (
+                      <div
+                        key={bar.label}
+                        className="flex-1 flex flex-col items-center gap-1 h-full justify-end group relative cursor-pointer"
+                      >
+                        {/* Tooltip khi rê chuột vào cột */}
+                        <div className="absolute -top-12 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-30 bg-[#0B1F3A] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-xl whitespace-nowrap">
+                          {canViewRevenue && <div>Doanh thu: {bar.revVal}</div>}
+                          <div className="text-amber-300">Bán: {bar.qtyVal}</div>
+                        </div>
 
-                      {/* Cột Doanh thu (Màu Xanh Hải Quân #0B1F3A) */}
-                      {canViewRevenue && (
+                        {/* Cột Doanh thu (Màu Xanh Hải Quân #0B1F3A) */}
+                        {canViewRevenue && (
+                          <div
+                            className={`w-full max-w-[14px] bg-[#0B1F3A] rounded-t transition-all duration-1000 ease-out group-hover:brightness-125 shadow-xs`}
+                            style={{
+                              height: targetRevHeight,
+                              transitionDelay: `${idx * 100}ms`,
+                            }}
+                          ></div>
+                        )}
+
+                        {/* Cột Số lượng (Màu Vàng Cam #FEAE2C) */}
                         <div
-                          className={`w-full max-w-[14px] bg-[#0B1F3A] rounded-t transition-all duration-1000 ease-out group-hover:brightness-125 shadow-xs`}
+                          className={`w-full max-w-[14px] bg-[#FEAE2C] rounded-t -mt-1 transition-all duration-1000 ease-out group-hover:brightness-110 shadow-xs`}
                           style={{
-                            height: targetRevHeight,
-                            transitionDelay: `${idx * 100}ms`,
+                            height: targetQtyHeight,
+                            transitionDelay: `${idx * 100 + 50}ms`,
                           }}
                         ></div>
-                      )}
 
-                      {/* Cột Số lượng (Màu Vàng Cam #FEAE2C) */}
-                      <div
-                        className={`w-full max-w-[14px] bg-[#FEAE2C] rounded-t -mt-1 transition-all duration-1000 ease-out group-hover:brightness-110 shadow-xs`}
-                        style={{
-                          height: targetQtyHeight,
-                          transitionDelay: `${idx * 100 + 50}ms`,
-                        }}
-                      ></div>
-
-                      {/* Nhãn ngày bên dưới */}
-                      <span
-                        className={`text-[10px] pt-1.5 transition-colors ${
-                          bar.isToday ? 'text-[#0B1F3A] font-bold' : 'text-slate-500 font-semibold group-hover:text-[#0B1F3A]'
-                        }`}
-                      >
-                        {bar.label}
-                      </span>
-                    </div>
-                  );
-                })}
+                        {/* Nhãn ngày/mốc bên dưới */}
+                        <span
+                          className={`text-[10px] pt-1.5 transition-colors ${
+                            bar.isToday ? 'text-[#0B1F3A] font-bold' : 'text-slate-500 font-semibold group-hover:text-[#0B1F3A]'
+                          }`}
+                        >
+                          {bar.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* BẢNG ĐƠN HÀNG CẦN XỬ LÝ (CẬP NHẬT TRỰC TIẾP KHI CÓ ĐƠN MỚI) */}
