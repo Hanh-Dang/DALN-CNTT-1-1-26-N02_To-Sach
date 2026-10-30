@@ -35,7 +35,19 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
     },
   });
 
-  if (!order || (order.userId !== user.id && user.role !== 'SUPER_ADMIN')) {
+  // Cho phép xem đơn hàng nếu:
+  // 1. Không gắn userId (đơn khách vãng lai)
+  // 2. Là Super Admin
+  // 3. Khớp userId người dùng
+  // 4. Khớp customerEmail
+  const isAuthorized =
+    order &&
+    (!order.userId ||
+      user.role === 'SUPER_ADMIN' ||
+      order.userId === user.id ||
+      (order.customerEmail && user.email && order.customerEmail.toLowerCase() === user.email.toLowerCase()));
+
+  if (!order || !isAuthorized) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
         <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-5 shadow-sm">
