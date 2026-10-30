@@ -797,7 +797,7 @@ export function FloatingChatbot() {
   return (
     <>
       {/* 1. FLOATING ACTION BUTTON */}
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-6 right-6 z-[9999]">
         {!isOpen && (
           <button
             onClick={() => setIsOpen(true)}
@@ -836,7 +836,7 @@ export function FloatingChatbot() {
       {/* 2. CHAT DIALOG MODAL WINDOW */}
       {isOpen && (
         <div
-          className="fixed bottom-6 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[440px] h-[640px] max-h-[88vh] bg-white rounded-3xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-6 duration-200"
+          className="fixed bottom-6 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[440px] h-[640px] max-h-[88vh] bg-white rounded-3xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden z-[9999] animate-in fade-in slide-in-from-bottom-6 duration-200"
           role="dialog"
           aria-label="Khung trò chuyện Trợ lý Bán Hàng AI"
         >
