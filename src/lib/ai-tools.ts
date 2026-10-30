@@ -30,14 +30,14 @@ export const searchBooksTool: ToolDefinition = {
   declaration: {
     name: 'search_books',
     description:
-      'Tìm kiếm sách trong kho dữ liệu hơn 5.000 cuốn của Tổ Sách theo mảng từ khóa mở rộng (tiêu đề, tác giả, danh mục, nội dung) hoặc thể loại, khoảng giá. Trả về thông tin chính xác 100% về giá, tồn kho thực tế, nhà xuất bản và tác giả.',
+      'Tìm kiếm sách trong kho dữ liệu hơn 5.000 cuốn của Tổ Sách theo mảng từ khóa mở rộng (tiêu đề, tác giả, danh mục, nội dung), tiêu chí sắp xếp cực trị (đắt nhất, rẻ nhất, bán chạy nhất, dày nhất, mới nhất), thể loại hoặc khoảng giá. Trả về thông tin chính xác 100% về giá, tồn kho thực tế, nhà xuất bản và tác giả từ CSDL.',
     parameters: {
       type: 'OBJECT',
       properties: {
         keywords: {
           type: 'ARRAY',
           description:
-            'Mảng 2-5 từ khóa ngắn, từ đồng nghĩa hoặc cụm từ trọng tâm không dấu/có dấu (Ví dụ: ["trinh thám", "nhật bản", "keigo"], ["lập trình", "python"], ["cảm xúc", "buồn", "chữa lành"]). Không truyền cả câu dài.',
+            'Mảng từ khóa ngắn (Ví dụ: ["trinh thám", "keigo"], ["lập trình", "python"]). Để mảng rỗng [] nếu khách chỉ tìm theo tiêu chí sắp xếp cực trị (đắt nhất, rẻ nhất, bán chạy nhất) mà không có tên sách cụ thể.',
           items: { type: 'STRING' },
         },
         categorySlug: {
@@ -53,35 +53,105 @@ export const searchBooksTool: ToolDefinition = {
           type: 'NUMBER',
           description: 'Mức giá bán tối đa bằng VNĐ',
         },
+        sortBy: {
+          type: 'STRING',
+          description:
+            'Tiêu chí sắp xếp: "price_desc" (đắt nhất / giá cao nhất), "price_asc" (rẻ nhất / giá thấp nhất), "sold_desc" (bán chạy nhất), "newest" (mới nhất), "page_desc" (dày nhất/nhiều trang nhất), hoặc "relevance" (khớp từ khóa nhất).',
+        },
+        limit: {
+          type: 'NUMBER',
+          description: 'Số lượng sách tối đa cần lấy (mặc định 5, tối đa 10).',
+        },
       },
-      required: ['keywords'],
     },
   },
   execute: async (
-    args: { keywords?: string[]; categorySlug?: string; minPrice?: number; maxPrice?: number },
+    args: {
+      keywords?: string[];
+      categorySlug?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      sortBy?: string;
+      limit?: number;
+    },
     ctx: ToolContext
   ) => {
     try {
       const rawKeywords = Array.isArray(args.keywords) ? args.keywords : [];
-      // Làm sạch mảng từ khóa: 1-5 từ, 2-40 ký tự mỗi từ
+      const takeLimit = Math.min(Math.max(1, Number(args.limit) || 5), 10);
+
+      // Nhận diện ý định sắp xếp từ args hoặc từ chuỗi keywords thô
+      let effectiveSortBy = (args.sortBy || '').trim().toLowerCase();
+      const joinedRawKeywords = rawKeywords.join(' ').toLowerCase();
+
+      if (!effectiveSortBy) {
+        if (/(đắt nhất|mắc nhất|giá cao nhất|giá đắt nhất|đắt tiền nhất)/i.test(joinedRawKeywords)) {
+          effectiveSortBy = 'price_desc';
+        } else if (/(rẻ nhất|giá rẻ nhất|giá thấp nhất|bình dân nhất|tiết kiệm nhất)/i.test(joinedRawKeywords)) {
+          effectiveSortBy = 'price_asc';
+        } else if (/(bán chạy nhất|hot nhất|bán chạy|phổ biến nhất|nhiều người mua)/i.test(joinedRawKeywords)) {
+          effectiveSortBy = 'sold_desc';
+        } else if (/(mới nhất|vừa ra|mới ra|mới xuất bản)/i.test(joinedRawKeywords)) {
+          effectiveSortBy = 'newest';
+        } else if (/(dày nhất|nhiều trang nhất)/i.test(joinedRawKeywords)) {
+          effectiveSortBy = 'page_desc';
+        }
+      }
+
+      // Các từ dừng liên quan đến cực trị và sắp xếp cần loại bỏ để không làm sai lệch full-text search
+      const SORT_INTENT_WORDS = [
+        'đắt nhất', 'mắc nhất', 'rẻ nhất', 'giá cao nhất', 'giá thấp nhất',
+        'cao nhất', 'thấp nhất', 'bán chạy nhất', 'bán chạy', 'mới nhất',
+        'dày nhất', 'nhiều trang nhất', 'đắt', 'mắc', 'rẻ', 'nhất', 'tiết kiệm nhất'
+      ];
+
+      // Làm sạch mảng từ khóa: 1-5 từ, 2-40 ký tự mỗi từ, loại bỏ từ khóa sắp xếp
       const cleanKeywords = Array.from(
         new Set(
           rawKeywords
             .map((k) => (typeof k === 'string' ? k.trim() : ''))
-            .filter((k) => k.length >= 2 && k.length <= 40)
+            .filter((k) => {
+              if (k.length < 2 || k.length > 40) return false;
+              const lower = k.toLowerCase();
+              return !SORT_INTENT_WORDS.some((stop) => lower === stop);
+            })
         )
       ).slice(0, 5);
-      // 4.1: Nếu không có từ khóa nhưng có lọc khoảng giá hoặc thể loại, tìm trực tiếp sách phù hợp
-      if (cleanKeywords.length === 0 && (args.minPrice !== undefined || args.maxPrice !== undefined || args.categorySlug)) {
-        const minP = typeof args.minPrice === 'number' && args.minPrice >= 0 ? args.minPrice : null;
-        const maxP = typeof args.maxPrice === 'number' && args.maxPrice > 0 ? args.maxPrice : null;
-        let validCatSlug: string | null = null;
-        if (args.categorySlug) {
-          const catExists = await prisma.category.findUnique({
-            where: { slug: args.categorySlug.trim() },
-            select: { slug: true },
-          });
-          if (catExists) validCatSlug = catExists.slug;
+
+      const minP = typeof args.minPrice === 'number' && args.minPrice >= 0 ? args.minPrice : null;
+      const maxP = typeof args.maxPrice === 'number' && args.maxPrice > 0 ? args.maxPrice : null;
+
+      let validCategorySlug: string | null = null;
+      if (args.categorySlug) {
+        const catExists = await prisma.category.findUnique({
+          where: { slug: args.categorySlug.trim() },
+          select: { slug: true },
+        });
+        if (catExists) validCategorySlug = catExists.slug;
+      }
+
+      // Xác định câu hỏi sắp xếp cực trị (đắt nhất, rẻ nhất, bán chạy...)
+      const isExtremeSort = [
+        'price_desc',
+        'price_asc',
+        'sold_desc',
+        'newest',
+        'page_desc',
+      ].includes(effectiveSortBy);
+
+      // Trường hợp 1: Không có từ khóa tên sách cụ thể HOẶC có sắp xếp cực trị không kèm từ khóa cụ thể
+      if (cleanKeywords.length === 0 || (isExtremeSort && cleanKeywords.length === 0)) {
+        let orderBy: any = [{ isBestseller: 'desc' }, { soldCount: 'desc' }];
+        if (effectiveSortBy === 'price_desc') {
+          orderBy = [{ price: 'desc' }, { id: 'asc' }];
+        } else if (effectiveSortBy === 'price_asc') {
+          orderBy = [{ price: 'asc' }, { id: 'asc' }];
+        } else if (effectiveSortBy === 'sold_desc') {
+          orderBy = [{ soldCount: 'desc' }, { id: 'asc' }];
+        } else if (effectiveSortBy === 'newest') {
+          orderBy = [{ publishYear: 'desc' }, { createdAt: 'desc' }];
+        } else if (effectiveSortBy === 'page_desc') {
+          orderBy = [{ pageCount: 'desc' }, { id: 'asc' }];
         }
 
         const directBooks = await prisma.book.findMany({
@@ -96,12 +166,12 @@ export const searchBooksTool: ToolDefinition = {
                   },
                 }
               : {}),
-            ...(validCatSlug
-              ? { categories: { some: { category: { slug: validCatSlug } } } }
+            ...(validCategorySlug
+              ? { categories: { some: { category: { slug: validCategorySlug } } } }
               : {}),
           },
-          take: 5,
-          orderBy: [{ isBestseller: 'desc' }, { soldCount: 'desc' }],
+          take: takeLimit,
+          orderBy,
           include: {
             authors: { include: { author: { select: { name: true } } } },
             categories: { include: { category: { select: { name: true, slug: true } } } },
@@ -127,6 +197,9 @@ export const searchBooksTool: ToolDefinition = {
               categoryName: b.categories[0]?.category.name || 'Sách Hay',
               catSlug: b.categories[0]?.category.slug || 'van-hoc',
               description: b.description || '',
+              pageCount: b.pageCount,
+              soldCount: b.soldCount,
+              publishYear: b.publishYear,
               isSuggestion: false,
             })),
           };
@@ -137,21 +210,9 @@ export const searchBooksTool: ToolDefinition = {
         cleanKeywords.push('sách');
       }
 
-      // Kiểm tra tính hợp lệ của categorySlug trong DB
-      let validCategorySlug: string | null = null;
-      if (args.categorySlug) {
-        const catExists = await prisma.category.findUnique({
-          where: { slug: args.categorySlug.trim() },
-          select: { slug: true },
-        });
-        if (catExists) {
-          validCategorySlug = catExists.slug;
-        }
-      }
-
       const patterns = cleanKeywords.map((k) => `%${k}%`);
-      const minPrice = typeof args.minPrice === 'number' && args.minPrice >= 0 ? args.minPrice : null;
-      const maxPrice = typeof args.maxPrice === 'number' && args.maxPrice > 0 ? args.maxPrice : null;
+      const minPrice = minP;
+      const maxPrice = maxP;
 
       // Truy vấn PostgreSQL tham số hóa với unaccent() ILIKE ANY, tính điểm trọng số
       // title: 5đ, tác giả: 4đ, danh mục: 2đ, mô tả: 1đ
@@ -165,6 +226,8 @@ export const searchBooksTool: ToolDefinition = {
             b.original_price AS "originalPrice",
             b.stock_qty AS "stockQty",
             b.sold_count AS "soldCount",
+            b.page_count AS "pageCount",
+            b.publish_year AS "publishYear",
             b.cover_url AS "coverUrl",
             b.publisher,
             b.description,
@@ -264,8 +327,17 @@ export const searchBooksTool: ToolDefinition = {
         SELECT *
         FROM book_matches
         WHERE matched_count > 0
-        ORDER BY ("stockQty" > 0) DESC, matched_count DESC, total_score DESC, "soldCount" DESC
-        LIMIT 5;
+        ORDER BY
+          ("stockQty" > 0) DESC,
+          CASE WHEN ${effectiveSortBy}::text = 'price_desc' THEN price END DESC NULLS LAST,
+          CASE WHEN ${effectiveSortBy}::text = 'price_asc' THEN price END ASC NULLS LAST,
+          CASE WHEN ${effectiveSortBy}::text = 'sold_desc' THEN "soldCount" END DESC NULLS LAST,
+          CASE WHEN ${effectiveSortBy}::text = 'page_desc' THEN "pageCount" END DESC NULLS LAST,
+          CASE WHEN ${effectiveSortBy}::text = 'newest' THEN "publishYear" END DESC NULLS LAST,
+          matched_count DESC,
+          total_score DESC,
+          "soldCount" DESC
+        LIMIT ${takeLimit};
       `;
 
       let books: any[] = [];
@@ -286,12 +358,22 @@ export const searchBooksTool: ToolDefinition = {
           categoryName: b.categoryName,
           categorySlug: b.catSlug,
           description: b.description ? b.description.slice(0, 180) + '...' : '',
+          pageCount: b.pageCount ? Number(b.pageCount) : null,
+          soldCount: b.soldCount ? Number(b.soldCount) : 0,
+          publishYear: b.publishYear ? Number(b.publishYear) : null,
           isSuggestion: false,
         }));
       } else {
         // KHI 0 KẾT QUẢ KHỚP TRỰC TIẾP:
-        // Lấy sách bán chạy CÒN HÀNG của danh mục gần nhất hoặc toàn kho, tôn trọng khoảng giá khách yêu cầu
+        // Lấy sách phù hợp CÒN HÀNG của danh mục gần nhất hoặc toàn kho, tôn trọng khoảng giá và sắp xếp
         isSuggestion = true;
+        let fallbackOrderBy: any = [{ isBestseller: 'desc' }, { soldCount: 'desc' }];
+        if (effectiveSortBy === 'price_desc') fallbackOrderBy = [{ price: 'desc' }];
+        else if (effectiveSortBy === 'price_asc') fallbackOrderBy = [{ price: 'asc' }];
+        else if (effectiveSortBy === 'sold_desc') fallbackOrderBy = [{ soldCount: 'desc' }];
+        else if (effectiveSortBy === 'newest') fallbackOrderBy = [{ publishYear: 'desc' }];
+        else if (effectiveSortBy === 'page_desc') fallbackOrderBy = [{ pageCount: 'desc' }];
+
         const fallbackBooks = await prisma.book.findMany({
           where: {
             isActive: true,
@@ -309,7 +391,7 @@ export const searchBooksTool: ToolDefinition = {
               : {}),
           },
           take: 3,
-          orderBy: [{ isBestseller: 'desc' }, { soldCount: 'desc' }],
+          orderBy: fallbackOrderBy,
           include: {
             authors: { include: { author: { select: { name: true } } } },
             categories: { include: { category: { select: { name: true, slug: true } } } },
@@ -330,6 +412,9 @@ export const searchBooksTool: ToolDefinition = {
           categoryName: b.categories[0]?.category?.name || 'Sách Hay',
           categorySlug: b.categories[0]?.category?.slug || 'van-hoc',
           description: b.description ? b.description.slice(0, 180) + '...' : '',
+          pageCount: b.pageCount,
+          soldCount: b.soldCount,
+          publishYear: b.publishYear,
           isSuggestion: true,
         }));
       }

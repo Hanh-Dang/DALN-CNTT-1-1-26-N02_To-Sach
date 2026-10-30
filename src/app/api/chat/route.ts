@@ -24,7 +24,35 @@ interface IncomingCartItem {
 export async function POST(req: NextRequest) {
   try {
     const clientIp = getClientIp(req);
-    const user = await getCurrentUser();
+    let user: any = null;
+    try {
+      user = await getCurrentUser();
+    } catch {
+      user = null;
+    }
+
+    // Thời gian thực tế chính xác tại Việt Nam (GMT+7)
+    const now = new Date();
+    const vnDateTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    const vnDateOnlyFormatter = new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const currentTimeFormatted = vnDateTimeFormatter.format(now);
+    const currentDateFormatted = vnDateOnlyFormatter.format(now);
 
     // 1. Rate Limit Bảo Vệ Hệ Thống (Môn Bảo mật: Chống DoS / Brute-force chat)
     // Ưu tiên định danh theo user đã đăng nhập, nếu là khách vãng lai và proxy chưa bật thì nới rộng quota dùng chung
@@ -112,7 +140,8 @@ export async function POST(req: NextRequest) {
       'một', 'với', 'được', 'gợi', 'ý', 'dưới', 'trên', 'khoảng', 'tầm', 'của',
       'xin', 'chào', 'hello', 'hi', 'alo', 'shop', 'ơi', 'nha', 'nhé', 'ạ', 'ad', 'admin',
       'tư', 'vấn', 'giúp', 'hộ', 'xem', 'hỏi', 'cần', 'thử', 'do', 'you', 'have',
-      'can', 'please', 'is', 'there', 'the', 'a', 'an', 'book', 'books'
+      'can', 'please', 'is', 'there', 'the', 'a', 'an', 'book', 'books',
+      'đắt', 'mắc', 'rẻ', 'nhất', 'tiết', 'kiệm', 'nhiều', 'trang', 'dày'
     ]);
 
     function parsePriceUnit(numStr: string, unitStr?: string): number {
@@ -138,12 +167,27 @@ export async function POST(req: NextRequest) {
       keywords: string[];
       minPrice?: number;
       maxPrice?: number;
+      sortBy?: string;
       isGreetingOnly: boolean;
     } {
       const rawLower = message.toLowerCase().normalize('NFC').trim();
       let text = rawLower;
       let minPrice: number | undefined;
       let maxPrice: number | undefined;
+
+      // 0. Nhận diện ý định sắp xếp cực trị (đắt nhất, rẻ nhất, bán chạy...)
+      let sortBy: string | undefined;
+      if (/(đắt nhất|mắc nhất|giá cao nhất|giá đắt nhất|đắt tiền nhất)/i.test(rawLower)) {
+        sortBy = 'price_desc';
+      } else if (/(rẻ nhất|giá rẻ nhất|giá thấp nhất|bình dân nhất|tiết kiệm nhất)/i.test(rawLower)) {
+        sortBy = 'price_asc';
+      } else if (/(bán chạy nhất|hot nhất|bán chạy|phổ biến nhất|nhiều người mua)/i.test(rawLower)) {
+        sortBy = 'sold_desc';
+      } else if (/(mới nhất|vừa ra|mới ra|mới xuất bản)/i.test(rawLower)) {
+        sortBy = 'newest';
+      } else if (/(dày nhất|nhiều trang nhất)/i.test(rawLower)) {
+        sortBy = 'page_desc';
+      }
 
       // 1. Nhận diện dạng khoảng giá "từ X đến Y" hoặc "X - Y" (hỗ trợ số thập phân 4.1)
       const rangeMatch = text.match(/(?:từ|giá từ)\s*(\d+(?:[.,]\d+)*)\s*(k|nghìn|ngàn|triệu|tr)?\s*(?:đến|tới|-)\s*(\d+(?:[.,]\d+)*)\s*(k|nghìn|ngàn|triệu|tr)?/);
@@ -185,6 +229,7 @@ export async function POST(req: NextRequest) {
         tokens.length === 0 &&
         !minPrice &&
         !maxPrice &&
+        !sortBy &&
         /^(xin\s+)?(chào|chao|hello|hi|helo|alo|hai|hé lô|hey)(\s+(shop|ad|admin|bạn|ơi|cậu))?[\s.!?:;~]*$/i.test(rawLower);
 
       const keywords: string[] = [];
@@ -196,18 +241,57 @@ export async function POST(req: NextRequest) {
         keywords: keywords.slice(0, 5),
         minPrice,
         maxPrice,
-        isGreetingOnly: isGreetingOnly || (tokens.length === 0 && !minPrice && !maxPrice),
+        sortBy,
+        isGreetingOnly: isGreetingOnly || (tokens.length === 0 && !minPrice && !maxPrice && !sortBy),
       };
     }
 
     async function localFallback() {
       try {
-        const { keywords, minPrice, maxPrice, isGreetingOnly } = extractSearchArgs(userMessage);
+        // 1. Xử lý câu hỏi về ngày tháng năm / thời gian thực tế
+        const isDateQuery =
+          /(hôm nay là thứ mấy|hôm nay ngày bao nhiêu|bây giờ là mấy giờ|ngày mấy|tháng mấy|năm mấy|hôm nay là ngày gì|ngày hôm nay|thời gian hiện tại|mấy giờ rồi|thứ mấy rồi)/i.test(userMessage) ||
+          ((/hôm nay|bây giờ|hiện tại/i.test(userMessage)) && (/ngày|tháng|năm|thứ|giờ/i.test(userMessage)));
+
+        if (isDateQuery) {
+          return {
+            reply: `Dạ, hôm nay là ${currentDateFormatted} (thời gian hiện tại: ${currentTimeFormatted}, múi giờ Việt Nam GMT+7) ạ! Không biết hôm nay bạn đang quan tâm hoặc muốn tìm cuốn sách nào để Tổ Sách tư vấn cho bạn nhé?`,
+            suggestedBooks: [],
+            bestVoucher: null,
+            actions: [],
+            source: 'local-db-fallback',
+          };
+        }
+
+        // 2. Xử lý câu hỏi về chính sách cửa hàng (Freeship & Đổi trả)
+        const isFreeshipQuery = /(freeship|phí ship|phí giao hàng|tiền ship|miễn phí ship|vận chuyển bao nhiêu)/i.test(userMessage);
+        if (isFreeshipQuery) {
+          return {
+            reply: `Dạ, chính sách vận chuyển của Tổ Sách như sau ạ:\n- 🚚 **FREESHIP TOÀN QUỐC** cho tất cả đơn hàng từ **150.000đ** trở lên.\n- Với đơn hàng dưới 150.000đ, phí giao hàng đồng giá chỉ **25.000đ** toàn quốc.\n- Thời gian giao hàng từ 2 - 4 ngày làm việc, hỗ trợ kiểm tra hàng (đồng kiểm COD) trước khi thanh toán. Bạn đang quan tâm đến cuốn sách nào hôm nay ạ?`,
+            suggestedBooks: [],
+            bestVoucher: null,
+            actions: [],
+            source: 'local-db-fallback',
+          };
+        }
+
+        const isReturnQuery = /(đổi trả|chính sách đổi|bảo hành|được đổi không|lỗi in ấn)/i.test(userMessage);
+        if (isReturnQuery) {
+          return {
+            reply: `Dạ, Tổ Sách áp dụng chính sách **đổi trả miễn phí trong vòng 7 ngày** kể từ ngày nhận hàng nếu sách gặp lỗi kỹ thuật in ấn, bung gáy, rách trang hoặc hư hỏng do vận chuyển. Bạn hoàn toàn yên tâm đặt mua nhé!`,
+            suggestedBooks: [],
+            bestVoucher: null,
+            actions: [],
+            source: 'local-db-fallback',
+          };
+        }
+
+        const { keywords, minPrice, maxPrice, sortBy, isGreetingOnly } = extractSearchArgs(userMessage);
 
         if (isGreetingOnly) {
           return {
             reply:
-              'Xin chào bạn! Trợ lý ảo của Nhà sách Tổ Sách rất vui được hỗ trợ bạn. Bạn đang quan tâm đến cuốn sách, tác giả hoặc thể loại nào hôm nay? (Ví dụ: sách trinh thám Nhật Bản, sách lập trình Python, sách dưới 100k...)',
+              'Xin chào bạn! Trợ lý ảo của Nhà sách Tổ Sách rất vui được hỗ trợ bạn. Bạn đang quan tâm đến cuốn sách, tác giả hoặc thể loại nào hôm nay? (Ví dụ: sách trinh thám Nhật Bản, sách lập trình Python, sách dưới 100k, sách bán chạy...)',
             suggestedBooks: [],
             bestVoucher: null,
             actions: [],
@@ -217,10 +301,17 @@ export async function POST(req: NextRequest) {
 
         const searchTool = AI_TOOLS_REGISTRY['search_books'];
         const voucherTool = AI_TOOLS_REGISTRY['recommend_best_voucher'];
-        // 4.1: Nếu câu hỏi chỉ có tầm giá (keywords rỗng), không truyền cả câu vào title search mà lọc theo khoảng giá
-        const effectiveKeywords = keywords.length > 0 ? keywords : (minPrice !== undefined || maxPrice !== undefined ? [] : [userMessage]);
+
+        // Nếu câu hỏi chỉ có tầm giá hoặc sortBy (keywords rỗng), không truyền cả câu vào title search mà lọc theo khoảng giá và sắp xếp
+        const effectiveKeywords =
+          keywords.length > 0
+            ? keywords
+            : minPrice !== undefined || maxPrice !== undefined || sortBy
+            ? []
+            : [userMessage];
+
         const searchRes = await searchTool.execute(
-          { keywords: effectiveKeywords, minPrice, maxPrice },
+          { keywords: effectiveKeywords, minPrice, maxPrice, sortBy },
           ctx
         );
         const books = (searchRes?.books || []).slice(0, 5);
@@ -231,11 +322,26 @@ export async function POST(req: NextRequest) {
         }
 
         const allSuggestions = books.length > 0 && books.every((b: any) => b.isSuggestion);
-        const reply = books.length === 0
-          ? 'Tổ Sách luôn sẵn sàng tư vấn cho bạn các tựa sách hay cùng các chương trình ưu đãi hấp dẫn. Bạn đang quan tâm đến cuốn sách hay thể loại nào hôm nay?'
-          : allSuggestions
-          ? 'Mình chưa tìm thấy sách khớp đúng yêu cầu, dưới đây là các cuốn đang bán chạy bạn có thể tham khảo:'
-          : 'Mình đã tìm thấy các cuốn sách phù hợp trong kho Tổ Sách:';
+        let reply = '';
+        if (books.length === 0) {
+          reply = 'Tổ Sách luôn sẵn sàng tư vấn cho bạn các tựa sách hay cùng các chương trình ưu đãi hấp dẫn. Bạn đang quan tâm đến cuốn sách hay thể loại nào hôm nay?';
+        } else if (sortBy === 'price_desc') {
+          const top = books[0];
+          reply = `Dạ, tựa sách có giá cao nhất hiện có trong kho Tổ Sách là cuốn "${top.title}" của ${top.authorName} với giá ${Number(top.price).toLocaleString('vi-VN')}đ (${top.inStock ? `còn ${top.stockQty} cuốn` : 'tạm hết hàng'}). Dưới đây là thông tin chi tiết:`;
+        } else if (sortBy === 'price_asc') {
+          const top = books[0];
+          reply = `Dạ, tựa sách có mức giá tiết kiệm / rẻ nhất hiện có tại Tổ Sách là cuốn "${top.title}" của ${top.authorName} với giá chỉ ${Number(top.price).toLocaleString('vi-VN')}đ (${top.inStock ? `còn ${top.stockQty} cuốn` : 'tạm hết hàng'}). Dưới đây là thông tin chi tiết:`;
+        } else if (sortBy === 'sold_desc') {
+          reply = 'Dạ, dưới đây là những tựa sách bán chạy và được yêu thích nhất trong kho sách Tổ Sách:';
+        } else if (sortBy === 'newest') {
+          reply = 'Dạ, dưới đây là những tựa sách mới nhất vừa được bổ sung vào kho Tổ Sách:';
+        } else if (sortBy === 'page_desc') {
+          reply = 'Dạ, dưới đây là những tựa sách đồ sộ, dày dặn và nhiều trang nhất tại Tổ Sách:';
+        } else if (allSuggestions) {
+          reply = 'Mình chưa tìm thấy sách khớp đúng yêu cầu, dưới đây là các cuốn đang bán chạy bạn có thể tham khảo:';
+        } else {
+          reply = 'Mình đã tìm thấy các cuốn sách phù hợp trong kho Tổ Sách:';
+        }
 
         return {
           reply,
@@ -280,6 +386,24 @@ export async function POST(req: NextRequest) {
     // 5. System Prompt Định Hướng Trợ Lý Bán Hàng Cao Cấp & Chốt Đơn
     const systemPromptText = `Bạn là Trợ Lý Bán Hàng Xuất Sắc và Tận Tâm của Nhà Sách Trực Tuyến Tổ Sách ("Sách về tổ, tri thức bay xa").
 Mục tiêu cao nhất của bạn là: TƯ VẤN SÁCH CHUYÊN NGHIỆP, THUYẾT PHỤC KHÁCH HÀNG, GIỚI THIỆU VOUCHER TỐI ƯU VÀ HỖ TRỢ KHÁCH MUA SẮM TRỰC TIẾP.
+
+========================================================================
+[THỜI GIAN THỰC TẾ HIỆN TẠI (MÚI GIỜ VIỆT NAM GMT+7)]:
+- Thời gian hiện tại: ${currentTimeFormatted} (Giờ Việt Nam GMT+7)
+- Hôm nay: ${currentDateFormatted}
+* QUY TẮC BẮT BUỘC VỀ THỜI GIAN:
+- Khi khách hỏi về ngày, tháng, năm, hôm nay là thứ mấy, bây giờ là mấy giờ, hôm nay là ngày gì: Bạn PHẢI trả lời chính xác 100% theo mốc thời gian thực tế ở trên. TUYỆT ĐỐI KHÔNG tự bịa ra ngày tháng năm trong quá khứ hoặc tương lai.
+
+========================================================================
+[QUY TẮC TÌM KIẾM THEO CỰC TRỊ VÀ SẮP XẾP SÁCH]:
+- Kho Tổ Sách có hơn 5.000 đầu sách thật trong cơ sở dữ liệu.
+- Khi khách hỏi sách ĐẮT NHẤT (mắc nhất, giá cao nhất): BẮT BUỘC gọi tool "search_books" với tham số { sortBy: "price_desc" }. Không truyền từ "đắt nhất" vào mảng keywords!
+- Khi khách hỏi sách RẺ NHẤT (giá thấp nhất, rẻ tiền nhất): BẮT BUỘC gọi tool "search_books" với tham số { sortBy: "price_asc" }. Không truyền từ "rẻ nhất" vào mảng keywords!
+- Khi khách hỏi sách BÁN CHẠY NHẤT (hot nhất, nhiều người mua): BẮT BUỘC gọi tool "search_books" với tham số { sortBy: "sold_desc" }.
+- Khi khách hỏi sách MỚI NHẤT (vừa xuất bản): BẮT BUỘC gọi tool "search_books" với tham số { sortBy: "newest" }.
+- Khi khách hỏi sách DÀY NHẤT (nhiều trang nhất): BẮT BUỘC gọi tool "search_books" với tham số { sortBy: "page_desc" }.
+- Trả lời khách hàng chính xác tên cuốn sách đứng đầu danh sách trả về từ tool, nêu đúng giá tiền, tác giả, nhà xuất bản và tồn kho. TUYỆT ĐỐI KHÔNG tự bịa ra tên sách hay phỏng đoán giá tiền khi chưa có kết quả từ tool.
+========================================================================
 
 DANH MỤC SÁCH THỰC TẾ TRONG KHO TỔ SÁCH:
 ${dynamicCategoriesText}
