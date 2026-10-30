@@ -71,6 +71,8 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
 
   // Purchase quantity state
   const [quantity, setQuantity] = useState(1);
+  // Chuỗi tạm cho ô nhập số lượng, cho phép xóa trống khi đang gõ
+  const [quantityInput, setQuantityInput] = useState('1');
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -107,6 +109,35 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
   }, [book.id]);
 
   const primaryCategory = book.categories && book.categories.length > 0 ? book.categories[0].category : null;
+
+  // Cập nhật số lượng hợp lệ (1..stockQty) và đồng bộ ô nhập
+  const updateQuantity = (next: number) => {
+    const maxQty = Math.max(1, book.stockQty);
+    const safe = Math.min(maxQty, Math.max(1, Math.floor(next) || 1));
+    setQuantity(safe);
+    setQuantityInput(String(safe));
+  };
+
+  // Khách tự gõ số lượng: chỉ nhận chữ số, vượt tồn kho thì tự hạ về mức tối đa
+  const handleQuantityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '');
+    if (digits === '') {
+      setQuantityInput('');
+      return;
+    }
+    const parsed = parseInt(digits, 10);
+    if (parsed > book.stockQty) {
+      updateQuantity(book.stockQty);
+      return;
+    }
+    setQuantityInput(String(parsed));
+    if (parsed >= 1) setQuantity(parsed);
+  };
+
+  // Rời ô nhập: để trống hoặc nhập 0 thì trả về 1
+  const commitQuantityInput = () => {
+    updateQuantity(parseInt(quantityInput, 10) || 1);
+  };
 
   // Handle Add To Cart
   const handleAddToCart = (e?: React.MouseEvent) => {
@@ -490,7 +521,7 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
                     <span className="text-xs font-bold text-slate-700">Chọn số lượng:</span>
                     <div className="flex items-center border border-slate-300 rounded-xl bg-white overflow-hidden shadow-2xs">
                       <button
-                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        onClick={() => updateQuantity(quantity - 1)}
                         disabled={quantity <= 1}
                         className="px-3 py-2 text-slate-600 hover:bg-slate-100 disabled:opacity-40 transition-colors"
                         type="button"
@@ -498,11 +529,22 @@ export const BookDetailClient: React.FC<BookDetailClientProps> = ({ book, relate
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
-                      <span className="w-12 text-center text-sm font-bold text-[#0B1F3A]">
-                        {quantity}
-                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={quantityInput}
+                        onChange={handleQuantityInputChange}
+                        onBlur={commitQuantityInput}
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                        }}
+                        className="w-14 text-center text-sm font-bold text-[#0B1F3A] bg-transparent outline-none focus:bg-slate-50"
+                        aria-label="Nhập số lượng"
+                      />
                       <button
-                        onClick={() => setQuantity((q) => Math.min(book.stockQty, q + 1))}
+                        onClick={() => updateQuantity(quantity + 1)}
                         disabled={quantity >= book.stockQty}
                         className="px-3 py-2 text-slate-600 hover:bg-slate-100 disabled:opacity-40 transition-colors"
                         type="button"
