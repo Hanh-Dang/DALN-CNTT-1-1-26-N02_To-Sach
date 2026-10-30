@@ -2,6 +2,14 @@
 
 > **Nền tảng thương mại điện tử chuyên sâu ngành sách (B2C), sở hữu kiến trúc giao dịch ACID toàn vẹn, phân quyền 4 vai trò độc lập, tích hợp thanh toán VietQR tự động và Trợ lý bán hàng Agentic AI.**
 
+> 🌐 **Trải nghiệm trực tuyến (Live Demo):** [**https://to-sach.vercel.app**](https://to-sach.vercel.app)  
+> 🔑 **Tài khoản dùng thử nghiệm hệ thống (Demo Accounts):**  
+> * **Quản trị viên (Super Admin):** `admin@tosach.vn` / `Admin@123` *(Xem dashboard doanh thu thực tế, quản lý đơn hàng & sách)*  
+> * **Nhân viên Đơn hàng (Staff Orders):** `staff.order@tosach.vn` / `Staff@123` *(Xử lý đơn, ẩn thẻ tài chính)*  
+> * **Nhân viên Kho (Staff Kho):** `staff.kho@tosach.vn` / `Staff@123` *(Quản lý sách & tồn kho)*  
+> * **Khách hàng (Customer):** `customer@gmail.com` / `User@123` *(hoặc tự đăng ký nhận mã OTP thật qua Gmail)*
+
+[![Live Demo](https://img.shields.io/badge/Demo_Trực_Tuyến-to--sach.vercel.app-0070f3?logo=vercel&logoColor=white)](https://to-sach.vercel.app/)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16_App_Router-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Prisma 6](https://img.shields.io/badge/ORM-Prisma_6-2D3748?logo=prisma)](https://www.prisma.io/)
