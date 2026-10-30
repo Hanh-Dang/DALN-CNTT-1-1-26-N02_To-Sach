@@ -682,6 +682,7 @@ export function AdminDashboardClient({ user, initialData }: AdminDashboardClient
                 ) : (
                   <p className="mt-1 text-2xl font-black text-[#0B1F3A] tracking-tight">
                     <CountUpNumber
+                      key={selectedMonthKey}
                       value={activeMonth ? activeMonth.revenue : 395119106}
                       duration={1400}
                       formatType="currency"

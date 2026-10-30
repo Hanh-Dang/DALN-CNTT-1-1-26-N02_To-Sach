@@ -32,10 +32,10 @@ export function CountUpNumber({
     const diff = endVal - startVal;
 
     // Kích hoạt hiệu ứng nhấp nháy nhẹ nếu số thay đổi trong lúc đang xem (Realtime update)
+    let highlightTimer: ReturnType<typeof setTimeout> | null = null;
     if (startVal !== 0 && diff !== 0) {
       setIsUpdated(true);
-      const timer = setTimeout(() => setIsUpdated(false), 2000);
-      return () => clearTimeout(timer);
+      highlightTimer = setTimeout(() => setIsUpdated(false), 2000);
     }
 
     startTimeRef.current = null;
@@ -52,6 +52,7 @@ export function CountUpNumber({
 
       const current = Math.round(startVal + diff * easeProgress);
       setDisplayValue(current);
+      startValRef.current = current;
 
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(animate);
@@ -65,6 +66,7 @@ export function CountUpNumber({
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (highlightTimer) clearTimeout(highlightTimer);
     };
   }, [value, duration]);
 
