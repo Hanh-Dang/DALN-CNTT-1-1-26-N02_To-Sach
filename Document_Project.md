@@ -1144,6 +1144,40 @@ await prisma.$transaction(async (tx) => {
 });
 ```
 
+#### Biểu đồ Tuần tự: Hủy Đơn hàng & Hoàn trả Tồn kho / Voucher Chống Khóa chéo
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Khách hàng / Nhân viên Đơn
+    participant API as Cancel / Status API
+    participant Tx as Prisma Transaction ($transaction)
+    participant DB as PostgreSQL (orders, vouchers, books)
+
+    User->>API: Yêu cầu Hủy đơn hàng (orderId)
+    API->>DB: Truy vấn đơn hàng kèm danh sách items và voucherId
+    API->>Tx: Mở prisma.$transaction(async (tx) => { ... })
+    
+    Tx->>DB: BƯỚC 1: Khóa và cập nhật trạng thái Order sang CANCELLED<br/>tx.order.update({ where: { id }, data: { status: 'CANCELLED' } })
+
+    opt BƯỚC 2: Luôn khóa và hoàn lượt Voucher TRƯỚC TIÊN (nếu đơn có áp mã)
+        Tx->>DB: tx.voucher.update({ where: { id: voucherId }, data: { usedCount: { decrement: 1 } } })
+        Tx->>DB: tx.voucherUsage.deleteMany({ where: { orderId, voucherId } })
+    end
+
+    Note over Tx,DB: BƯỚC 3: Sắp xếp danh sách sách theo bookId TĂNG DẦN (localeCompare)<br/>để mọi Transaction đồng thời luôn khóa dòng theo cùng 1 chiều duy nhất<br/>sortedItems = [...order.items].sort((a, b) => a.bookId.localeCompare(b.bookId))
+
+    loop Duyệt theo thứ tự bookId đã sắp xếp (Deadlock-Safe)
+        Tx->>DB: tx.book.update({ where: { id: item.bookId }, data: { stockQty: increment(qty), soldCount: decrement(qty) } })
+    end
+
+    Tx->>DB: COMMIT TRANSACTION HOÀN KHO AN TOÀN
+    Tx-->>API: Hoàn tất cập nhật
+    API-->>User: HTTP 200 OK (Đơn hàng đã hủy & hoàn tồn kho thành công)
+```
+
+*Hình 2.8 : Hủy Đơn hàng & Hoàn trả Tồn kho / Voucher Chống Khóa chéo*
+
 - **Ngăn chặn triệt để Deadlock:** Nhờ việc luôn luôn khóa `Voucher` trước, sau đó khóa các cuốn sách theo thứ tự chuỗi `bookId` tăng dần (`localeCompare`), 100% mọi luồng giao dịch đồng thời trên toàn hệ thống đều tuân thủ duy nhất một chiều khóa tài nguyên. Điều này thỏa mãn định lý Havender, loại bỏ hoàn toàn điều kiện "Chờ đợi vòng tròn" (Circular Wait) của Deadlock.
 - **Bắt ngoại lệ xung đột ghi an toàn (Safe Conflict Handling):** Nếu phát sinh xung đột ghi đồng thời hoặc mã lỗi Prisma `P2034` / `P2002`, API tự động bắt ngoại lệ và trả về mã phản hồi HTTP `409 Conflict` kèm thông điệp rõ ràng, cho phép client retry một cách an toàn mà không làm rò rỉ lỗi hệ thống 500.
 
